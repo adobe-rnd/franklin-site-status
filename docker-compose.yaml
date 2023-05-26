@@ -1,0 +1,40 @@
+version: '3'
+services:
+  mongo:
+    image: mongo:4.2
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+
+  import-worker:
+    image: franklin-site-status-import-worker:latest
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      GITHUB_ORG: ${GITHUB_ORG}
+    depends_on:
+      - mongo
+
+  server:
+    image: franklin-site-status-server:latest
+    ports:
+      - "8000:8000"
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      USER_API_KEY: ${USER_API_KEY}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+    depends_on:
+      - mongo
+
+  audit-worker:
+    image: franklin-site-status-audit-worker:latest
+    environment:
+      MONGODB_URI: ${MONGODB_URI}
+      PAGESPEED_API_KEY: ${PAGESPEED_API_KEY}
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data:

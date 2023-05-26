@@ -1,0 +1,13 @@
+{
+  "name": "franklin-site-status-server",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "4.17.1",
+    "mongodb": "3.6.6",
+    "body-parser": "1.19.0"
+  }
+}

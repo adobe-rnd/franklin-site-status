@@ -1,0 +1,19 @@
+{
+  "name": "franklin-site-status",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build:docker:server": "docker build -f server/Dockerfile -t franklin-site-status-server .",
+    "build:docker:audit-worker": "docker build -f audit-worker/Dockerfile -t franklin-site-status-audit-worker .",
+    "build:docker:import-worker": "docker build -f import-worker/Dockerfile -t franklin-site-status-import-worker .",
+    "build:docker": "npm run build:docker:server && npm run build:docker:audit-worker && npm run build:docker:import-worker",
+    "start:dev": "docker-compose -f docker-compose.dev.yaml up",
+    "start": "concurrently \"npm run start-server\" \"npm run start-worker\" \"npm run start-import-worker\"",
+    "start-server": "cd server && npm start",
+    "start-worker": "cd audit-worker && npm start",
+    "start-import-worker": "cd import-worker && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "6.5.1"
+  }
+}

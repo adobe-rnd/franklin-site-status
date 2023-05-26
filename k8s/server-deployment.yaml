@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: franklin-site-status-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: franklin-site-status-server
+  template:
+    metadata:
+      labels:
+        app: franklin-site-status-server
+    spec:
+      containers:
+        - name: server
+          image: franklin-site-status-server:latest
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-secrets
+                  key: mongodb-uri
+            - name: USER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-api-keys
+                  key: user-api-key
+            - name: ADMIN_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-api-keys
+                  key: admin-api-key
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: franklin-site-status-server
+spec:
+  selector:
+    app: franklin-site-status-server
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: LoadBalancer

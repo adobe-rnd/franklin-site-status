@@ -1,0 +1,14 @@
+{
+  "name": "franklin-site-status-import-worker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "import-worker.js",
+  "scripts": {
+    "start": "node import-worker.js"
+  },
+  "dependencies": {
+    "axios": "0.24.0",
+    "mongodb": "3.6.6"
+  }
+}
+

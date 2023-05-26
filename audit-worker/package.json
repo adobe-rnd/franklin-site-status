@@ -1,0 +1,14 @@
+{
+  "name": "franklin-site-status-audit-worker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "",
+  "scripts": {
+    "start": "node audit-worker.js"
+  },
+  "dependencies": {
+    "axios": "0.24.0",
+    "mongodb": "3.6.6"
+  }
+}
+

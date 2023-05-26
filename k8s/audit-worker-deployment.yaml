@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: franklin-site-status-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: franklin-site-status-audit-worker
+  template:
+    metadata:
+      labels:
+        app: franklin-site-status-audit-worker
+    spec:
+      containers:
+        - name: worker
+          image: franklin-site-status-audit-worker:latest
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-secrets
+                  key: mongodb-uri
+            - name: PAGESPEED_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-secrets
+                  key: pagespeed-api-key
