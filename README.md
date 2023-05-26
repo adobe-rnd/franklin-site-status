@@ -56,12 +56,22 @@ npm run build:docker
 docker-compose up
 ```
 
-The application will now be running, and you can view it in your browser at `http://localhost:3000`.
+The web server will now be running, and you can view it in your browser at `http://localhost:8000`.
 
 ## API Endpoints
 
 - `GET /api/status/:domain`: Get the latest audit status for a given domain.
 - `GET /api/sites`: Get a list of all sites with the latest audit results, sorted by the performance score in ascending order.
+
+### Authenticating API Requests
+
+All API requests should include an `X-API-KEY` header for authentication. The value of the header should be either the `USER_API_KEY` or `ADMIN_API_KEY` as defined in your `.env` file.
+
+Example of including the `X-API-KEY` in a curl request:
+
+```bash
+curl -H "X-API-KEY: your-api-key" http://localhost:8000/api/status/example.com
+```
 
 ## Workers
 
@@ -79,17 +89,8 @@ There are two main collections in the MongoDB database:
 
 - `audits`: This collection contains the audit results. Each audit is a document containing the domain, the audit result (a JSON object returned by the PageSpeed Insights API), a flag indicating if an error occurred during the audit, the error message (if any), and a timestamp.
 
-## Authenticating API Requests
 
-All API requests should include an `X-API-KEY` header for authentication. The value of the header should be either the `USER_API_KEY` or `ADMIN_API_KEY` as defined in your `.env` file.
-
-Example of including the `X-API-KEY` in a curl request:
-
-```bash
-curl -H "X-API-KEY: your-api-key" http://localhost:3000/api/status/example.com
-```
-
-## Production Deployment
+# Production Deployment
 
 For production deployment, we recommend using Kubernetes. We've provided a set of Kubernetes manifests in the `k8s` directory for deploying the application to a Kubernetes cluster.
 
