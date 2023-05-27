@@ -17,27 +17,48 @@ function getDb() {
 
 async function getSiteStatus(domain) {
   const db = getDb();
-  const sitesCollection = db.collection('sites');
-  const auditsCollection = db.collection('audits');
 
   const pipeline = [
     { $match: { domain: domain } },
     {
       $lookup: {
-        from: auditsCollection.collectionName,
+        from: 'audits',
         let: { siteDomain: "$domain" },
         pipeline: [
           { $match: { $expr: { $eq: ["$domain", "$$siteDomain"] } } },
-          { $sort: { auditedAt: -1 } },
-          { $limit: 1 }
+          { $sort: { auditedAt: -1 } }
         ],
-        as: "latestAudit"
+        as: "auditHistory"
+      }
+    },
+    {
+      $unwind: { path: "$auditHistory", preserveNullAndEmptyArrays: true }
+    },
+    {
+      $group: {
+        _id: "$_id",
+        domain: { $first: "$domain" },
+        lastAudited: { $first: "$lastAudited" },
+        githubUrl: { $first: "$gitHubURL" },
+        auditHistory: {
+          $push: {
+            auditedAt: "$auditHistory.auditedAt",
+            errorMessage: "$auditHistory.errorMessage",
+            isError: "$auditHistory.isError",
+            scores: {
+              performance: "$auditHistory.auditResult.categories.performance.score",
+              accessibility: "$auditHistory.auditResult.categories.accessibility.score",
+              bestPractices: "$auditHistory.auditResult.categories.best-practices.score",
+              seo: "$auditHistory.auditResult.categories.seo.score"
+            }
+          }
+        },
       }
     }
   ];
 
-  const siteWithLatestAudit = await sitesCollection.aggregate(pipeline).toArray();
-  return siteWithLatestAudit[0];
+  const result = await db.collection('sites').aggregate(pipeline).next();
+  return result;
 }
 
 async function getSitesWithAudits() {
@@ -63,7 +84,7 @@ async function getSitesWithAudits() {
       }
     },
     {
-      $unwind: '$latestAudit'
+      $unwind: { path: '$latestAudit', preserveNullAndEmptyArrays: true }
     },
     {
       $project: {
@@ -81,7 +102,13 @@ async function getSitesWithAudits() {
       }
     },
     {
-      $sort: { 'isError': 1, 'scores.performance': 1 }
+      $sort: {
+        'isError': 1,
+        'scores.performance': 1,
+        'scores.accessibility': 1,
+        'scores.bestPractices': 1,
+        'scores.seo': 1,
+      }
     }
   ];
 

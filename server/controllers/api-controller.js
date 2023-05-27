@@ -6,43 +6,28 @@ async function getStatus(req, res) {
   try {
     const site = await getSiteStatus(domain);
 
-    if (!site || !site.latestAudit.length) {
-      return res.json({ error: 'Site not found or no audits found for site' });
+    if (!site) {
+      return res.json({ error: 'Site not found' });
     }
 
-    const { githubUrl, latestAudit: [latestAudit], lastAudited } = site;
+    console.log(JSON.stringify(site, null, 2));
 
-    if (latestAudit.isError) {
-      return res.json({
-        domain,
-        githubUrl,
-        auditError: latestAudit.error
-      });
-    }
+    const { auditHistory, githubUrl, lastAudited } = site;
+    const latestAudit = auditHistory?.[0] ?? {};
 
-    const {
-      'performance': performance,
-      'accessibility': accessibility,
-      'best-practices': bestPractices,
-      'seo': seo
-    } = latestAudit.auditResult.categories;
-
-    return res.json({
+    const response = {
       domain,
       githubUrl,
       lastAudited,
-      scores: {
-        performance: performance.score,
-        accessibility: accessibility.score,
-        bestPractices: bestPractices.score,
-        seo: seo.score
-      }
-    });
+      auditHistory,
+      auditError: latestAudit.isError ? latestAudit.errorMessage : null,
+    };
+
+    return res.json(response);
   } catch (err) {
-    res.json({ error: err });
+    res.json({ message: 'Failed to fetch status:', error: err });
   }
 }
-
 
 async function getSites(req, res) {
   try {
