@@ -1,16 +1,14 @@
 const { getSiteStatus, getSitesWithAudits } = require('../db');
 
-async function getStatus(req, res) {
+async function getSite(req, res) {
   const domain = req.params.domain;
 
   try {
     const site = await getSiteStatus(domain);
 
     if (!site) {
-      return res.json({ error: 'Site not found' });
+      return res.status(404).json({ message: 'Site not found' });
     }
-
-    console.log(JSON.stringify(site, null, 2));
 
     const { auditHistory, githubUrl, lastAudited } = site;
     const latestAudit = auditHistory?.[0] ?? {};
@@ -25,7 +23,7 @@ async function getStatus(req, res) {
 
     return res.json(response);
   } catch (err) {
-    res.json({ message: 'Failed to fetch status:', error: err });
+    res.status(500).json({ message: 'Failed to fetch status:', error: err });
   }
 }
 
@@ -49,11 +47,11 @@ async function getSites(req, res) {
       ...(isError ? { auditError: errorMessage } : { scores }),
     })));
   } catch (err) {
-    res.json({ message: 'Failed to fetch sites: ', err });
+    res.status(500).json({ message: 'Failed to fetch sites: ', err });
   }
 }
 
 module.exports = {
-  getStatus,
+  getSite,
   getSites,
 };
