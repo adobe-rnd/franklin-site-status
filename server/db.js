@@ -69,6 +69,7 @@ async function getSitesWithAudits() {
       $project: {
         domain: 1,
         gitHubURL: 1,
+        lastAudited: 1,
         isError: '$latestAudit.isError',
         errorMessage: '$latestAudit.errorMessage',
         scores: {
@@ -87,16 +88,8 @@ async function getSitesWithAudits() {
   return await db.collection('sites').aggregate(pipeline).toArray();
 }
 
-
-async function getWorkerRunningState(workerName) {
-  const db = getDb();
-  const workerState = await db.collection('workerStates').findOne({ name: workerName });
-  return workerState?.isRunning || false;
-}
-
 module.exports = {
   connectToDb,
   getSiteStatus,
   getSitesWithAudits,
-  getWorkerRunningState,
 };

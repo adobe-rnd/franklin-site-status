@@ -6,6 +6,6 @@ const router = express.Router();
 
 router.get('/status/:domain', verifyAPIKey(process.env.USER_API_KEY), apiController.getStatus);
 router.get('/sites', verifyAPIKey(process.env.USER_API_KEY), apiController.getSites);
-router.post('/import', verifyAPIKey(process.env.ADMIN_API_KEY), apiController.triggerImport);
+// router.post('/some-admin-api', verifyAPIKey(process.env.ADMIN_API_KEY), apiController.someAction);
 
 module.exports = router;

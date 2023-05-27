@@ -2,16 +2,15 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const apiRoutes = require('./routes/api-routes');
 const { connectToDb } = require('./db');
-const { verifyAPIKey } = require('./middlewares/api-key-middleware');
 
 const app = express();
 app.use(bodyParser.json());
 
 app.use('/api', apiRoutes);
 
-app.get('/admin', verifyAPIKey(process.env.ADMIN_API_KEY), (req, res) => {
+/*app.get('/admin', verifyAPIKey(process.env.ADMIN_API_KEY), (req, res) => {
   res.sendFile(__dirname + '/public/admin.html');
-});
+});*/
 
 connectToDb()
   .then(() => {

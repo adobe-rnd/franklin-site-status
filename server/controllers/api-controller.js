@@ -1,4 +1,4 @@
-const { getSiteStatus, getSitesWithAudits, getWorkerRunningState } = require('../db');
+const { getSiteStatus, getSitesWithAudits } = require('../db');
 
 async function getStatus(req, res) {
   const domain = req.params.domain;
@@ -10,7 +10,7 @@ async function getStatus(req, res) {
       return res.json({ error: 'Site not found or no audits found for site' });
     }
 
-    const { githubUrl, latestAudit: [latestAudit] } = site;
+    const { githubUrl, latestAudit: [latestAudit], lastAudited } = site;
 
     if (latestAudit.isError) {
       return res.json({
@@ -30,6 +30,7 @@ async function getStatus(req, res) {
     return res.json({
       domain,
       githubUrl,
+      lastAudited,
       scores: {
         performance: performance.score,
         accessibility: accessibility.score,
@@ -47,38 +48,27 @@ async function getSites(req, res) {
   try {
     const sites = await getSitesWithAudits();
 
-    return res.json(sites.map(({ domain, gitHubURL, isError, errorMessage, scores }) => ({
+    return res.json(sites.map(({
+                                 domain,
+                                 gitHubURL,
+                                 isError,
+                                 errorMessage,
+                                 lastAudited,
+                                 scores,
+                                 totalAudits,
+                               }) => ({
       domain,
       gitHubURL,
-      ...(isError ? { auditError: errorMessage } : { scores })
+      lastAudited,
+      totalAudits,
+      ...(isError ? { auditError: errorMessage } : { scores }),
     })));
   } catch (err) {
-    res.json({ message: 'Failed to fetch sites.' });
-  }
-}
-
-async function triggerImport(req, res) {
-  try {
-    const importWorkerRunning = await getWorkerRunningState('importWorker');
-
-    if (importWorkerRunning) {
-      return res.json({ message: 'Import is already running.' });
-    }
-
-    const workerResponse = await axios.post('http://import-worker:3000/start');
-
-    if (workerResponse.status === 200) {
-      return res.json({ message: 'Import started.' });
-    }
-
-    res.json({ message: 'Failed to start import.' });
-  } catch (err) {
-    res.json({ message: 'Failed to trigger import.' });
+    res.json({ message: 'Failed to fetch sites: ', err });
   }
 }
 
 module.exports = {
   getStatus,
   getSites,
-  triggerImport,
 };
