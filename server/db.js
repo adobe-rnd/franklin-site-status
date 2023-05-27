@@ -3,7 +3,7 @@ const { MongoClient } = require('mongodb');
 let db;
 
 async function connectToDb() {
-  const client = new MongoClient(process.env.MONGODB_URI);
+  const client = new MongoClient(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
   await client.connect();
   db = client.db('franklin-status');
 }
@@ -80,7 +80,7 @@ async function getSitesWithAudits() {
       }
     },
     {
-      $sort: { 'scores.performance': 1 }
+      $sort: { 'isError': 1, 'scores.performance': 1 }
     }
   ];
 

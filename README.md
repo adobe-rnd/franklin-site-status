@@ -37,6 +37,7 @@ cp .env.example .env
 Here is the list of environment variables in the `.env` file:
 
 - `MONGODB_URI`: The connection string for your MongoDB database.
+- `AUDIT_TTL_DAYS`: The number of days to keep audit results in the database.
 - `PAGESPEED_API_KEY`: Your Google PageSpeed Insights API key.
 - `GITHUB_CLIENT_ID`: Your Github App client id.
 - `GITHUB_CLIENT_SECRET`: Your Github App client secret.

@@ -21,6 +21,11 @@ spec:
                 secretKeyRef:
                   name: franklin-site-status-secrets
                   key: mongodb-uri
+            - name: AUDIT_TTL_DAYS
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-secrets
+                  key: audit-ttl-days
             - name: PAGESPEED_API_KEY
               valueFrom:
                 secretKeyRef:

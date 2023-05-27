@@ -3,7 +3,7 @@ const { MongoClient } = require('mongodb');
 let db;
 
 async function connectToDb() {
-  const client = new MongoClient(process.env.MONGODB_URI);
+  const client = new MongoClient(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
   await client.connect();
   db = client.db('franklin-status');
 }
@@ -13,6 +13,11 @@ function getDb() {
     throw new Error('Not connected to database');
   }
   return db;
+}
+
+async function ensureAuditTTL(auditTTL) {
+  // Create a TTL index on the auditedAt field, expiring documents after the specified number of days
+  await db.collection('audits').createIndex({ "auditedAt": 1 }, { expireAfterSeconds: auditTTL });
 }
 
 /**
@@ -50,6 +55,16 @@ async function saveAudit(domain, audit, error) {
   });
 }
 
+async function setLastAudited(domain) {
+  const db = getDb();
+  const sitesCollection = db.collection('sites');
+
+  await sitesCollection.updateOne(
+    { domain: domain },
+    { $set: { lastAudited: new Date() } }
+  );
+}
+
 async function setWorkerRunningState(workerName, isRunning) {
   const db = getDb();
   const workersCollection = db.collection('workerStates');
@@ -64,8 +79,10 @@ async function setWorkerRunningState(workerName, isRunning) {
 
 module.exports = {
   connectToDb,
+  ensureAuditTTL,
   getDb,
   saveAudit,
   getNextSiteToAudit,
+  setLastAudited,
   setWorkerRunningState,
 };
