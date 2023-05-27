@@ -1,0 +1,116 @@
+openapi: 3.0.0
+info:
+  title: Franklin Site Status API
+  version:
+    $ref: "../../package.json#/version"
+
+servers:
+  - url: 'http://localhost:8000'
+
+paths:
+  /sites:
+    get:
+      summary: Get all sites
+      responses:
+        200:
+          description: List of all sites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteList'
+  /sites/{domain}:
+    get:
+      summary: Get specific site by domain
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          description: The domain of the site
+          schema:
+            type: string
+      responses:
+        200:
+          description: Site details by domain
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Site:
+      type: object
+      description: Information about a specific website and its most recent audit
+      properties:
+        domain:
+          type: string
+          description: The domain of the website
+        githubUrl:
+          type: string
+          description: The GitHub URL where the website's codebase is hosted
+        lastAudited:
+          type: string
+          format: date-time
+          description: The date and time when the website was last audited
+        auditHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/Audit'
+        auditError:
+          type: string
+          description: Any error that occurred during the most recent audit of the site
+    Audit:
+      type: object
+      description: Information about a specific audit of a website
+      properties:
+        auditedAt:
+          type: string
+          format: date-time
+          description: The date and time when the audit was performed
+        scores:
+          $ref: '#/components/schemas/Scores'
+    Scores:
+      type: object
+      description: Audit scores for different categories
+      properties:
+        performance:
+          type: number
+          description: Performance score for the site
+        accessibility:
+          type: number
+          description: Accessibility score for the site
+        bestPractices:
+          type: number
+          description: Best practices score for the site
+        seo:
+          type: number
+          description: SEO score for the site
+    SiteList:
+      type: object
+      description: List of sites with their last audit summary
+      properties:
+        domain:
+          type: string
+          description: The domain of the website
+        gitHubURL:
+          type: string
+          description: The GitHub URL where the website's codebase is hosted
+        lastAudited:
+          type: string
+          format: date-time
+          description: The date and time when the website was last audited
+        scores:
+          $ref: '#/components/schemas/Scores'
+        auditError:
+          type: string
+          description: Any error that occurred during the most recent audit of the site
+        totalAudits:
+          type: number
+          description: The total number of audits performed on the site
+security:
+  - ApiKeyAuth: [ ]  # Use the security scheme named "ApiKeyAuth" for all API paths
