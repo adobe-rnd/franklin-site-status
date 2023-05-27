@@ -1,37 +1,40 @@
 const axios = require('axios');
 const url = require('url');
-const { connectToDb, getDb, setWorkerRunningState } = require('.//db');
+const { connectToDb, getDb, setWorkerRunningState } = require('./db');
+
+const WORKER_NAME = 'importWorker';
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+function createGithubApiUrl(githubOrg, page) {
+  return `https://api.github.com/orgs/${githubOrg}/repos?type=public&page=${page}&per_page=100`;
+}
+
+function createGithubAuthHeaderValue(githubId, githubSecret) {
+  return `Basic ${Buffer.from(`${githubId}:${githubSecret}`).toString('base64')}`;
+}
+
 async function importWorker() {
-  // Connecting to database
   await connectToDb();
 
   const db = getDb();
-
-  await setWorkerRunningState('importWorker', true);
-
   const sitesCollection = db.collection('sites');
-
   const githubId = process.env.GITHUB_CLIENT_ID;
   const githubSecret = process.env.GITHUB_CLIENT_SECRET;
   const githubOrg = process.env.GITHUB_ORG;
-  const authHeaderValue = `Basic ${Buffer.from(`${githubId}:${githubSecret}`).toString('base64')}`;
+
+  await setWorkerRunningState(WORKER_NAME, true);
+
+  const authHeaderValue = createGithubAuthHeaderValue(githubId, githubSecret);
 
   let page = 1;
   let hasMorePages = true;
+  const bulkOps = [];
 
   while (hasMorePages) {
     try {
-      const response = await axios.get(
-        `https://api.github.com/orgs/${githubOrg}/repos?type=public&page=${page}&per_page=100`,
-        {
-          headers: {
-            'Authorization': authHeaderValue
-          }
-        }
-      );
+      const apiUrl = createGithubApiUrl(githubOrg, page);
+      const response = await axios.get(apiUrl, { headers: { 'Authorization': authHeaderValue } });
       const repos = response.data;
       hasMorePages = Boolean(repos.length);
 
@@ -51,21 +54,28 @@ async function importWorker() {
           continue;
         }
 
-        await sitesCollection.updateOne(
-          { domain: domain },
-          {
-            $setOnInsert: {
-              domain: domain,
-              gitHubURL: repo.html_url,
-              gitHubOrg: githubOrg,
-              createdAt: new Date(),
-              lastAudited: null,
-            }
+        bulkOps.push({
+          updateOne: {
+            filter: { domain: domain },
+            update: {
+              $setOnInsert: {
+                domain: domain,
+                gitHubURL: repo.html_url,
+                gitHubOrg: githubOrg,
+                createdAt: new Date(),
+                lastAudited: null,
+              }
+            },
+            upsert: true,
           },
-          { upsert: true }
-        );
+        });
 
-        console.info(`Added ${domain} to sites collection.`)
+        console.info(`Added ${domain} to sites collection.`);
+      }
+
+      if (bulkOps.length > 0) {
+        await sitesCollection.bulkWrite(bulkOps, { ordered: false });
+        bulkOps.length = 0;
       }
 
       page++;
@@ -75,7 +85,7 @@ async function importWorker() {
     }
   }
 
-  await setWorkerRunningState('importWorker', false);
+  await setWorkerRunningState(WORKER_NAME, false);
 }
 
 importWorker().catch(console.error);
