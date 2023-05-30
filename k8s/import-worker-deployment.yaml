@@ -9,8 +9,15 @@ spec:
       template:
         spec:
           containers:
-            - name: franklin-site-status-import-worker
+            - name: import-worker
               image: franklin-site-status-import-worker:latest
+              resources:
+                requests:
+                  cpu: "1"
+                  memory: "1Gi"
+                limits:
+                  cpu: "2"
+                  memory: "2Gi"
               env:
                 - name: MONGODB_URI
                   valueFrom:

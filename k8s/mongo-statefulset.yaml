@@ -16,6 +16,13 @@ spec:
       containers:
         - name: mongo
           image: mongo:4.2
+          resources:
+            requests:
+              cpu: "0.5"
+              memory: "2Gi"
+            limits:
+              cpu: "1"
+              memory: "4Gi"
           command: ["mongod"]
           args: ["--config", "/etc/mongod.conf"]
           ports:

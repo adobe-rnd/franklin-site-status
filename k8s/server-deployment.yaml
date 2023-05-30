@@ -13,8 +13,15 @@ spec:
         app: franklin-site-status-server
     spec:
       containers:
-        - name: server
+        - name: node-express-server
           image: franklin-site-status-server:latest
+          resources:
+            requests:
+              cpu: "0.5"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
           env:
             - name: MONGODB_URI
               valueFrom:
