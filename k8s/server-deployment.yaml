@@ -12,9 +12,11 @@ spec:
       labels:
         app: franklin-site-status-server
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
         - name: server
-          image: franklin-site-status-server:latest
+          image: docker-experience-success-release.dr-uw2.adobeitc.com/franklin-site-status-server:latest
           env:
             - name: MONGODB_URI
               valueFrom:
@@ -24,12 +26,12 @@ spec:
             - name: USER_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: franklin-site-status-api-keys
+                  name: franklin-site-status-secrets
                   key: user-api-key
             - name: ADMIN_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: franklin-site-status-api-keys
+                  name: franklin-site-status-secrets
                   key: admin-api-key
 
 ---

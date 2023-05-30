@@ -8,9 +8,11 @@ spec:
     spec:
       template:
         spec:
+          imagePullSecrets:
+            - name: regcred
           containers:
             - name: franklin-site-status-import-worker
-              image: franklin-site-status-import-worker:latest
+              image: docker-experience-success-release.dr-uw2.adobeitc.com/franklin-site-status-import-worker:latest
               env:
                 - name: MONGODB_URI
                   valueFrom:
