@@ -11,8 +11,20 @@ spec:
           imagePullSecrets:
             - name: regcred
           containers:
+<<<<<<< HEAD
             - name: franklin-site-status-import-worker
               image: docker-experience-success-release.dr-uw2.adobeitc.com/franklin-site-status-import-worker:latest
+=======
+            - name: import-worker
+              image: franklin-site-status-import-worker:latest
+              resources:
+                requests:
+                  cpu: "1"
+                  memory: "1Gi"
+                limits:
+                  cpu: "2"
+                  memory: "2Gi"
+>>>>>>> 64cb2d7e63052780dfbcab156a244c39ad7937af
               env:
                 - name: MONGODB_URI
                   valueFrom:

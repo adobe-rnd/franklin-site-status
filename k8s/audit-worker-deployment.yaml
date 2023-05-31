@@ -15,8 +15,15 @@ spec:
       imagePullSecrets:
         - name: regcred
       containers:
-        - name: worker
+        - name: audit-worker
           image: docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-audit-worker:latest
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
           env:
             - name: MONGODB_URI
               valueFrom:

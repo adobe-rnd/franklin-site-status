@@ -22,6 +22,13 @@ spec:
             - "--bind_ip_all"
             - "--replSet"
             - rs0
+          resources:
+            requests:
+              cpu: "0.5"
+              memory: "2Gi"
+            limits:
+              cpu: "1"
+              memory: "4Gi"
           ports:
             - containerPort: 27017
           volumeMounts:
