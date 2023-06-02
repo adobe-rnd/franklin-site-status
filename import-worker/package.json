@@ -1,6 +1,6 @@
 {
   "name": "franklin-site-status-import-worker",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "",
   "main": "import-worker.js",
   "scripts": {
