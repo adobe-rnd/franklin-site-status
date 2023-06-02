@@ -1,14 +1,12 @@
 const {
   connectToDb,
-  ensureAuditTTL,
+  createIndexes,
   getNextSiteToAudit,
   saveAudit,
-  setLastAudited,
   setWorkerRunningState
 } = require('./db');
 const {
   auditSite,
-  getAuditTTL,
   sleep
 } = require('./util');
 
@@ -20,7 +18,7 @@ async function auditWorker() {
   try {
     await connectToDb();
     await setWorkerRunningState(WORKER_NAME, true);
-    await ensureAuditTTL(getAuditTTL());
+    await createIndexes()
 
     console.info('Audit worker started');
 
@@ -28,7 +26,6 @@ async function auditWorker() {
       const site = await getNextSiteToAudit();
 
       if (!site) {
-        // If no sites are available to audit, sleep for a while before trying again
         console.info('No sites to audit, sleeping for 1 minute');
         await sleep(1000 * 60);
         continue;
@@ -48,12 +45,7 @@ async function auditWorker() {
         await saveAudit(site.domain, null, msg);
       }
 
-      // Update site's lastAudited timestamp
-      await setLastAudited(site.domain);
-
       console.info(`Audited ${site.domain}`);
-
-      // Sleep for a while to distribute audits evenly across the day
       await sleep(1000 * 60 * 24 / 100);
     }
   } catch (error) {

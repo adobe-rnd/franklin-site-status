@@ -78,7 +78,7 @@ curl -H "X-API-KEY: your-api-key" http://localhost:8000/api/status/example.com
 
 There are two worker processes:
 
-1. **Import Worker** (`import-worker`): This worker fetches a list of repositories from a Github organization, extracts the website URLs, and stores them in the database. The worker is scheduled to run daily, but can also be triggered manually via the admin page.
+1. **Import Worker** (`import-worker`): This worker fetches a list of repositories from a Github organization, extracts the website URLs, and stores them in the database. The worker is scheduled to run daily. The import worker also purges audits older than the configured TTL.
 
 2. **Audit Worker** (`audit-worker`): This worker fetches one site at a time from the database, runs an audit using the PageSpeed Insights API, and stores the results in the database. The worker runs continuously, auditing each site once per day.
 
@@ -86,10 +86,7 @@ There are two worker processes:
 
 There are two main collections in the MongoDB database:
 
-- `sites`: This collection contains a document for each website. Each document contains the domain, the associated Github URL, and a timestamp for the last audit.
-
-- `audits`: This collection contains the audit results. Each audit is a document containing the domain, the audit result (a JSON object returned by the PageSpeed Insights API), a flag indicating if an error occurred during the audit, the error message (if any), and a timestamp.
-
+- `sites`: This collection contains a document for each website. Each document contains the domain, the associated Github URL, and a timestamp for the last audit. It also contains the audits property. This property contains the audit results. Each audit is an entry containing the domain, the audit result (a JSON object returned by the PageSpeed Insights API), a flag indicating if an error occurred during the audit, the error message (if any), and a timestamp.
 
 # Production Deployment
 

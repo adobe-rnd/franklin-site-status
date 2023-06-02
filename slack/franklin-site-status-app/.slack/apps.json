@@ -1,0 +1,11 @@
+{
+  "apps": {
+    "cq-dev": {
+      "name": "cq-dev",
+      "app_id": "A05AG8M6YM8",
+      "team_id": "T06DUTYDQ",
+      "IsDev": false
+    }
+  },
+  "default": "cq-dev"
+}
