@@ -12,7 +12,7 @@ spec:
             - name: regcred
           containers:
             - name: import-worker
-              image: docker-experience-success-release.dr-uw2.adobeitc.com/franklin-site-status-import-worker:latest
+              image: docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-import-worker:latest
               resources:
                 requests:
                   cpu: "1"
