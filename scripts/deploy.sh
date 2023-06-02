@@ -17,17 +17,7 @@ if ! kubectl get secret franklin-site-status-secrets --context ethos05-prod-va7 
     --from-literal=admin-api-key=$ADMIN_API_KEY
 fi
 
- docker image tag franklin-site-status-server:latest docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-server:latest
- docker image push docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-server:latest
-
- docker image tag franklin-site-status-audit-worker:latest docker-experience-success-release.dr-uw2.adobeitc.com/franklin-site-status-audit-worker:latest
- docker image push docker-experience-success-release.dr-uw2.adobeitc.com/franklin-site-status-audit-worker:latest
-
- docker image tag franklin-site-status-import-worker:latest docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-import-worker:latest
- docker image push docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-import-worker:latest
-
-
- kubectl apply -f k8s -n ns-team-sites-xp-space-cat
+kubectl apply -f k8s -n ns-team-sites-xp-space-cat
 
 
 
