@@ -18,10 +18,10 @@ const formatAuditHistory = (auditHistory: object[] | null): string => {
 
   const headers = ["Audited At (UTC)", "Performance", "SEO", "Accessibility", "Best Practices"];
   const rows = auditHistory.map((audit) => {
-    const { auditedAt, scores, errorMessage } = audit;
+    const {auditedAt, scores, errorMessage} = audit;
 
     if (Object.keys(scores).length > 0) {
-      const { performance, seo, accessibility, bestPractices } = scores;
+      const {performance, seo, accessibility, bestPractices} = scores;
       return [
         formatDate(auditedAt),
         formatScore(performance),
@@ -74,7 +74,13 @@ const formatSiteMessage = (site: object): string => {
 export default SlackFunction(
   FormatSiteMessageDefinition,
   async ({inputs}) => {
-    const message = formatSiteMessage(inputs.site);
+    const site = inputs.site;
+
+    if (!site.domain) {
+      return {outputs: {message: ":warning: This site could not be found."}}
+    }
+
+    const message = formatSiteMessage(site);
     return {outputs: {message}};
   }
 );

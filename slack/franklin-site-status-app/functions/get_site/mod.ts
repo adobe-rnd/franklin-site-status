@@ -30,6 +30,13 @@ export default SlackFunction(
       });
 
       if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            outputs: {
+              site: {},
+            }
+          };
+        }
         throw new Error(`Error while getting the site from Franklin Status API: ${response.statusText}`);
       }
 
