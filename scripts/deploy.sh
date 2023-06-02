@@ -18,8 +18,3 @@ if ! kubectl get secret franklin-site-status-secrets --context ethos05-prod-va7 
 fi
 
 kubectl apply -f k8s -n ns-team-sites-xp-space-cat
-
-
-
-
-
