@@ -5,7 +5,7 @@ import GetSitesWorkflow from '../workflows/get_sites.ts';
 
 const getSitesShortcut: Trigger<typeof GetSitesWorkflow.definition> = {
   type: TriggerTypes.Shortcut,
-  name: "Get Sites",
+  name: "Franklin Status: Get Sites",
   description: "Get Sites from the Franklin Status API",
   workflow: `#/workflows/${GetSitesWorkflow.definition.callback_id}`,
   inputs: {

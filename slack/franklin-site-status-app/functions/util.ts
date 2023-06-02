@@ -1,3 +1,5 @@
+const PERCENT_MULTIPLIER = 100;
+
 export const validateApiKey = (key): void => {
   if (!key || key.trim() === '') {
     throw new Error('API key is not set or empty.');
@@ -17,3 +19,7 @@ export const formatDate = (isoDate: string | null): string => {
   return date.toISOString().replace("T", " ").slice(0, 19);
 };
 
+export const formatScore = (score: number): string => {
+  const percentage = score * PERCENT_MULTIPLIER;
+  return `${percentage}%`;
+};

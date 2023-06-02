@@ -3,7 +3,7 @@ import {SiteType} from '../../types/site.ts';
 
 const GetSitesDefinition = DefineFunction({
   callback_id: "get_sites_function",
-  title: "Get Sites",
+  title: "Franklin Status: Get Sites",
   description: "Gets sites from the Franklin Status API",
   source_file: "functions/get_sites/mod.ts",
   output_parameters: {

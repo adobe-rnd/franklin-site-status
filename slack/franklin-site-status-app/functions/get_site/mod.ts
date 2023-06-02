@@ -8,7 +8,7 @@ const API_KEY = Deno.env.get('FRANKLIN_SITE_STATUS_API_KEY');
 
 const processSiteData = (site: any) => {
   site.auditError = site.auditError ?? "none";
-  site.auditHistory.forEach((audit: any) => {
+  site.audits.forEach((audit: any) => {
     audit.errorMessage = audit.errorMessage ?? "none";
   });
 };

@@ -5,7 +5,7 @@ import FormatSiteMessageDefinition from '../functions/format_site_message/defini
 
 const GetSiteWorkflow = DefineWorkflow({
   callback_id: "get_site_workflow",
-  title: "Get Site Workflow",
+  title: "Franklin Status: Get Site Workflow",
   description: "Gets a site from the Franklin Status API",
   input_parameters: {
     properties: {

@@ -1,23 +1,18 @@
 import {SlackFunction} from "deno-slack-sdk/mod.ts";
 import FormatSiteMessageDefinition from '../format_site_message/definition.ts';
-import {formatDate} from '../util.ts';
+import {formatDate, formatScore} from '../util.ts';
 
-const PERCENT_MULTIPLIER = 100;
 const PADDING_EXTRA_SPACE = 2;
 const BACKTICKS = '```';
 
-const formatScore = (score: number): string => {
-  const percentage = score * PERCENT_MULTIPLIER;
-  return `${percentage}%`;
-};
 
-const formatAuditHistory = (auditHistory: object[] | null): string => {
-  if (!Array.isArray(auditHistory)) {
+const formatAudits = (audits: object[] | null): string => {
+  if (!Array.isArray(audits)) {
     return "No audit history available";
   }
 
   const headers = ["Audited At (UTC)", "Performance", "SEO", "Accessibility", "Best Practices"];
-  const rows = auditHistory.map((audit) => {
+  const rows = audits.map((audit) => {
     const {auditedAt, scores, errorMessage} = audit;
 
     if (Object.keys(scores).length > 0) {
@@ -66,7 +61,7 @@ const formatSiteMessage = (site: object): string => {
     *Last Audit Date:* ${formatDate(site.lastAudited)}
 
     *Audit History:*
-    ${formatAuditHistory(site.auditHistory)}
+    ${formatAudits(site.audits)}
   `;
   return formattedMessage.trim();
 };
