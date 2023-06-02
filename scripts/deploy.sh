@@ -27,11 +27,7 @@ fi
  docker image push docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-import-worker:latest
 
 
- kubectl apply -f k8s/audit-worker-deployment.yaml -n ns-team-sites-xp-space-cat
- kubectl apply -f k8s/egress.yaml -n ns-team-sites-xp-space-cat
- kubectl apply -f k8s/server-deployment.yaml -n ns-team-sites-xp-space-cat
- kubectl apply -f k8s/mongo-statefulset.yaml -n ns-team-sites-xp-space-cat
- kubectl apply -f k8s/import-worker-deployment.yaml -n ns-team-sites-xp-space-cat
+ kubectl apply -f k8s -n ns-team-sites-xp-space-cat
 
 
 
