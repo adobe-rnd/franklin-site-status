@@ -1,5 +1,6 @@
 const {
   connectToDb,
+  createIndexes,
   ensureAuditTTL,
   getNextSiteToAudit,
   saveAudit,
@@ -21,6 +22,7 @@ async function auditWorker() {
     await connectToDb();
     await setWorkerRunningState(WORKER_NAME, true);
     await ensureAuditTTL(getAuditTTL());
+    await createIndexes()
 
     console.info('Audit worker started');
 

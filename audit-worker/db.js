@@ -17,8 +17,18 @@ function getDb() {
 
 async function ensureAuditTTL(auditTTL) {
   // Create a TTL index on the auditedAt field, expiring documents after the specified number of days
-  await db.collection('audits').createIndex({ "auditedAt": 1 }, { expireAfterSeconds: auditTTL });
+  await db.collection('audits').createIndex({ auditedAt: 1 }, { expireAfterSeconds: auditTTL });
 }
+
+async function createIndexes() {
+  // Create an index on the 'domain' field in the 'sites' collection
+  await db.collection('sites').createIndex({ domain: 1 });
+
+  // Create indexes on the 'domain' and 'auditedAt' fields in the 'audits' collection
+  await db.collection('audits').createIndex({ domain: 1 });
+  await db.collection('audits').createIndex({ auditedAt: -1 });
+}
+
 
 /**
  * Get the next site that should be audited.
@@ -79,8 +89,8 @@ async function setWorkerRunningState(workerName, isRunning) {
 
 module.exports = {
   connectToDb,
+  createIndexes,
   ensureAuditTTL,
-  getDb,
   saveAudit,
   getNextSiteToAudit,
   setLastAudited,
