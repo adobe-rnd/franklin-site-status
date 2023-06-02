@@ -26,8 +26,28 @@ async function setWorkerRunningState(workerName, isRunning) {
   );
 }
 
+async function cleanupOldAudits() {
+  const TTL_DAYS = 30; // Replace with your desired TTL in days
+  const db = getDb();
+  const ttlDate = new Date(Date.now() - (TTL_DAYS * 24 * 60 * 60 * 1000));
+
+  const cursor = db.collection('sites').find();
+
+  while(await cursor.hasNext()) {
+    const site = await cursor.next();
+
+    // Remove audits older than TTL
+    site.audits = site.audits.filter(audit => audit.auditedAt > ttlDate);
+
+    await db.collection('sites').updateOne(
+      { _id: site._id },
+      { $set: { audits: site.audits } }
+    );
+  }
+}
 
 module.exports = {
+  cleanupOldAudits,
   connectToDb,
   getDb,
   setWorkerRunningState,

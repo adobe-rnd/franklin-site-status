@@ -55,7 +55,7 @@ export const SiteType = DefineType({
     auditError: {
       type: Schema.types.string,
     },
-    auditHistory: {
+    audits: {
       type: Schema.types.array,
       items: {
         type: AuditType,
