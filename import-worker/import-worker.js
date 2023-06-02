@@ -1,6 +1,7 @@
 const axios = require('axios');
 const url = require('url');
 const { connectToDb, getDb, setWorkerRunningState } = require('./db');
+const { cleanupOldAudits } = require('./db.js');
 
 const WORKER_NAME = 'importWorker';
 
@@ -54,16 +55,24 @@ async function importWorker() {
           continue;
         }
 
+        const now = new Date();
+
         bulkOps.push({
           updateOne: {
             filter: { domain: domain },
             update: {
               $setOnInsert: {
-                domain: domain,
                 gitHubURL: repo.html_url,
                 gitHubOrg: githubOrg,
-                createdAt: new Date(),
+                createdAt: now,
                 lastAudited: null,
+                audits: [],
+              },
+              $set: {
+                domain: domain, // updating domain every time
+              },
+              $currentDate: {
+                updatedAt: true // setting updatedAt to the current date/time during an update operation
               }
             },
             upsert: true,
@@ -84,6 +93,8 @@ async function importWorker() {
       await sleep(1000 * 60);
     }
   }
+
+  await cleanupOldAudits();
 
   await setWorkerRunningState(WORKER_NAME, false);
 }

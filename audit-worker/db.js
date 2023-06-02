@@ -15,24 +15,18 @@ function getDb() {
   return db;
 }
 
-async function ensureAuditTTL(auditTTL) {
-  // Create a TTL index on the auditedAt field, expiring documents after the specified number of days
-  await db.collection('audits').createIndex({ "auditedAt": 1 }, { expireAfterSeconds: auditTTL });
+async function createIndexes() {
+  // Create an index on the 'domain' field in the 'sites' collection
+  await db.collection('sites').createIndex({ domain: 1 });
+  await db.collection('sites').createIndex({ 'audits.auditedAt': -1 });
+  await db.collection('sites').createIndex({ 'audits.auditedAt': 1 });
 }
 
-/**
- * Get the next site that should be audited.
- * The site that was last audited is selected, if no site was audited before, the first site is returned.
- */
 async function getNextSiteToAudit() {
   const db = getDb();
-  const sitesCollection = db.collection('sites');
-
-  // Use the $exists operator to sort by the existence of lastAudited, putting sites that were never audited first
-  // Then, sort by lastAudited to get the least recently audited sites next
-  const site = await sitesCollection
+  const site = await db.collection('sites')
     .find()
-    .sort({ lastAudited: { $exists: -1 }, lastAudited: 1 })
+    .sort({ lastAudited: 1 })
     .limit(1)
     .toArray();
 
@@ -41,48 +35,37 @@ async function getNextSiteToAudit() {
   }
 }
 
-
 async function saveAudit(domain, audit, error) {
   const db = getDb();
-  const auditCollection = db.collection('audits');
-
-  await auditCollection.insertOne({
-    domain: domain,
+  const now = new Date();
+  const newAudit = {
+    auditedAt: now,
     isError: !!error,
     errorMessage: error?.message,
     auditResult: audit,
-    auditedAt: new Date(),
-  });
-}
-
-async function setLastAudited(domain) {
-  const db = getDb();
-  const sitesCollection = db.collection('sites');
-
-  await sitesCollection.updateOne(
+  };
+  await db.collection('sites').updateOne(
     { domain: domain },
-    { $set: { lastAudited: new Date() } }
+    {
+      $push: { audits: newAudit },
+      $set: { lastAudited: now }
+    }
   );
 }
 
 async function setWorkerRunningState(workerName, isRunning) {
   const db = getDb();
-  const workersCollection = db.collection('workerStates');
-
-  await workersCollection.updateOne(
+  await db.collection('workerStates').updateOne(
     { name: workerName },
     { $set: { isRunning: isRunning, lastUpdated: new Date() } },
     { upsert: true }
   );
 }
 
-
 module.exports = {
   connectToDb,
-  ensureAuditTTL,
-  getDb,
+  createIndexes,
   saveAudit,
   getNextSiteToAudit,
-  setLastAudited,
   setWorkerRunningState,
 };
