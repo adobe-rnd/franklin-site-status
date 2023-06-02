@@ -18,3 +18,6 @@ if ! kubectl get secret franklin-site-status-secrets --context ethos05-prod-va7 
 fi
 
 kubectl apply -f k8s -n ns-team-sites-xp-space-cat
+kubectl set image deployment/franklin-site-status-worker audit-worker=docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-import-worker:$1 -n ns-team-sites-xp-space-cat
+kubectl set image deployment/franklin-status-import-worker-cronjob import-worker=docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-audit-worker:$1 -n ns-team-sites-xp-space-cat
+kubectl set image deployment/franklin-site-status-server node-express-server=docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-server:$1 -n ns-team-sites-xp-space-cat
