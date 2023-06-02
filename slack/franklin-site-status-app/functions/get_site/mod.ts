@@ -1,17 +1,24 @@
 import { SlackFunction } from "deno-slack-sdk/mod.ts";
+
 import GetSiteDefinition from './definition.ts';
-import validateApiKey from '../util.ts';
+import {validateApiKey} from '../util.ts';
 
 const BASE_API_URL = 'https://franklin-site-status-server.ethos05-prod-va7.ethos.adobe.net/api/sites';
 const API_KEY = Deno.env.get('FRANKLIN_SITE_STATUS_API_KEY');
 
+const processSiteData = (site: any) => {
+  site.auditError = site.auditError ?? "none";
+  site.auditHistory.forEach((audit: any) => {
+    audit.errorMessage = audit.errorMessage ?? "none";
+  });
+};
+
 export default SlackFunction(
   GetSiteDefinition,
   async ({ inputs }) => {
-    console.debug("X-API-KEY: ", API_KEY);
     validateApiKey(API_KEY);
 
-    const siteUrl = `${BASE_API_URL}/${inputs.domain}`;
+    const siteUrl = `${BASE_API_URL}/${inputs.domain.trim()}`;
 
     try {
       const response = await fetch(siteUrl, {
@@ -26,11 +33,15 @@ export default SlackFunction(
         throw new Error(`Error while getting the site from Franklin Status API: ${response.statusText}`);
       }
 
+      const site = await response.json();
+
+      processSiteData(site);
+
       return {
         outputs: {
-          site: await response.json(),
+          site,
         }
-      }
+      };
     } catch (e) {
       console.error(e);
       return {

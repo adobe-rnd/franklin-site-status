@@ -2,6 +2,7 @@ import {Manifest} from "deno-slack-sdk/mod.ts";
 
 import GetSitesWorkflow from './workflows/get_sites.ts';
 import GetSiteWorkflow from './workflows/get_site.ts';
+import {AuditType, ScoresType, SiteType} from './types/site.ts';
 
 /**
  * The app manifest contains the app's configuration. This
@@ -15,6 +16,7 @@ export default Manifest({
   // functions: [GetSitesDefinition, GetSiteDefinition],
   workflows: [GetSitesWorkflow, GetSiteWorkflow],
   outgoingDomains: ["franklin-site-status-server.ethos05-prod-va7.ethos.adobe.net"],
+  types: [SiteType, AuditType, ScoresType],
   botScopes: [
     "commands",
     "chat:write",

@@ -1,6 +1,7 @@
 import { DefineWorkflow, Schema } from "deno-slack-sdk/mod.ts";
 
 import GetSiteDefinition from '../functions/get_site/definition.ts';
+import FormatSiteMessageDefinition from '../functions/format_site_message/definition.ts';
 
 const GetSiteWorkflow = DefineWorkflow({
   callback_id: "get_site_workflow",
@@ -38,13 +39,22 @@ const inputForm = GetSiteWorkflow.addStep(
   },
 );
 
+GetSiteWorkflow.addStep(Schema.slack.functions.SendMessage, {
+  channel_id: GetSiteWorkflow.inputs.channel,
+  message: "Fetching audit data for site: " + inputForm.outputs.fields.domain + " ... please wait",
+});
+
 const getSiteStep = GetSiteWorkflow.addStep(GetSiteDefinition, {
   domain: inputForm.outputs.fields.domain,
 });
 
+const formatSiteMessageStep = GetSiteWorkflow.addStep(FormatSiteMessageDefinition, {
+  site: getSiteStep.outputs.site,
+});
+
 GetSiteWorkflow.addStep(Schema.slack.functions.SendMessage, {
   channel_id: GetSiteWorkflow.inputs.channel,
-  message: "Site: " + getSiteStep.outputs.site,
+  message: formatSiteMessageStep.outputs.message,
 });
 
 export default GetSiteWorkflow;

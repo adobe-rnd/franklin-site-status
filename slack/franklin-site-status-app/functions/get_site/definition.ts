@@ -1,5 +1,7 @@
 import {DefineFunction, Schema} from "deno-slack-sdk/mod.ts";
 
+import {SiteType} from '../../types/site.ts';
+
 const GetSiteDefinition = DefineFunction({
   callback_id: "get_site_function",
   title: "Get Site",
@@ -17,7 +19,7 @@ const GetSiteDefinition = DefineFunction({
   output_parameters: {
     properties: {
       site: {
-        type: Schema.types.object,
+        type: SiteType,
         description: "Site from the Franklin Status API",
       },
     },
