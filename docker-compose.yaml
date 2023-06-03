@@ -25,6 +25,8 @@ services:
       MONGODB_URI: ${MONGODB_URI}
       USER_API_KEY: ${USER_API_KEY}
       ADMIN_API_KEY: ${ADMIN_API_KEY}
+      SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
     depends_on:
       - mongo
 
