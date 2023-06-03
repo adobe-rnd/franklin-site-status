@@ -34,9 +34,9 @@ const accepts = (message) => {
 };
 
 const execute = async (message, say) => {
-  const sites = await getCachedSitesWithAudits();
-
   await say('Retrieving all sites, please wait :hourglass:');
+
+  const sites = await getCachedSitesWithAudits();
 
   if (sites.length === 0) {
     await say(':warning: No sites found.');
