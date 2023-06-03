@@ -1,20 +1,8 @@
 const { getSiteStatus, getSitesWithAudits } = require('../db');
 const { generateExcel, generateCsv, selectPropertiesForObject } = require('../utils/exportUtils');
 
-let cachedSites = null;
-let cacheTimestamp = null;
+const getCachedSitesWithAudits = require('../cache');
 
-async function getCachedSitesWithAudits() {
-  const now = Date.now();
-  const fiveMinutes = 5 * 60 * 1000;
-
-  if (!cachedSites || now - cacheTimestamp > fiveMinutes) {
-    cachedSites = await getSitesWithAudits();
-    cacheTimestamp = now;
-  }
-
-  return cachedSites;
-}
 
 function extractAuditScores(audit) {
   if (!audit || !audit.auditResult) return {};
