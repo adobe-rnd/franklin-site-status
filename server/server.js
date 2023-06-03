@@ -2,10 +2,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const apiRoutes = require('./routes/api-routes');
 const { connectToDb } = require('./db');
+const errorHandler = require('./middlewares/error-handler.js');
 
 const app = express();
 app.use(bodyParser.json());
-
+app.use(errorHandler);
 app.use('/api', apiRoutes);
 
 /*app.get('/admin', verifyAPIKey(process.env.ADMIN_API_KEY), (req, res) => {

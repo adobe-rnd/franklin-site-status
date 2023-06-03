@@ -1,11 +1,22 @@
 const { MongoClient } = require('mongodb');
 
+const SITES_SORT_CONFIG = [
+  { key: 'lastAudit.auditResult.categories.performance.score', desc: false },
+  { key: 'lastAudit.auditResult.categories.seo.score', desc: false },
+  { key: 'lastAudit.auditResult.categories.accessibility.score', desc: false },
+  { key: 'lastAudit.auditResult.categories.bestPractices.score', desc: false },
+];
+
+let client;
 let db;
 
 async function connectToDb() {
-  const client = new MongoClient(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-  await client.connect();
-  db = client.db('franklin-status');
+  if (!client) {
+    client = new MongoClient(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+    await client.connect();
+    db = client.db('franklin-status');
+  }
+  return db;
 }
 
 function getDb() {
@@ -13,6 +24,42 @@ function getDb() {
     throw new Error('Not connected to database');
   }
   return db;
+}
+
+function getNestedValue(obj, keyString) {
+  const keys = keyString.split('.');
+  let value = obj;
+
+  for (let key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) {
+      return -Infinity;
+    }
+
+    value = value[key];
+  }
+
+  return value;
+}
+
+function sortSites(sites, sortConfig) {
+  return sites.sort((a, b) => {
+    if (!a.lastAudit || a.lastAudit.isError) return 1;
+    if (!b.lastAudit || b.lastAudit.isError) return -1;
+
+    for (let config of sortConfig) {
+      const { key, desc } = config;
+
+      const valueA = getNestedValue(a, key) || -Infinity;
+      const valueB = getNestedValue(b, key) || -Infinity;
+
+      if (valueA !== valueB) {
+        return desc ? valueB - valueA : valueA - valueB;
+      }
+    }
+
+    // equal, so no change in order
+    return 0;
+  });
 }
 
 async function getSiteStatus(domain) {
@@ -25,12 +72,14 @@ async function getSiteStatus(domain) {
 async function getSitesWithAudits() {
   const db = getDb();
 
-  const sites = await db.collection('sites').find().toArray();
-  sites.forEach(site => {
-    site.latestAudit = site.audits[0];
+  let sites = await db.collection('sites').find().toArray();
+
+  sites = sites.map(site => {
+    site.lastAudit = site.audits && site.audits.length > 0 ? site.audits[0] : null;
+    return site;
   });
 
-  return sites;
+  return sortSites(sites, SITES_SORT_CONFIG);
 }
 
 module.exports = {
