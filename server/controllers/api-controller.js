@@ -1,6 +1,21 @@
 const { getSiteStatus, getSitesWithAudits } = require('../db');
 const { generateExcel, generateCsv, selectPropertiesForObject } = require('../utils/exportUtils');
 
+let cachedSites = null;
+let cacheTimestamp = null;
+
+async function getCachedSitesWithAudits() {
+  const now = Date.now();
+  const fiveMinutes = 5 * 60 * 1000;
+
+  if (!cachedSites || now - cacheTimestamp > fiveMinutes) {
+    cachedSites = await getSitesWithAudits();
+    cacheTimestamp = now;
+  }
+
+  return cachedSites;
+}
+
 function extractAuditScores(audit) {
   if (!audit || !audit.auditResult) return {};
 
@@ -65,7 +80,7 @@ async function getSite(req, res, next) {
 
 async function getSites(req, res, next) {
   try {
-    const sites = await getSitesWithAudits();
+    const sites = await getCachedSitesWithAudits();
     const transformedData = transformSitesData(sites);
 
     return res.json(transformedData);
@@ -84,36 +99,28 @@ const SITES_EXPORT_PROPERTIES = [
   { name: 'auditError', path: 'lastAudit.errorMessage', condition: (site) => site.lastAudit && site.lastAudit.isError },
 ];
 
-async function exportSitesToExcel(req, res, next) {
+async function exportSites(res, next, exportFunction, mimeType, filename) {
   try {
-    const sites = await getSitesWithAudits();
+    const sites = await getCachedSitesWithAudits();
     const data = transformSitesData(sites);
     const dataForExport = data.map((site) => selectPropertiesForObject(site, SITES_EXPORT_PROPERTIES));
-    const excel = generateExcel(dataForExport, 'franklin-site-status');
+    const file = exportFunction(dataForExport);
 
-    res.setHeader('Content-Disposition', 'attachment; filename=franklin-site-status.xlsx');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(excel);
-
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.setHeader('Content-Type', mimeType);
+    res.send(file);
   } catch (err) {
+    console.error(err);
     next(err);
   }
 }
 
+async function exportSitesToExcel(req, res, next) {
+  await exportSites(res, next, (data) => generateExcel(data, 'franklin-site-status'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'franklin-site-status.xlsx');
+}
+
 async function exportSitesToCSV(req, res, next) {
-  try {
-    const sites = await getSitesWithAudits();
-    const data = transformSitesData(sites);
-    const dataForExport = data.map((site) => selectPropertiesForObject(site, SITES_EXPORT_PROPERTIES));
-    const csv = generateCsv(dataForExport);
-
-    res.setHeader('Content-Disposition', 'attachment; filename=franklin-site-status.csv');
-    res.setHeader('Content-Type', 'text/csv');
-    res.send(csv);
-
-  } catch (err) {
-    next(err);
-  }
+  await exportSites(res, next, generateCsv, 'text/csv', 'franklin-site-status.csv');
 }
 
 module.exports = {
