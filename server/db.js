@@ -66,6 +66,11 @@ async function getSiteStatus(domain) {
   const db = getDb();
 
   const site = await db.collection('sites').findOne({ domain: domain });
+
+  if (site && Array.isArray(site.audits)) {
+    site.audits.sort((a, b) => new Date(b.auditedAt) - new Date(a.auditedAt));
+  }
+
   return site;
 }
 

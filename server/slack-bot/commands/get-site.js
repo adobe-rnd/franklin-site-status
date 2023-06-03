@@ -1,0 +1,129 @@
+const { URL } = require('url');
+
+const { getSiteStatus } = require('../../db.js');
+const { extractAuditScores } = require('../../utils/auditUtils.js');
+const { formatDate, formatScore } = require('../../utils/formatUtils.js');
+
+const BACKTICKS = '```';
+const CHARACTER_LIMIT = 2500;
+const LINKED_REGEX = /<([^|>]+)\|[^>]+>/;
+const PADDING_EXTRA_SPACE = 2;
+const PHRASES = ['get domain', 'get site with domain'];
+
+const formatAudits = (audits) => {
+  if (!Array.isArray(audits)) {
+    return "No audit history available";
+  }
+
+  const headers = ["Audited At (UTC)", "Performance", "SEO", "Accessibility", "Best Practices"];
+  const rows = audits.map((audit) => {
+    const { auditedAt, errorMessage, isError } = audit;
+
+    if (!isError) {
+      const { performance, seo, accessibility, bestPractices } = extractAuditScores(audit);
+      return [
+        formatDate(auditedAt),
+        formatScore(performance),
+        formatScore(seo),
+        formatScore(accessibility),
+        formatScore(bestPractices),
+      ];
+    } else {
+      return [formatDate(auditedAt), errorMessage, "", "", ""];
+    }
+  });
+
+  const table = [headers, ...rows];
+  const columnWidths = table.reduce((widths, row) => {
+    return row.map((cell, i) => {
+      const colSpan = row.length === 2 && i === 1 ? 4 : 1;
+      return Math.max(widths[i] || 0, cell.length / colSpan);
+    });
+  }, []);
+
+  let formattedTable = table
+    .map((row) => {
+      return row.map((cell, i) => {
+        if (i === 0) {
+          return cell.padEnd(columnWidths[i]);
+        } else if (row.length === 2 && i === 1) {
+          return cell.padEnd(columnWidths[i] * 4);
+        } else {
+          return cell.padEnd(columnWidths[i] + PADDING_EXTRA_SPACE);
+        }
+      }).join("  ");
+    })
+    .join("\n");
+
+  // ensure the formattedTable string does not exceed the character limit.
+  // this is mostly due to the 3001 character limit of slack messages.
+  if (formattedTable.length > CHARACTER_LIMIT) {
+    formattedTable = formattedTable.slice(0, CHARACTER_LIMIT) + '...';
+  }
+
+  return `${BACKTICKS}\n${formattedTable}\n${BACKTICKS}`;
+};
+
+const usage = () => {
+  return `Usage: _${PHRASES.join(' or ')}_ <domain>`;
+};
+
+const accepts = (message) => {
+  console.log('comparing', message, 'to', PHRASES);
+  return PHRASES.some(phrase => message.startsWith(phrase));
+};
+
+const extractDomainFromInput = (input) => {
+  const linkedFormMatch = input.match(LINKED_REGEX);
+
+  if (linkedFormMatch) {
+    return new URL(linkedFormMatch[1]).hostname;
+  } else {
+    return input.trim();
+  }
+};
+
+const execute = async (message, say) => {
+  const phrase = PHRASES.find(phrase => message.startsWith(phrase));
+  const domain = phrase ? extractDomainFromInput(message.trim().slice(phrase.length).trim()) : null;
+
+  if (!domain) {
+    await say(usage());
+    return;
+  }
+
+  await say(`Retrieving site status for domain: ${domain}, please wait :hourglass:`);
+
+  const site = await getSiteStatus(domain);
+
+  if (!site) {
+    await say(`:warning: No site found with domain: ${domain}`);
+    return;
+  }
+
+  let blocks = [{
+    "type": "section",
+    "text": {
+      "type": "mrkdwn",
+      "text": `
+*Franklin Site Status*: ${site.domain}
+:github-4173: GitHub: ${site.gitHubURL}
+:clock1: Last audit on ${formatDate(site.lastAudited)}
+
+_Audits are sorted by date descending._
+${formatAudits(site.audits)}
+      `,
+    }
+  }];
+
+  await say({ blocks });
+};
+
+module.exports = {
+  name: "Get Franklin Site Status",
+  phrases: ['get site', 'get domain'],
+  description: 'Retrieves audit status for a franklin site with a given domain',
+  accepts,
+  execute,
+  usage,
+};

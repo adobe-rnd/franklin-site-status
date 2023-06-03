@@ -1,14 +1,15 @@
 const { App, ExpressReceiver } = require('@slack/bolt');
 
 const getCachedSitesWithAudits = require('../cache');
+const commands = require('./commands.js');
 
+const BOT_MENTION_REGEX = /^<@[^>]+>\s+/;
 
-// Initialize your custom receiver
 const receiver = new ExpressReceiver({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
-receiver.router.post('/events', (req, res) => {
+/*receiver.router.post('/events', (req, res) => {
   const { challenge } = req.body;
 
   if (challenge) {
@@ -17,50 +18,27 @@ receiver.router.post('/events', (req, res) => {
   } else {
     res.status(200).end();
   }
-});
+});*/
 
-// Initialize your Bolt app with the custom receiver
 const bot = new App({
   token: process.env.SLACK_BOT_TOKEN,
   receiver: receiver
 });
 
-// Add your Slack bot routes here
-bot.event('app_mention', async ({ context, event }) => {
+bot.event('app_mention', async ({ context, event, say }) => {
   try {
-    await bot.client.chat.postMessage({
-      token: context.botToken,
-      channel: event.channel,
-      text: "Button and input field here",
-      attachments: [
-        {
-          blocks: [
-            {
-              type: "button",
-              text: {
-                type: "plain_text",
-                text: "Get Franklin Sites",
-                emoji: true,
-              },
-              value: "click_me_123",
-              action_id: "get_sites",
-            },
-            {
-              type: "input",
-              element: {
-                type: "plain_text_input",
-                action_id: "get_site_by_domain",
-              },
-              label: {
-                type: "plain_text",
-                text: "Domain",
-                emoji: true,
-              },
-            },
-          ],
-        },
-      ],
-    });
+    const message = event.text.replace(BOT_MENTION_REGEX, '').trim();
+
+    for (const command of commands) {
+      if (command.accepts(message)) {
+        await command.execute(message, say, commands);
+        return;
+      } else {
+      }
+    }
+
+    await commands.find(cmd => cmd.phrases.includes('help')).execute(message, say, commands);
+
   } catch (error) {
     console.error(error);
   }
