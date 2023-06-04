@@ -8,12 +8,23 @@ const { sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.
 
 const PAGE_SIZE = 20;
 const PHRASES = ['get sites', 'get all sites'];
+const EXPORT_FORMATS = {
+  CSV: 'csv',
+  XLSX: 'xlsx',
+};
 
-function formatSites(sites, start, end) {
-  const sitesMessage = sites.slice(start, end).reduce((message, site, index) => {
+/**
+ * Format a list of sites for output.
+ *
+ * @param {Array} [sites=[]] - The sites to format.
+ * @param {number} start - The index to start slicing the array.
+ * @param {number} end - The index to end slicing the array.
+ * @returns {string} The formatted sites message.
+ */
+function formatSites(sites = [], start, end) {
+  return sites.slice(start, end).reduce((message, site, index) => {
     const { domain } = site;
     const rank = start + index + 1;
-
     let siteMessage = `${rank}. No audits found for ${domain}`;
 
     if (site.audits.length !== 0) {
@@ -31,10 +42,13 @@ function formatSites(sites, start, end) {
 
     return message + '\n' + siteMessage.trim();
   }, '');
-
-  return `${sitesMessage}`;
 }
 
+/**
+ * Generate an overflow accessory object for a Slack message.
+ *
+ * @returns {Object} The overflow accessory object.
+ */
 function generateOverflowAccessory() {
   return {
     "type": "overflow",
@@ -60,6 +74,14 @@ function generateOverflowAccessory() {
   };
 }
 
+/**
+ * Generate pagination blocks for a Slack message.
+ *
+ * @param {number} start - The index to start the page.
+ * @param {number} end - The index to end the page.
+ * @param {number} totalSites - The total number of sites.
+ * @returns {Object} The pagination blocks object.
+ */
 function generatePaginationBlocks(start, end, totalSites) {
   const blocks = [];
   const numberOfPages = Math.ceil(totalSites / PAGE_SIZE);
@@ -110,18 +132,23 @@ function generatePaginationBlocks(start, end, totalSites) {
   };
 }
 
+/**
+ * Handler for the overflow action, which allows for downloading the list of sites in different formats.
+ *
+ * @param {Object} param0 - The object containing the body, acknowledgement function (ack), client, and say function.
+ */
 async function overflowActionHandler({ body, ack, client, say }) {
   await ack();
 
   const selectedOption = body.actions?.[0]?.selected_option?.value;
 
   if (!selectedOption) {
-    await say(`:nuclear-warning: Oops! No format selected. Please select either 'csv' or 'xlsx'.`);
+    await say(`:nuclear-warning: Oops! No format selected. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
     return;
   }
 
-  if (selectedOption !== 'csv' && selectedOption !== 'xlsx') {
-    await say(`:nuclear-warning: Oops! The selected format '${selectedOption}' is not supported. Please select either 'csv' or 'xlsx'.`);
+  if (selectedOption !== EXPORT_FORMATS.CSV && selectedOption !== EXPORT_FORMATS.XLSX) {
+    await say(`:nuclear-warning: Oops! The selected format '${selectedOption}' is not supported. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
     return;
   }
 
@@ -129,9 +156,9 @@ async function overflowActionHandler({ body, ack, client, say }) {
 
   try {
     let fileBuffer;
-    if (selectedOption === 'csv') {
+    if (selectedOption === EXPORT_FORMATS.CSV) {
       fileBuffer = await exporters.exportSitesToCSV();
-    } else if (selectedOption === 'xlsx') {
+    } else if (selectedOption === EXPORT_FORMATS.XLSX) {
       fileBuffer = await exporters.exportSitesToExcel();
     }
 
@@ -147,6 +174,11 @@ async function overflowActionHandler({ body, ack, client, say }) {
   }
 }
 
+/**
+ * Handler for the pagination actions (previous page, next page, or specific page).
+ *
+ * @param {Object} param0 - The object containing the acknowledgement function (ack), say function, and action.
+ */
 async function paginationHandler({ ack, say, action }) {
   await ack();
 
@@ -173,6 +205,12 @@ async function paginationHandler({ ack, say, action }) {
 
 }
 
+/**
+ * GetSitesCommand constructor function. Creates an instance of the command for retrieving all Franklin sites.
+ *
+ * @param {Object} bot - The bot instance.
+ * @returns {Object} The command object.
+ */
 function GetSitesCommand(bot) {
   const baseCommand = BaseCommand({
     id: 'get-all-franklin-sites',
@@ -181,41 +219,57 @@ function GetSitesCommand(bot) {
     phrases: PHRASES,
   });
 
+  /**
+   * Initializes the bot with the necessary action handlers.
+   *
+   * @param {Object} bot - The bot instance.
+   */
   const init = (bot) => {
     bot.action('sites_overflow_action', overflowActionHandler);
     bot.action(/^paginate_sites_(prev|next|page_\d+)$/, paginationHandler);
   };
 
+  /**
+   * Execute the command to get all Franklin sites. This includes retrieving the sites, formatting the sites,
+   * generating the necessary Slack message blocks, and sending the message.
+   *
+   * @param {Object} message - The Slack message object.
+   * @param {function} say - The function to send a message to Slack.
+   */
   const execute = async (message, say) => {
     await say(':hourglass: Retrieving all sites, please wait...');
 
-    const sites = await getCachedSitesWithAudits();
+    try {
+      const sites = await getCachedSitesWithAudits();
 
-    if (sites.length === 0) {
-      await say(':warning: No sites found.');
-      return;
-    }
+      if (sites.length === 0) {
+        await say(':warning: No sites found.');
+        return;
+      }
 
-    const totalSites = sites.length;
-    const start = 0;
-    const end = start + PAGE_SIZE;
+      const totalSites = sites.length;
+      const start = 0;
+      const end = start + PAGE_SIZE;
 
-    let textSections = [{
-      text: `
+      let textSections = [{
+        text: `
     *Franklin Sites Status:* ${totalSites} total sites
 
     Columns: Rank: Performance - SEO - Accessibility - Best Practices >> Domain
     _Sites are ordered by performance score, then all other scores, descending._
     ${formatSites(sites, start, end)}
     `,
-      accessory: generateOverflowAccessory(),
-    },
-    ];
+        accessory: generateOverflowAccessory(),
+      },
+      ];
 
-    let additionalBlocks = [generatePaginationBlocks(start, end, totalSites)];
+      let additionalBlocks = [generatePaginationBlocks(start, end, totalSites)];
 
-    await sendMessageBlocks(say, textSections, additionalBlocks);
-  };
+      await sendMessageBlocks(say, textSections, additionalBlocks);
+    } catch (error) {
+      await postErrorMessage(say, error);
+    }
+  }
 
   init(bot);
 
