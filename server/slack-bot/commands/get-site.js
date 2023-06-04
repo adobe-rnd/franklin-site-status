@@ -2,7 +2,7 @@ const { URL } = require('url');
 
 const { getSiteStatus } = require('../../db.js');
 const { extractAuditScores } = require('../../utils/auditUtils.js');
-const { formatDate, formatScore } = require('../../utils/formatUtils.js');
+const { formatDate, formatScore, getLastWord } = require('../../utils/formatUtils.js');
 
 const BACKTICKS = '```';
 const CHARACTER_LIMIT = 2500;
@@ -69,11 +69,16 @@ const usage = () => {
 };
 
 const accepts = (message) => {
-  console.log('comparing', message, 'to', PHRASES);
-  return PHRASES.some(phrase => message.startsWith(phrase));
+  return PHRASES.some(phrase => message.includes(phrase));
 };
 
-const extractDomainFromInput = (input) => {
+const extractDomainFromInput = (message) => {
+  const input = getLastWord(message);
+
+  if (!input) {
+    return null;
+  }
+
   const linkedFormMatch = input.match(LINKED_REGEX);
 
   if (linkedFormMatch) {
@@ -84,15 +89,14 @@ const extractDomainFromInput = (input) => {
 };
 
 const execute = async (message, say) => {
-  const phrase = PHRASES.find(phrase => message.startsWith(phrase));
-  const domain = phrase ? extractDomainFromInput(message.trim().slice(phrase.length).trim()) : null;
+  const domain = extractDomainFromInput(message);
 
   if (!domain) {
     await say(usage());
     return;
   }
 
-  await say(`Retrieving site status for domain: ${domain}, please wait :hourglass:`);
+  await say(`:hourglass: Retrieving status for domain: ${domain}, please wait...`);
 
   const site = await getSiteStatus(domain);
 
@@ -119,11 +123,19 @@ ${formatAudits(site.audits)}
   await say({ blocks });
 };
 
-module.exports = {
-  name: "Get Franklin Site Status",
-  phrases: ['get site', 'get domain'],
-  description: 'Retrieves audit status for a franklin site with a given domain',
-  accepts,
-  execute,
-  usage,
+const init = (bot) => {
+  // nothing for now
+};
+
+module.exports = (bot) => {
+  init(bot);
+
+  return {
+    name: "Get Franklin Site Status",
+      phrases: ['get site', 'get domain'],
+    description: 'Retrieves audit status for a franklin site with a given domain',
+    accepts,
+    execute,
+    usage,
+  }
 };

@@ -1,6 +1,37 @@
 const xlsx = require('xlsx');
 const { Parser } = require('json2csv');
 
+const getCachedSitesWithAudits = require('../cache.js');
+const { extractAuditScores } = require('./auditUtils.js');
+
+
+const SITES_EXPORT_PROPERTIES = [
+  { name: 'domain', path: 'domain' },
+  { name: 'gitHubURL', path: 'gitHubURL' },
+  { name: 'performance', path: 'lastAudit.scores.performance' },
+  { name: 'seo', path: 'lastAudit.scores.seo' },
+  { name: 'accessibility', path: 'lastAudit.scores.accessibility' },
+  { name: 'best-practices', path: 'lastAudit.scores.bestPractices' },
+  { name: 'auditError', path: 'lastAudit.errorMessage', condition: (site) => site.lastAudit && site.lastAudit.isError },
+];
+
+function transformSitesData(sites) {
+  return sites.map(({ domain, gitHubURL, lastAudit }) => {
+    const auditInfo = lastAudit ? {
+      auditedAt: lastAudit.auditedAt,
+      isError: lastAudit.isError,
+      errorMessage: lastAudit.errorMessage,
+      scores: extractAuditScores(lastAudit),
+    } : null;
+
+    return {
+      domain,
+      gitHubURL,
+      lastAudit: auditInfo,
+    };
+  });
+}
+
 function selectPropertiesForObject(obj, properties) {
   return properties.reduce((result, property) => {
     if (property.condition && !property.condition(obj)) {
@@ -26,11 +57,26 @@ function generateExcel(data, sheetName) {
 
 function generateCsv(data) {
   const json2csvParser = new Parser();
-  return json2csvParser.parse(data);
+  return Buffer.from(json2csvParser.parse(data));
+}
+
+const exportSites = async (exportFunction) => {
+  const sites = await getCachedSitesWithAudits();
+  const data = transformSitesData(sites);
+  const dataForExport = data.map((site) => selectPropertiesForObject(site, SITES_EXPORT_PROPERTIES));
+  return exportFunction(dataForExport);
+}
+
+const exportSitesToExcel = async () => {
+  return exportSites((data) => generateExcel(data, 'franklin-sites-status'));
+}
+
+const exportSitesToCSV = async () => {
+  return exportSites(generateCsv);
 }
 
 module.exports = {
-  generateExcel,
-  generateCsv,
-  selectPropertiesForObject,
+  exportSitesToCSV,
+  exportSitesToExcel,
+  transformSitesData
 };

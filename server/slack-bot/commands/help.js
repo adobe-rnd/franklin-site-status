@@ -1,7 +1,7 @@
 const PHRASES = ['help', 'what can you do'];
 
 const accepts = (message) => {
-  return PHRASES.some(phrase => message.startsWith(phrase));
+  return PHRASES.some(phrase => message.includes(phrase));
 };
 
 const execute = async (message, say, commands) => {
@@ -27,14 +27,22 @@ const execute = async (message, say, commands) => {
 };
 
 const usage = () => {
-  return `Usage: ${PHRASES.join(' or ')}`;
+  return `Usage: _${PHRASES.join(' or ')}_`;
 };
 
-module.exports = {
-  name: "Help",
-  description: 'Displays this help message',
-  phrases: PHRASES,
-  accepts,
-  execute,
-  usage,
+const init = (bot) => {
+  // nothing for now
+};
+
+module.exports = (bot) => {
+  init(bot);
+
+  return {
+    name: "Help",
+    description: 'Displays a help message',
+    phrases: PHRASES,
+    accepts,
+    execute,
+    usage,
+  }
 };
