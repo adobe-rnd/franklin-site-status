@@ -1,25 +1,7 @@
-const { getSiteStatus } = require('../db');
-const { generateExcel, generateCsv, selectPropertiesForObject } = require('../utils/exportUtils');
-
-const { extractAuditScores } = require('../utils/auditUtils.js');
 const getCachedSitesWithAudits = require('../cache');
-
-function transformSitesData(sites) {
-  return sites.map(({ domain, gitHubURL, lastAudit }) => {
-    const auditInfo = lastAudit ? {
-      auditedAt: lastAudit.auditedAt,
-      isError: lastAudit.isError,
-      errorMessage: lastAudit.errorMessage,
-      scores: extractAuditScores(lastAudit),
-    } : null;
-
-    return {
-      domain,
-      gitHubURL,
-      lastAudit: auditInfo,
-    };
-  });
-}
+const exporters = require('../utils/exportUtils.js');
+const { getSiteStatus } = require('../db');
+const { extractAuditScores } = require('../utils/auditUtils.js');
 
 async function getSite(req, res, next) {
   const domain = req.params.domain;
@@ -57,7 +39,7 @@ async function getSite(req, res, next) {
 async function getSites(req, res, next) {
   try {
     const sites = await getCachedSitesWithAudits();
-    const transformedData = transformSitesData(sites);
+    const transformedData = exporters.transformSitesData(sites);
 
     return res.json(transformedData);
   } catch (err) {
@@ -65,22 +47,9 @@ async function getSites(req, res, next) {
   }
 }
 
-const SITES_EXPORT_PROPERTIES = [
-  { name: 'domain', path: 'domain' },
-  { name: 'gitHubURL', path: 'gitHubURL' },
-  { name: 'performance', path: 'lastAudit.scores.performance' },
-  { name: 'seo', path: 'lastAudit.scores.seo' },
-  { name: 'accessibility', path: 'lastAudit.scores.accessibility' },
-  { name: 'best-practices', path: 'lastAudit.scores.bestPractices' },
-  { name: 'auditError', path: 'lastAudit.errorMessage', condition: (site) => site.lastAudit && site.lastAudit.isError },
-];
-
 async function exportSites(res, next, exportFunction, mimeType, filename) {
   try {
-    const sites = await getCachedSitesWithAudits();
-    const data = transformSitesData(sites);
-    const dataForExport = data.map((site) => selectPropertiesForObject(site, SITES_EXPORT_PROPERTIES));
-    const file = exportFunction(dataForExport);
+    const file = await exportFunction();
 
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
     res.setHeader('Content-Type', mimeType);
@@ -92,11 +61,11 @@ async function exportSites(res, next, exportFunction, mimeType, filename) {
 }
 
 async function exportSitesToExcel(req, res, next) {
-  await exportSites(res, next, (data) => generateExcel(data, 'franklin-site-status'), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'franklin-site-status.xlsx');
+  await exportSites(res, next, exporters.exportSitesToExcel, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'franklin-site-status.xlsx');
 }
 
 async function exportSitesToCSV(req, res, next) {
-  await exportSites(res, next, generateCsv, 'text/csv', 'franklin-site-status.csv');
+  await exportSites(res, next, exporters.exportSitesToCSV, 'text/csv', 'franklin-site-status.csv');
 }
 
 module.exports = {

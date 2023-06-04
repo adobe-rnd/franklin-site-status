@@ -1,11 +1,7 @@
-const getSite = require('./commands/get-site.js');
-const getSites = require('./commands/get-sites.js');
-const help = require('./commands/help.js');
-
-const commands = [
-  getSite,
-  getSites,
-  help,
-];
-
-module.exports = commands;
+module.exports = (bot) => {
+  return [
+    require('./commands/get-site.js')(bot),
+    require('./commands/get-sites.js')(bot),
+    require('./commands/help.js')(bot),
+  ];
+};

@@ -30,11 +30,19 @@ const usage = () => {
   return `Usage: _${PHRASES.join(' or ')}_`;
 };
 
-module.exports = {
-  name: "Help",
-  description: 'Displays a help message',
-  phrases: PHRASES,
-  accepts,
-  execute,
-  usage,
+const init = (bot) => {
+  // nothing for now
+};
+
+module.exports = (bot) => {
+  init(bot);
+
+  return {
+    name: "Help",
+    description: 'Displays a help message',
+    phrases: PHRASES,
+    accepts,
+    execute,
+    usage,
+  }
 };

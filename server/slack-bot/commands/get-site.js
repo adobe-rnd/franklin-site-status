@@ -123,11 +123,19 @@ ${formatAudits(site.audits)}
   await say({ blocks });
 };
 
-module.exports = {
-  name: "Get Franklin Site Status",
-  phrases: ['get site', 'get domain'],
-  description: 'Retrieves audit status for a franklin site with a given domain',
-  accepts,
-  execute,
-  usage,
+const init = (bot) => {
+  // nothing for now
+};
+
+module.exports = (bot) => {
+  init(bot);
+
+  return {
+    name: "Get Franklin Site Status",
+      phrases: ['get site', 'get domain'],
+    description: 'Retrieves audit status for a franklin site with a given domain',
+    accepts,
+    execute,
+    usage,
+  }
 };
