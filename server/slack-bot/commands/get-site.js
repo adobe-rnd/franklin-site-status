@@ -1,5 +1,6 @@
 const { URL } = require('url');
 
+const BaseCommand = require('./base-command.js');
 const { getSiteStatus } = require('../../db.js');
 const { extractAuditScores } = require('../../utils/auditUtils.js');
 const { formatDate, formatScore, getLastWord } = require('../../utils/formatUtils.js');
@@ -11,7 +12,7 @@ const LINKED_REGEX = /<([^|>]+)\|[^>]+>/;
 const PADDING_EXTRA_SPACE = 2;
 const PHRASES = ['get domain', 'get site with domain'];
 
-const formatAudits = (audits) => {
+function formatAudits(audits) {
   if (!Array.isArray(audits)) {
     return "No audit history available";
   }
@@ -63,17 +64,9 @@ const formatAudits = (audits) => {
   }
 
   return `${BACKTICKS}\n${formattedTable}\n${BACKTICKS}`;
-};
+}
 
-const usage = () => {
-  return `Usage: _${PHRASES.join(' or ')}_ <domain>`;
-};
-
-const accepts = (message) => {
-  return PHRASES.some(phrase => message.includes(phrase));
-};
-
-const extractDomainFromInput = (message) => {
+function extractDomainFromInput(message) {
   const input = getLastWord(message);
 
   if (!input) {
@@ -87,52 +80,53 @@ const extractDomainFromInput = (message) => {
   } else {
     return input.trim();
   }
-};
+}
 
-const execute = async (message, say) => {
-  const domain = extractDomainFromInput(message);
+function GetSiteCommand(bot) {
+  const baseCommand = BaseCommand({
+    id: 'get-franklin-site-status',
+    name: "Get Franklin Site Status",
+    description: 'Retrieves audit status for a franklin site by a given domain',
+    phrases: PHRASES,
+    usage: `${PHRASES.join(' or ')} {domain};`,
+  });
 
-  if (!domain) {
-    await say(usage());
-    return;
-  }
+  const execute = async (message, say) => {
+    const domain = extractDomainFromInput(message);
 
-  await say(`:hourglass: Retrieving status for domain: ${domain}, please wait...`);
+    if (!domain) {
+      await say(usage());
+      return;
+    }
 
-  const site = await getSiteStatus(domain);
+    await say(`:hourglass: Retrieving status for domain: ${domain}, please wait...`);
 
-  if (!site) {
-    await say(`:warning: No site found with domain: ${domain}`);
-    return;
-  }
+    const site = await getSiteStatus(domain);
 
-  let textSections = [{
-    text: `
+    if (!site) {
+      await say(`:warning: No site found with domain: ${domain}`);
+      return;
+    }
+
+    let textSections = [{
+      text: `
     *Franklin Site Status*: ${site.domain}
     :github-4173: GitHub: ${site.gitHubURL}
     :clock1: Last audit on ${formatDate(site.lastAudited)}
 
-    _Audits are sorted by date descending._
-    ${formatAudits(site.audits)}
+    _Audits are sorted by date descending._\n${formatAudits(site.audits)}
     `,
-  }];
+    }];
 
-  await sendMessageBlocks(say, textSections);
-};
+    await sendMessageBlocks(say, textSections);
+  };
 
-const init = (bot) => {
-  // nothing for now
-};
-
-module.exports = (bot) => {
-  init(bot);
+  baseCommand.init(bot);
 
   return {
-    name: "Get Franklin Site Status",
-    phrases: ['get site', 'get domain'],
-    description: 'Retrieves audit status for a franklin site with a given domain',
-    accepts,
+    ...baseCommand,
     execute,
-    usage,
-  }
-};
+  };
+}
+
+module.exports = GetSiteCommand;

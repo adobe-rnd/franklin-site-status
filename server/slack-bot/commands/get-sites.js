@@ -1,3 +1,4 @@
+const BaseCommand = require('./base-command.js');
 const exporters = require('../../utils/exportUtils.js');
 const getCachedSitesWithAudits = require('../../cache.js');
 
@@ -8,7 +9,7 @@ const { sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.
 const PAGE_SIZE = 20;
 const PHRASES = ['get sites', 'get all sites'];
 
-const formatSites = (sites, start, end) => {
+function formatSites(sites, start, end) {
   const sitesMessage = sites.slice(start, end).reduce((message, site, index) => {
     const { domain } = site;
     const rank = start + index + 1;
@@ -32,9 +33,9 @@ const formatSites = (sites, start, end) => {
   }, '');
 
   return `${sitesMessage}`;
-};
+}
 
-const generateOverflowAccessory = () => {
+function generateOverflowAccessory() {
   return {
     "type": "overflow",
     "options": [
@@ -57,9 +58,9 @@ const generateOverflowAccessory = () => {
     ],
     "action_id": "sites_overflow_action"
   };
-};
+}
 
-const generatePaginationBlocks = (start, end, totalSites) => {
+function generatePaginationBlocks(start, end, totalSites) {
   const blocks = [];
   const numberOfPages = Math.ceil(totalSites / PAGE_SIZE);
 
@@ -107,9 +108,9 @@ const generatePaginationBlocks = (start, end, totalSites) => {
     "type": "actions",
     "elements": blocks
   };
-};
+}
 
-const overflowActionHandler = async ({ body, ack, client, say }) => {
+async function overflowActionHandler({ body, ack, client, say }) {
   await ack();
 
   const selectedOption = body.actions?.[0]?.selected_option?.value;
@@ -144,9 +145,9 @@ const overflowActionHandler = async ({ body, ack, client, say }) => {
   } catch (error) {
     await postErrorMessage(say, error);
   }
-};
+}
 
-const paginationHandler = async ({ ack, say, action }) => {
+async function paginationHandler({ ack, say, action }) {
   await ack();
 
   const start = parseInt(action.value);
@@ -170,61 +171,59 @@ const paginationHandler = async ({ ack, say, action }) => {
 
   await sendMessageBlocks(say, textSections, additionalBlocks);
 
-};
+}
 
-const accepts = (message) => {
-  return PHRASES.some(phrase => message.includes(phrase));
-};
+function GetSitesCommand(bot) {
+  const baseCommand = BaseCommand({
+    id: 'get-all-franklin-sites',
+    name: 'Get All Franklin Sites',
+    description: 'Retrieves all known franklin sites and includes the latest audit scores',
+    phrases: PHRASES,
+  });
 
-const execute = async (message, say) => {
-  await say(':hourglass: Retrieving all sites, please wait...');
+  const init = (bot) => {
+    bot.action('sites_overflow_action', overflowActionHandler);
+    bot.action(/^paginate_sites_(prev|next|page_\d+)$/, paginationHandler);
+  };
 
-  const sites = await getCachedSitesWithAudits();
+  const execute = async (message, say) => {
+    await say(':hourglass: Retrieving all sites, please wait...');
 
-  if (sites.length === 0) {
-    await say(':warning: No sites found.');
-    return;
-  }
+    const sites = await getCachedSitesWithAudits();
 
-  const totalSites = sites.length;
-  const start = 0;
-  const end = start + PAGE_SIZE;
+    if (sites.length === 0) {
+      await say(':warning: No sites found.');
+      return;
+    }
 
-  let textSections = [{
-    text: `
+    const totalSites = sites.length;
+    const start = 0;
+    const end = start + PAGE_SIZE;
+
+    let textSections = [{
+      text: `
     *Franklin Sites Status:* ${totalSites} total sites
 
     Columns: Rank: Performance - SEO - Accessibility - Best Practices >> Domain
     _Sites are ordered by performance score, then all other scores, descending._
     ${formatSites(sites, start, end)}
     `,
-    accessory: generateOverflowAccessory(),
-  },
-  ];
+      accessory: generateOverflowAccessory(),
+    },
+    ];
 
-  let additionalBlocks = [generatePaginationBlocks(start, end, totalSites)];
+    let additionalBlocks = [generatePaginationBlocks(start, end, totalSites)];
 
-  await sendMessageBlocks(say, textSections, additionalBlocks);
-};
+    await sendMessageBlocks(say, textSections, additionalBlocks);
+  };
 
-const usage = () => {
-  return `Usage: _${PHRASES.join(' or ')}_`;
-};
-
-const init = (bot) => {
-  bot.action('sites_overflow_action', overflowActionHandler);
-  bot.action(/^paginate_sites_(prev|next|page_\d+)$/, paginationHandler);
-};
-
-module.exports = (bot) => {
   init(bot);
 
   return {
-    name: "Get All Franklin Sites",
-    description: 'Retrieves all known franklin sites and includes the latest audit scores',
-    phrases: PHRASES,
-    accepts,
+    ...baseCommand,
     execute,
-    usage,
-  }
-};
+    init
+  };
+}
+
+module.exports = GetSitesCommand;

@@ -1,6 +1,5 @@
 const { App, ExpressReceiver } = require('@slack/bolt');
 
-const getCachedSitesWithAudits = require('../cache');
 const { postErrorMessage } = require('../utils/slackUtils.js');
 
 const BOT_MENTION_REGEX = /^<@[^>]+>\s+/;
