@@ -3,10 +3,7 @@ const PERCENT_MULTIPLIER = 100;
 const getLastWord = (sentence) => {
   const trimmedSentence = sentence.trim();
   const words = trimmedSentence.split(' ');
-  const lastWord = words[words.length - 1];
-
-  // clean punctuation from the last word at start/end
-  return lastWord.replace(/^\W+|\W+$/g, '');
+  return words[words.length - 1];
 }
 
 const formatDate = (isoDate) => {

@@ -3,6 +3,7 @@ const { URL } = require('url');
 const { getSiteStatus } = require('../../db.js');
 const { extractAuditScores } = require('../../utils/auditUtils.js');
 const { formatDate, formatScore, getLastWord } = require('../../utils/formatUtils.js');
+const { sendMessageBlocks } = require('../../utils/slackUtils.js');
 
 const BACKTICKS = '```';
 const CHARACTER_LIMIT = 2500;
@@ -105,22 +106,18 @@ const execute = async (message, say) => {
     return;
   }
 
-  let blocks = [{
-    "type": "section",
-    "text": {
-      "type": "mrkdwn",
-      "text": `
-*Franklin Site Status*: ${site.domain}
-:github-4173: GitHub: ${site.gitHubURL}
-:clock1: Last audit on ${formatDate(site.lastAudited)}
+  let textSections = [{
+    text: `
+    *Franklin Site Status*: ${site.domain}
+    :github-4173: GitHub: ${site.gitHubURL}
+    :clock1: Last audit on ${formatDate(site.lastAudited)}
 
-_Audits are sorted by date descending._
-${formatAudits(site.audits)}
-      `,
-    }
+    _Audits are sorted by date descending._
+    ${formatAudits(site.audits)}
+    `,
   }];
 
-  await say({ blocks });
+  await sendMessageBlocks(say, textSections);
 };
 
 const init = (bot) => {
@@ -132,7 +129,7 @@ module.exports = (bot) => {
 
   return {
     name: "Get Franklin Site Status",
-      phrases: ['get site', 'get domain'],
+    phrases: ['get site', 'get domain'],
     description: 'Retrieves audit status for a franklin site with a given domain',
     accepts,
     execute,

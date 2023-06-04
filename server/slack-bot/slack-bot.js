@@ -1,6 +1,7 @@
 const { App, ExpressReceiver } = require('@slack/bolt');
 
 const getCachedSitesWithAudits = require('../cache');
+const { postErrorMessage } = require('../utils/slackUtils.js');
 
 const BOT_MENTION_REGEX = /^<@[^>]+>\s+/;
 
@@ -15,11 +16,6 @@ const bot = new App({
 
 const commands = require('./commands.js')(bot);
 
-const postErrorMessage = async (say, error) => {
-  await say(`:nuclear-warning: Oops! Something went wrong: ${error.message}`);
-  console.error(error);
-};
-
 bot.event('app_mention', async ({ context, event, say }) => {
   try {
     const message = event.text.replace(BOT_MENTION_REGEX, '').trim();
@@ -28,7 +24,6 @@ bot.event('app_mention', async ({ context, event, say }) => {
       if (command.accepts(message)) {
         await command.execute(message, say, commands);
         return;
-      } else {
       }
     }
 

@@ -3,6 +3,7 @@ const getCachedSitesWithAudits = require('../../cache.js');
 
 const { extractAuditScores } = require('../../utils/auditUtils.js');
 const { formatScore } = require('../../utils/formatUtils.js');
+const { sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
 
 const PAGE_SIZE = 20;
 const PHRASES = ['get sites', 'get all sites'];
@@ -141,11 +142,9 @@ const overflowActionHandler = async ({ body, ack, client, say }) => {
       initial_comment: ':tada: Here is an export of all sites and their audit scores.'
     });
   } catch (error) {
-    await say(`:nuclear-warning: Oops! Something went wrong: ${error.message}`);
-    console.error(error);
+    await postErrorMessage(say, error);
   }
 };
-
 
 const paginationHandler = async ({ ack, say, action }) => {
   await ack();
@@ -156,17 +155,21 @@ const paginationHandler = async ({ ack, say, action }) => {
   const sites = await getCachedSitesWithAudits();
   const totalSites = sites.length;
 
-  let blocks = [{
-    "type": "section",
-    "text": {
-      "type": "mrkdwn",
-      "text": formatSites(sites, start, end)
-    }
+  let textSections = [{
+    text: `
+    *Franklin Sites Status:* ${totalSites} total sites
+
+    Columns: Rank: Performance - SEO - Accessibility - Best Practices >> Domain
+    _Sites are ordered by performance score, then all other scores, descending._
+    ${formatSites(sites, start, end)}
+    `,
+    accessory: generateOverflowAccessory(),
   }];
 
-  blocks.push(generatePaginationBlocks(start, end, totalSites));
+  let additionalBlocks = [generatePaginationBlocks(start, end, totalSites)];
 
-  await say({ blocks });
+  await sendMessageBlocks(say, textSections, additionalBlocks);
+
 };
 
 const accepts = (message) => {
@@ -187,24 +190,21 @@ const execute = async (message, say) => {
   const start = 0;
   const end = start + PAGE_SIZE;
 
-  let blocks = [{
-    "type": "section",
-    "text": {
-      "type": "mrkdwn",
-      "text": `
-*Franklin Sites Status:* ${totalSites} total sites
+  let textSections = [{
+    text: `
+    *Franklin Sites Status:* ${totalSites} total sites
 
-Columns: Rank: Performance - SEO - Accessibility - Best Practices >> Domain
-_Sites are ordered by performance score, then all other scores, descending._
-${formatSites(sites, start, end)} 
-      `,
-    },
-    "accessory": generateOverflowAccessory(),
-  }];
+    Columns: Rank: Performance - SEO - Accessibility - Best Practices >> Domain
+    _Sites are ordered by performance score, then all other scores, descending._
+    ${formatSites(sites, start, end)}
+    `,
+    accessory: generateOverflowAccessory(),
+  },
+  ];
 
-  blocks.push(generatePaginationBlocks(start, end, totalSites));
+  let additionalBlocks = [generatePaginationBlocks(start, end, totalSites)];
 
-  await say({ blocks });
+  await sendMessageBlocks(say, textSections, additionalBlocks);
 };
 
 const usage = () => {
