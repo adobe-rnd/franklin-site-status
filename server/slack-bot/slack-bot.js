@@ -9,21 +9,15 @@ const receiver = new ExpressReceiver({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
 });
 
-/*receiver.router.post('/events', (req, res) => {
-  const { challenge } = req.body;
-
-  if (challenge) {
-    res.set('Content-Type', 'text/plain');
-    res.send(challenge);
-  } else {
-    res.status(200).end();
-  }
-});*/
-
 const bot = new App({
   token: process.env.SLACK_BOT_TOKEN,
   receiver: receiver
 });
+
+const postErrorMessage = async (say, error) => {
+  await say(`:nuclear-warning: Oops! Something went wrong: ${error.message}`);
+  console.error(error);
+};
 
 bot.event('app_mention', async ({ context, event, say }) => {
   try {
@@ -40,7 +34,7 @@ bot.event('app_mention', async ({ context, event, say }) => {
     await commands.find(cmd => cmd.phrases.includes('help')).execute(message, say, commands);
 
   } catch (error) {
-    console.error(error);
+    await postErrorMessage(say, error);
   }
 });
 
@@ -67,5 +61,4 @@ bot.action('get_site_by_domain', async ({ body, ack, say }) => {
   await say(`The status of ${domain} is ...`);
 });
 
-// Export the receiver's router so it can be used in your Express app
 module.exports = receiver.router;

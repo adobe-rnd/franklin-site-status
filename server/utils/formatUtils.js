@@ -1,5 +1,14 @@
 const PERCENT_MULTIPLIER = 100;
 
+const getLastWord = (sentence) => {
+  const trimmedSentence = sentence.trim();
+  const words = trimmedSentence.split(' ');
+  const lastWord = words[words.length - 1];
+
+  // clean punctuation from the last word at start/end
+  return lastWord.replace(/^\W+|\W+$/g, '');
+}
+
 const formatDate = (isoDate) => {
   if (isoDate === null) {
     return "N/A";
@@ -21,4 +30,5 @@ const formatScore = (score) => {
 module.exports = {
   formatDate,
   formatScore,
+  getLastWord,
 };

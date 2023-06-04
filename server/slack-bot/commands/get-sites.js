@@ -30,11 +30,11 @@ const formatSites = (sites) => {
 };
 
 const accepts = (message) => {
-  return PHRASES.some(phrase => message.startsWith(phrase));
+  return PHRASES.some(phrase => message.includes(phrase));
 };
 
 const execute = async (message, say) => {
-  await say('Retrieving all sites, please wait :hourglass:');
+  await say(':hourglass: Retrieving all sites, please wait...');
 
   const sites = await getCachedSitesWithAudits();
 
