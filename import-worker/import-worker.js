@@ -73,7 +73,7 @@ async function processRepository(repo, githubOrg, authHeaderValue, sitesCollecti
     return;
   }
 
-  const siteUrl = repo.homepage || `https://main--${repo.name}--${githubOrg}.hlx.live`;
+  const siteUrl = `https://main--${repo.name}--${githubOrg}.hlx.live`;
 
   let domain;
   try {
@@ -94,17 +94,20 @@ async function processRepository(repo, githubOrg, authHeaderValue, sitesCollecti
   let updateOperation = {
     $setOnInsert: {
       githubId: repo.id,
-      gitHubURL: repo.html_url,
-      gitHubOrg: githubOrg,
-      domain: domain,
       createdAt: now,
       lastAudited: null,
       audits: [],
+    },
+    $set: {
+      domain: domain,
+      gitHubURL: repo.html_url,
+      gitHubOrg: githubOrg
     },
     $currentDate: {
       updatedAt: true
     },
   };
+
 
   if (existingDoc && (existingDoc.gitHubOrg !== githubOrg || existingDoc.domain !== domain)) {
     console.info(`Organization, or domain has changed. Updating the document in the database.`);
@@ -142,11 +145,20 @@ async function fetchAndProcessRepositories(githubOrg, authHeaderValue, sitesColl
       const apiUrl = createGithubApiUrl(githubOrg, page);
       const response = await axios.get(apiUrl, { headers: { 'Authorization': authHeaderValue } });
       const repos = response.data;
-      hasMorePages = Boolean(repos.length);
+
+      const linkHeader = response.headers.link;
+      if (linkHeader) {
+        const links = linkHeader.split(',').map(linkInfo => linkInfo.split('; '));
+        const nextLink = links.find(link => link[1] === 'rel="next"');
+        hasMorePages = Boolean(nextLink);
+      } else {
+        hasMorePages = false;
+      }
 
       console.info(`Fetched ${repos.length} repos from Github page ${page}.`);
 
       for (const repo of repos) {
+        console.info(`Processing repo id: ${repo.id} name: ${repo.name}`);
         await processRepository(repo, githubOrg, authHeaderValue, sitesCollection, bulkOps);
       }
 
@@ -163,6 +175,7 @@ async function fetchAndProcessRepositories(githubOrg, authHeaderValue, sitesColl
     }
   }
 }
+
 
 /**
  * Connects to a database and imports data from a GitHub organization's public repositories.
