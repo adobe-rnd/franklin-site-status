@@ -49,6 +49,22 @@ function getDb() {
   return db;
 }
 
+/**
+ * Create indexes in the MongoDB database for efficient querying.
+ */
+async function createIndexes() {
+  try {
+    await db.collection(COLLECTION_SITES).createIndex({ domain: 1 }, { unique: true });
+    await db.collection(COLLECTION_SITES).createIndex({ githubId: 1 }, { unique: true });
+    await db.collection(COLLECTION_SITES).createIndex({ lastAudited: 1 });
+    await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': -1 });
+    await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': 1 });
+    console.log('Indexes created successfully');
+  } catch (error) {
+    console.error('Error creating indexes: ', error);
+  }
+}
+
 async function setWorkerRunningState(workerName, isRunning) {
   const db = getDb();
   const workersCollection = db.collection(COLLECTION_WORKERSTATES);
@@ -88,6 +104,7 @@ async function updateSiteAudits(siteId, audits) {
 module.exports = {
   cleanupOldAudits,
   connectToDb,
+  createIndexes,
   disconnectFromDb,
   getDb,
   setWorkerRunningState,

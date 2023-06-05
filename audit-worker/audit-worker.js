@@ -6,10 +6,9 @@ const {
   saveAudit,
   saveAuditError,
   setWorkerRunningState,
-  updateLastAudited,
 } = require('./db');
 const {
-  auditSite,
+  performPSICheck,
   sleep
 } = require('./util');
 
@@ -47,6 +46,49 @@ async function stop(workerName, signal) {
 }
 
 /**
+ * Waits for the next audit if the last audit was less than 24 hours ago.
+ *
+ * @param {object} site - The site to audit.
+ * @returns {Promise<void>}
+ */
+async function waitForNextAuditIfRequired(site) {
+  const lastAudited = site.lastAudited ? new Date(site.lastAudited) : null;
+  const now = new Date();
+  const oneDayInMilliseconds = 1000 * 60 * 60 * 24;
+  const timeSinceLastAudit = lastAudited ? now - lastAudited : oneDayInMilliseconds;
+
+  if (timeSinceLastAudit < oneDayInMilliseconds) {
+    const timeToWait = oneDayInMilliseconds - timeSinceLastAudit;
+    console.info(`Last site audit was less than 24 hours ago. Waiting for ${timeToWait / (1000 * 60)} minutes.`);
+    await sleep(timeToWait);
+  }
+}
+
+/**
+ * Audit a single site, handle rate limiting and audit errors.
+ *
+ * @param {Object} site - The site to audit.
+ * @returns {Promise<void>}
+ */
+async function auditSite(site) {
+  try {
+    const audit = await performPSICheck(site.domain);
+    await saveAudit(site.domain, audit);
+    console.info(`Audited ${site.domain}`);
+  } catch (err) {
+    if (err.response?.status === 429) {
+      console.error(`Rate limit exceeded for domain ${site.domain}. Retrying after 1 minute...`);
+      await sleep(SLEEP_TIME_ONE_MINUTE);
+      throw err;  // Retry the same site in the main loop
+    }
+
+    const errMsg = err.response?.data?.error || err.message || err;
+    console.error(`Error during site audit for domain ${site.domain}:`, errMsg);
+    await saveAuditError(site.domain, errMsg);
+  }
+}
+
+/**
  * The main worker function.
  *
  * @param {string} workerName - The name of the worker.
@@ -68,34 +110,13 @@ async function auditWorker(workerName) {
         continue;
       }
 
-      const lastAudited = site.lastAudited ? new Date(site.lastAudited) : null;
-      const now = new Date();
-      const oneDayInMilliseconds = 1000 * 60 * 60 * 24;
-      const timeSinceLastAudit = lastAudited ? now - lastAudited : oneDayInMilliseconds;
-
-      if (timeSinceLastAudit < oneDayInMilliseconds) {
-        const timeToWait = oneDayInMilliseconds - timeSinceLastAudit;
-        console.info(`Last site audit was less than 24 hours ago. Waiting for ${timeToWait / (1000 * 60)} minutes.`);
-        await sleep(timeToWait);
-      }
+      await waitForNextAuditIfRequired(site);
 
       try {
-        const audit = await auditSite(site.domain);
-        await saveAudit(site.domain, audit);
-        console.info(`Audited ${site.domain}`);
+        await auditSite(site);
       } catch (err) {
-        if (err.response?.status === 429) {
-          console.error(`Rate limit exceeded for domain ${site.domain}. Retrying after 1 minute...`);
-          await sleep(SLEEP_TIME_ONE_MINUTE);
-          continue;
-        }
-
-        const errMsg = err.response?.data?.error || err.message || err;
-        console.error(`Error during site audit for domain ${site.domain}:`, errMsg);
-        await saveAuditError(site.domain, errMsg);
+        console.error(`Error in main audit for domain ${site.domain}:`, err);
       }
-
-      await updateLastAudited(site.domain);
     }
   } catch (error) {
     console.error(error);
