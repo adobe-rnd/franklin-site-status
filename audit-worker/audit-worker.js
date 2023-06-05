@@ -34,24 +34,23 @@ async function auditWorker() {
 
       const lastAudited = site.lastAudited ? new Date(site.lastAudited) : null;
       const now = new Date();
-      // const oneDayInMilliseconds = 1000 * 60 * 60 * 24;
-      const oneDayInMilliseconds = 1000;
+      const oneDayInMilliseconds = 1000 * 60 * 60 * 24;
       const timeSinceLastAudit = lastAudited ? now - lastAudited : oneDayInMilliseconds;
 
       if (timeSinceLastAudit < oneDayInMilliseconds) {
         const timeToWait = oneDayInMilliseconds - timeSinceLastAudit;
         console.info(`Last site audit was less than 24 hours ago. Waiting for ${timeToWait / (1000 * 60)} minutes.`);
         await sleep(timeToWait);
-      } else {
-        try {
-          const audit = await auditSite(site.domain);
-          await saveAudit(site.domain, audit);
-          console.info(`Audited ${site.domain}`);
-        } catch (err) {
-          const errMsg = err.response?.data?.error || err.message || err;
-          console.error(`Error during site audit for domain ${site.domain}:`, errMsg);
-          await saveAuditError(site.domain, errMsg);
-        }
+      }
+
+      try {
+        const audit = await auditSite(site.domain);
+        await saveAudit(site.domain, audit);
+        console.info(`Audited ${site.domain}`);
+      } catch (err) {
+        const errMsg = err.response?.data?.error || err.message || err;
+        console.error(`Error during site audit for domain ${site.domain}:`, errMsg);
+        await saveAuditError(site.domain, errMsg);
       }
     }
   } catch (error) {

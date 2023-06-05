@@ -80,7 +80,9 @@ async function importWorker() {
         const apiUrl = createGithubApiUrl(githubOrg, page);
         const response = await axios.get(apiUrl, { headers: { 'Authorization': authHeaderValue } });
         const repos = response.data;
-        hasMorePages = Boolean(response.headers.link?.includes('rel="next"'));
+        hasMorePages = Boolean(repos.length);
+
+        console.info(`Fetched ${repos.length} repos from Github page ${page}.`);
 
         for (const repo of repos) {
           if (repo.archived) {
@@ -107,42 +109,43 @@ async function importWorker() {
           const now = new Date();
           const existingDoc = await sitesCollection.findOne({ githubId: repo.id });
 
-          if (existingDoc) {
-            if (existingDoc.gitHubOrg !== githubOrg || existingDoc.domain !== domain) {
-              console.info(`Organization, or domain has changed. Updating the document in the database.`);
-              await sitesCollection.updateOne(
-                { githubId: repo.id },
-                { $set: { domain: domain, gitHubURL: repo.html_url, gitHubOrg: githubOrg } }
-              ).catch(err => console.error(err));
-            }
-          } else {
-            bulkOps.push({
-              updateOne: {
-                filter: { githubId: repo.id },
-                update: {
-                  $setOnInsert: {
-                    githubId: repo.id,
-                    gitHubURL: repo.html_url,
-                    gitHubOrg: githubOrg,
-                    domain: domain,
-                    createdAt: now,
-                    lastAudited: null,
-                    audits: [],
-                  },
-                  $currentDate: {
-                    updatedAt: true
-                  }
-                },
-                upsert: true,
-              },
-            });
+          let updateOperation = {
+            $setOnInsert: {
+              githubId: repo.id,
+              gitHubURL: repo.html_url,
+              gitHubOrg: githubOrg,
+              domain: domain,
+              createdAt: now,
+              lastAudited: null,
+              audits: [],
+            },
+            $currentDate: {
+              updatedAt: true
+            },
+          };
+
+          if (existingDoc && (existingDoc.gitHubOrg !== githubOrg || existingDoc.domain !== domain)) {
+            console.info(`Organization, or domain has changed. Updating the document in the database.`);
+            updateOperation = {
+              ...updateOperation,
+              $set: { domain: domain, gitHubURL: repo.html_url, gitHubOrg: githubOrg }
+            };
           }
 
-          console.info(`Added ${domain} to sites collection.`);
+          bulkOps.push({
+            updateOne: {
+              filter: { githubId: repo.id },
+              update: updateOperation,
+              upsert: true,
+            },
+          });
+
+          console.info(`Synced ${domain} domain to sites collection.`);
         }
 
         if (bulkOps.length > 0) {
           await sitesCollection.bulkWrite(bulkOps, { ordered: false }).catch(err => console.error(err));
+          console.info(`Bulk writing ${bulkOps.length} documents to database.`);
           bulkOps.length = 0;
         }
 
