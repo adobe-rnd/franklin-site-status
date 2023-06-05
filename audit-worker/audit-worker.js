@@ -5,7 +5,8 @@ const {
   getNextSiteToAudit,
   saveAudit,
   saveAuditError,
-  setWorkerRunningState
+  setWorkerRunningState,
+  updateLastAudited,
 } = require('./db');
 const {
   auditSite,
@@ -13,12 +14,47 @@ const {
 } = require('./util');
 
 const WORKER_NAME = 'auditWorker';
+const SLEEP_TIME_ONE_MINUTE = 1000 * 60
+
 let isRunning = true;
 
-async function auditWorker() {
+/**
+ * Update the worker state and disconnect from the database.
+ *
+ * @param {string} workerName - The name of the worker.
+ * @param {boolean} runningState - The new running state of the worker.
+ */
+async function updateWorkerStateAndDisconnect(workerName, runningState) {
+  try {
+    await setWorkerRunningState(workerName, runningState);
+    await disconnectFromDb();
+  } catch (err) {
+    console.error('Error updating worker running state:', err);
+  }
+}
+
+/**
+ * Handles stop signals for the worker.
+ *
+ * @param {string} workerName - The name of the worker.
+ * @param {string} signal - The received signal.
+ */
+async function stop(workerName, signal) {
+  console.log(`Received ${signal}. Flushing data before exit...`);
+  isRunning = false;
+  await updateWorkerStateAndDisconnect(workerName, false);
+  process.exit(0);
+}
+
+/**
+ * The main worker function.
+ *
+ * @param {string} workerName - The name of the worker.
+ */
+async function auditWorker(workerName) {
   try {
     await connectToDb();
-    await setWorkerRunningState(WORKER_NAME, true);
+    await setWorkerRunningState(workerName, true);
     await createIndexes();
 
     console.info('Audit worker started');
@@ -28,7 +64,7 @@ async function auditWorker() {
 
       if (!site) {
         console.info('No sites to audit, sleeping for 1 minute');
-        await sleep(1000 * 60);
+        await sleep(SLEEP_TIME_ONE_MINUTE);
         continue;
       }
 
@@ -48,36 +84,35 @@ async function auditWorker() {
         await saveAudit(site.domain, audit);
         console.info(`Audited ${site.domain}`);
       } catch (err) {
+        if (err.response?.status === 429) {
+          console.error(`Rate limit exceeded for domain ${site.domain}. Retrying after 1 minute...`);
+          await sleep(SLEEP_TIME_ONE_MINUTE);
+          continue;
+        }
+
         const errMsg = err.response?.data?.error || err.message || err;
         console.error(`Error during site audit for domain ${site.domain}:`, errMsg);
         await saveAuditError(site.domain, errMsg);
       }
+
+      await updateLastAudited(site.domain);
     }
   } catch (error) {
     console.error(error);
     isRunning = false;
   } finally {
-    try {
-      await setWorkerRunningState(WORKER_NAME, false);
-      await disconnectFromDb();
-    } catch (err) {
-      console.error('Error updating worker running state:', err);
-    }
+    await updateWorkerStateAndDisconnect(workerName, false);
   }
 }
 
-process.on('SIGINT', async () => {
-  console.log('Received SIGINT. Flushing data before exit...');
-  isRunning = false;
-  await setWorkerRunningState(WORKER_NAME, false);
-  process.exit(0);
-});
+/**
+ * Handles the SIGINT signal.
+ */
+process.on('SIGINT', () => stop(WORKER_NAME, 'SIGINT'));
 
-process.on('SIGTERM', async () => {
-  console.log('Received SIGTERM. Flushing data before exit...');
-  isRunning = false;
-  await setWorkerRunningState(WORKER_NAME, false);
-  process.exit(0);
-});
+/**
+ * Handles the SIGTERM signal.
+ */
+process.on('SIGTERM', () => stop(WORKER_NAME, 'SIGTERM'));
 
-auditWorker();
+auditWorker(WORKER_NAME);

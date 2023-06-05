@@ -13,6 +13,18 @@ const WAIT_TIME_MS = 60 * 1000; // Replaced magic number with a named constant
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
+ * Update the worker state and disconnect from the database.
+ *
+ * @param {string} workerName - The name of the worker.
+ */
+async function stop(workerName) {
+  console.log(`Received signal. Stopping ${workerName}...`);
+  await setWorkerRunningState(workerName, false);
+  await disconnectFromDb();
+  process.exit(0);
+}
+
+/**
  * Creates a URL for the GitHub API.
  * @param {string} githubOrg - The name of the GitHub organization.
  * @param {number} page - The page number for pagination.
@@ -52,7 +64,7 @@ function createGithubAuthHeaderValue(githubId, githubSecret) {
  *
  * @returns {Promise<void>}
  */
-async function importWorker() {
+async function importWorker(workerName) {
   try {
     const githubId = process.env.GITHUB_CLIENT_ID;
     const githubSecret = process.env.GITHUB_CLIENT_SECRET;
@@ -67,7 +79,7 @@ async function importWorker() {
     const db = getDb();
     const sitesCollection = db.collection('sites');
 
-    await setWorkerRunningState(WORKER_NAME, true);
+    await setWorkerRunningState(workerName, true);
 
     const authHeaderValue = createGithubAuthHeaderValue(githubId, githubSecret);
 
@@ -157,7 +169,7 @@ async function importWorker() {
     }
 
     await cleanupOldAudits();
-    await setWorkerRunningState(WORKER_NAME, false);
+    await setWorkerRunningState(workerName, false);
     await disconnectFromDb();
 
   } catch (err) {
@@ -165,14 +177,7 @@ async function importWorker() {
   }
 }
 
-process.on('SIGINT', async () => {
-  console.log('Received SIGINT. Flushing data before exit...');
-  process.exit(0);
-});
+process.on('SIGINT', () => stop(WORKER_NAME));
+process.on('SIGTERM', () => stop(WORKER_NAME));
 
-process.on('SIGTERM', async () => {
-  console.log('Received SIGTERM. Flushing data before exit...');
-  process.exit(0);
-});
-
-importWorker();
+importWorker(WORKER_NAME);
