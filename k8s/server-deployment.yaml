@@ -44,6 +44,16 @@ spec:
                 secretKeyRef:
                   name: franklin-site-status-secrets
                   key: admin-api-key
+            - name: SLACK_SIGNING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-slack
+                  key: slack-signing-secret
+            - name: SLACK_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-slack
+                  key: slack-bot-token
 
 
 ---

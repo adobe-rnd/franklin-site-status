@@ -1,25 +1,25 @@
-const { getSiteStatus, getSitesWithAudits } = require('../db');
+const getCachedSitesWithAudits = require('../cache');
+const exporters = require('../utils/exportUtils.js');
+const { getSiteStatus } = require('../db');
+const { extractAuditScores } = require('../utils/auditUtils.js');
 
-async function getSite(req, res) {
+async function getSite(req, res, next) {
   const domain = req.params.domain;
 
   try {
     const site = await getSiteStatus(domain);
 
     if (!site) {
-      return res.status(404).json({ message: 'Site not found' });
+      const error = new Error('Site not found');
+      error.status = 404;
+      throw error;
     }
 
     const audits = site.audits.map(audit => ({
       auditedAt: audit.auditedAt,
       isError: audit.isError,
       errorMessage: audit.errorMessage,
-      scores: audit.auditResult ? {
-        performance: audit.auditResult.categories.performance.score,
-        accessibility: audit.auditResult.categories.accessibility.score,
-        bestPractices: audit.auditResult.categories['best-practices'].score,
-        seo: audit.auditResult.categories.seo.score,
-      } : {},
+      scores: extractAuditScores(audit),
     }));
 
     const response = {
@@ -32,31 +32,45 @@ async function getSite(req, res) {
 
     return res.json(response);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch status:', error: err });
+    next(err);
   }
 }
 
-async function getSites(req, res) {
+async function getSites(req, res, next) {
   try {
-    const sites = await getSitesWithAudits();
+    const sites = await getCachedSitesWithAudits();
+    const transformedData = exporters.transformSitesData(sites);
 
-    return res.json(sites.map(({ domain, gitHubURL, lastAudited, latestAudit }) => ({
-      domain,
-      gitHubURL,
-      lastAudited,
-      scores: latestAudit && latestAudit.auditResult ? {
-        performance: latestAudit.auditResult.categories.performance.score,
-        accessibility: latestAudit.auditResult.categories.accessibility.score,
-        bestPractices: latestAudit.auditResult.categories['best-practices'].score,
-        seo: latestAudit.auditResult.categories.seo.score,
-      } : {},
-    })));
+    return res.json(transformedData);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch sites: ', err });
+    next(err);
   }
+}
+
+async function exportSites(res, next, exportFunction, mimeType, filename) {
+  try {
+    const file = await exportFunction();
+
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.setHeader('Content-Type', mimeType);
+    res.send(file);
+  } catch (err) {
+    console.error(err);
+    next(err);
+  }
+}
+
+async function exportSitesToExcel(req, res, next) {
+  await exportSites(res, next, exporters.exportSitesToExcel, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'franklin-site-status.xlsx');
+}
+
+async function exportSitesToCSV(req, res, next) {
+  await exportSites(res, next, exporters.exportSitesToCSV, 'text/csv', 'franklin-site-status.csv');
 }
 
 module.exports = {
+  exportSitesToCSV,
+  exportSitesToExcel,
   getSite,
   getSites,
 };
