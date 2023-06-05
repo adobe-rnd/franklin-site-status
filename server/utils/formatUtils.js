@@ -30,14 +30,14 @@ const formatDate = (isoDate) => {
 };
 
 /**
- * Converts a score to a percentage and formats it.
+ * Formats the score as a whole number percentage.
  *
- * @param {number} score - The score to format.
- * @return {string} - The formatted score.
+ * @param {number} score - The score to be formatted.
+ * @returns {string} The formatted percentage string.
  */
 const formatScore = (score) => {
-  const percentage = score * PERCENT_MULTIPLIER;
-  return `${percentage}%`.padStart(4, " ");
+  const percentage = Math.round(score * PERCENT_MULTIPLIER);
+  return `${percentage}%`.padStart(3, " ");
 };
 
 module.exports = {

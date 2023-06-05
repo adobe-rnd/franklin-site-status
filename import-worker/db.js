@@ -67,7 +67,7 @@ async function cleanupOldAudits() {
 
   const cursor = db.collection(COLLECTION_SITES).find();
 
-  while(await cursor.hasNext()) {
+  while (await cursor.hasNext()) {
     const site = await cursor.next();
 
     // Remove audits older than TTL

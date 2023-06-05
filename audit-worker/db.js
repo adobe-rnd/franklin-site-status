@@ -111,13 +111,21 @@ async function createIndexes() {
  */
 async function getNextSiteToAudit() {
   const db = getDb();
-  const site = await db.collection(COLLECTION_SITES)
+  const sites = await db.collection(COLLECTION_SITES)
     .find()
     .sort({ lastAudited: 1 })
     .limit(1)
     .toArray();
 
-  return site.length > 0 ? site[0] : null;
+  const site = sites.length > 0 ? sites[0] : null;
+
+  if (site) {
+    console.info(`Next site to audit: ${site.domain}`);
+  } else {
+    console.info('No sites to audit');
+  }
+
+  return site;
 }
 
 /**
@@ -158,15 +166,24 @@ async function saveAuditError(domain, error) {
  */
 async function saveAuditRecord(domain, newAudit) {
   const db = getDb();
+  const now = new Date();
+
   try {
-    await db.collection(COLLECTION_SITES).updateOne(
+    const result = await db.collection(COLLECTION_SITES).updateOne(
       { domain: domain },
       {
         $push: { audits: newAudit },
-        $set: { lastAudited: new Date() }
+        $set: { lastAudited: now }
       }
     );
-    console.log('Audit saved successfully');
+
+    if (result.matchedCount === 0) {
+      console.warn(`No site found with domain ${domain}. Audit was not saved.`);
+    } else if (result.modifiedCount === 0) {
+      console.warn(`Site found with domain ${domain}, but it was not updated.`);
+    } else {
+      console.log(`Audit for domain ${domain} saved successfully at ${now}`);
+    }
   } catch (error) {
     console.error('Error saving audit: ', error);
   }
