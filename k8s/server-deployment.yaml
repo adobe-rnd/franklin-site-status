@@ -47,12 +47,12 @@ spec:
             - name: SLACK_SIGNING_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: franklin-site-status-slack
+                  name: franklin-site-status-secrets
                   key: slack-signing-secret
             - name: SLACK_BOT_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: franklin-site-status-slack
+                  name: franklin-site-status-secrets
                   key: slack-bot-token
 
 
