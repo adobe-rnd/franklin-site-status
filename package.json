@@ -6,7 +6,7 @@
     "build:docker:server": "docker build -f server/Dockerfile -t franklin-site-status-server:$npm_package_version .",
     "build:docker:audit-worker": "docker build -f audit-worker/Dockerfile -t franklin-site-status-audit-worker:$npm_package_version .",
     "build:docker:import-worker": "docker build -f import-worker/Dockerfile -t franklin-site-status-import-worker:$npm_package_version .",
-    "build:docker": "npm run build:docker:server && npm run build:docker:audit-worker && npm run build:docker:import-worker",
+    "build:docker": "npm version patch && npm run build:docker:server && npm run build:docker:audit-worker && npm run build:docker:import-worker",
     "release": "./scripts/release.sh $npm_package_version",
     "deploy": "npm run build:docker && npm run release && ./scripts/deploy.sh $npm_package_version",
     "start:dev": "docker-compose -f docker-compose.dev.yaml up",
