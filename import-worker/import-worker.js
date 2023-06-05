@@ -108,13 +108,8 @@ async function processRepository(repo, githubOrg, authHeaderValue, sitesCollecti
     },
   };
 
-
   if (existingDoc && (existingDoc.gitHubOrg !== githubOrg || existingDoc.domain !== domain)) {
     console.info(`Organization, or domain has changed. Updating the document in the database.`);
-    updateOperation = {
-      ...updateOperation,
-      $set: { domain: domain, gitHubURL: repo.html_url, gitHubOrg: githubOrg }
-    };
   }
 
   bulkOps.push({
