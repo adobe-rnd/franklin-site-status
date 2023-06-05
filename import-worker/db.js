@@ -1,11 +1,45 @@
 const { MongoClient } = require('mongodb');
 
+const MONGODB_URI = process.env.MONGODB_URI;
+const DATABASE_NAME = 'franklin-status';
+const COLLECTION_SITES = 'sites';
+const COLLECTION_WORKERSTATES = 'workerStates';
+
+let client;
 let db;
 
+/**
+ * Connect to the MongoDB database.
+ */
 async function connectToDb() {
-  const client = new MongoClient(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-  await client.connect();
-  db = client.db('franklin-status');
+  try {
+    client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+    await client.connect();
+    db = client.db(DATABASE_NAME);
+    console.info('Database connection established.');
+  } catch (error) {
+    console.error('Error connecting to database: ', error);
+    throw error;
+  }
+}
+
+/**
+ * Disconnect from the MongoDB database.
+ */
+async function disconnectFromDb() {
+  try {
+    if (!client) {
+      console.warn('Warning: Not connected to database');
+      return;
+    }
+    client.close();
+    db = null;
+    client = null;
+
+    console.info('Database connection closed.');
+  } catch (error) {
+    console.error('Error disconnecting from database: ', error);
+  }
 }
 
 function getDb() {
@@ -17,7 +51,7 @@ function getDb() {
 
 async function setWorkerRunningState(workerName, isRunning) {
   const db = getDb();
-  const workersCollection = db.collection('workerStates');
+  const workersCollection = db.collection(COLLECTION_WORKERSTATES);
 
   await workersCollection.updateOne(
     { name: workerName },
@@ -27,11 +61,11 @@ async function setWorkerRunningState(workerName, isRunning) {
 }
 
 async function cleanupOldAudits() {
-  const TTL_DAYS = 30; // Replace with your desired TTL in days
+  const TTL_DAYS = 30;
   const db = getDb();
   const ttlDate = new Date(Date.now() - (TTL_DAYS * 24 * 60 * 60 * 1000));
 
-  const cursor = db.collection('sites').find();
+  const cursor = db.collection(COLLECTION_SITES).find();
 
   while(await cursor.hasNext()) {
     const site = await cursor.next();
@@ -39,16 +73,22 @@ async function cleanupOldAudits() {
     // Remove audits older than TTL
     site.audits = site.audits.filter(audit => audit.auditedAt > ttlDate);
 
-    await db.collection('sites').updateOne(
-      { _id: site._id },
-      { $set: { audits: site.audits } }
-    );
+    await updateSiteAudits(site._id, site.audits);
   }
+}
+
+async function updateSiteAudits(siteId, audits) {
+  const db = getDb();
+  await db.collection(COLLECTION_SITES).updateOne(
+    { _id: siteId },
+    { $set: { audits: audits } }
+  );
 }
 
 module.exports = {
   cleanupOldAudits,
   connectToDb,
+  disconnectFromDb,
   getDb,
   setWorkerRunningState,
 };

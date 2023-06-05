@@ -7,7 +7,7 @@ const getApiUrl = (siteUrl) => {
     key: process.env.PAGESPEED_API_KEY,
   });
 
-  return `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${urlParameters.toString()}&category=performance&category=accessibility&category=best-practices&category=seo`;
+  return `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${urlParameters.toString()}&category=performance&category=accessibility&category=best-practices&category=seo&strategy=mobile`;
 }
 
 const getAuditTTL = () => {
