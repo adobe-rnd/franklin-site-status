@@ -1,5 +1,9 @@
 const { MongoClient } = require('mongodb');
 
+const MONGODB_URI = process.env.MONGODB_URI;
+const DATABASE_NAME = 'franklin-status';
+const COLLECTION_SITES = 'sites';
+
 const SITES_SORT_CONFIG = [
   { key: 'lastAudit.auditResult.categories.performance.score', desc: false },
   { key: 'lastAudit.auditResult.categories.seo.score', desc: false },
@@ -10,13 +14,38 @@ const SITES_SORT_CONFIG = [
 let client;
 let db;
 
+/**
+ * Connect to the MongoDB database.
+ */
 async function connectToDb() {
-  if (!client) {
-    client = new MongoClient(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+  try {
+    client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
     await client.connect();
-    db = client.db('franklin-status');
+    db = client.db(DATABASE_NAME);
+    console.info('Database connection established.');
+  } catch (error) {
+    console.error('Error connecting to database: ', error);
+    throw error;
   }
-  return db;
+}
+
+/**
+ * Disconnect from the MongoDB database.
+ */
+async function disconnectFromDb() {
+  try {
+    if (!client) {
+      console.warn('Warning: Not connected to database');
+      return;
+    }
+    client.close();
+    db = null;
+    client = null;
+
+    console.info('Database connection closed.');
+  } catch (error) {
+    console.error('Error disconnecting from database: ', error);
+  }
 }
 
 function getDb() {
@@ -65,7 +94,7 @@ function sortSites(sites, sortConfig) {
 async function getSiteStatus(domain) {
   const db = getDb();
 
-  const site = await db.collection('sites').findOne({ domain: domain });
+  const site = await db.collection(COLLECTION_SITES).findOne({ domain: domain });
 
   if (site && Array.isArray(site.audits)) {
     site.audits.sort((a, b) => new Date(b.auditedAt) - new Date(a.auditedAt));
@@ -77,7 +106,7 @@ async function getSiteStatus(domain) {
 async function getSitesWithAudits() {
   const db = getDb();
 
-  let sites = await db.collection('sites').find().toArray();
+  let sites = await db.collection(COLLECTION_SITES).find().toArray();
 
   sites = sites.map(site => {
     site.lastAudit = site.audits && site.audits.length > 0 ? site.audits[0] : null;
@@ -89,6 +118,7 @@ async function getSitesWithAudits() {
 
 module.exports = {
   connectToDb,
+  disconnectFromDb,
   getSiteStatus,
   getSitesWithAudits,
 };

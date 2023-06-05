@@ -15,8 +15,23 @@ app.use(slackBotRouter);
 
 connectToDb()
   .then(() => {
-    app.listen(8000, () => {
+    const server = app.listen(8000, () => {
       console.log('Server is running on port 8000');
+    });
+
+    // Ensure that we close the database connection when the server is stopped
+    process.on('SIGINT', () => {
+      server.close(async () => {
+        console.log('Server stopped');
+        try {
+          await disconnectFromDb();
+          console.log('Database connection closed');
+          process.exit(0);
+        } catch (err) {
+          console.error('Failed to close database connection', err);
+          process.exit(1);
+        }
+      });
     });
   })
   .catch((err) => {
