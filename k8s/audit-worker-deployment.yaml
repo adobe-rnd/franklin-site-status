@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: franklin-site-status-worker
+  name: franklin-site-status-audit-worker
 spec:
   replicas: 1
   selector:

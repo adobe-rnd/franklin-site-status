@@ -1,6 +1,8 @@
 const { MongoClient } = require('mongodb');
 
 const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) throw new Error('Please set the MONGODB_URI environment variable');
+
 const DATABASE_NAME = 'franklin-status';
 const COLLECTION_SITES = 'sites';
 const COLLECTION_WORKERSTATES = 'workerStates';
@@ -94,6 +96,8 @@ function processLighthouseResult({
 async function createIndexes() {
   try {
     await db.collection(COLLECTION_SITES).createIndex({ domain: 1 });
+    await db.collection(COLLECTION_SITES).createIndex({ githubId: 1 });
+    await db.collection(COLLECTION_SITES).createIndex({ lastAudited: 1 });
     await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': -1 });
     await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': 1 });
     console.log('Indexes created successfully');
@@ -172,8 +176,7 @@ async function saveAuditRecord(domain, newAudit) {
     const result = await db.collection(COLLECTION_SITES).updateOne(
       { domain: domain },
       {
-        $push: { audits: newAudit },
-        $set: { lastAudited: now }
+        $push: { audits: newAudit }
       }
     );
 
@@ -208,6 +211,34 @@ async function setWorkerRunningState(workerName, isRunning) {
   }
 }
 
+/**
+ * Updates the `lastAudited` field for a site in the MongoDB database.
+ *
+ * @param {string} domain - The domain of the site.
+ */
+async function updateLastAudited(domain) {
+  const db = getDb();
+  const now = new Date();
+
+  try {
+    const result = await db.collection(COLLECTION_SITES).updateOne(
+      { domain: domain },
+      { $set: { lastAudited: now } }
+    );
+
+    if (result.matchedCount === 0) {
+      console.warn(`No site found with domain ${domain}. lastAudited was not updated.`);
+    } else if (result.modifiedCount === 0) {
+      console.warn(`Site found with domain ${domain}, but lastAudited was not updated.`);
+    } else {
+      console.log(`lastAudited for domain ${domain} updated successfully at ${now}`);
+    }
+  } catch (error) {
+    console.error('Error updating lastAudited: ', error);
+  }
+}
+
+
 module.exports = {
   connectToDb,
   disconnectFromDb,
@@ -216,4 +247,5 @@ module.exports = {
   saveAuditError,
   getNextSiteToAudit,
   setWorkerRunningState,
+  updateLastAudited,
 };
