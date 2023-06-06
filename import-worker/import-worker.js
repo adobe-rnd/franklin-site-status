@@ -73,23 +73,9 @@ async function processRepository(repo, githubOrg, authHeaderValue, sitesCollecti
     return;
   }
 
-  const siteUrl = `https://main--${repo.name}--${githubOrg}.hlx.live`;
-
-  let domain;
-  try {
-    domain = new URL(siteUrl).hostname;
-  } catch (error) {
-    console.error(`Invalid URL for repo ${repo.name}: ${siteUrl}`);
-    return;
-  }
-
-  if (!domain) {
-    console.error(`No domain could be extracted from URL for repo ${repo.name}: ${siteUrl}`);
-    return;
-  }
+  const domain = `main--${repo.name}--${githubOrg}.hlx.live`;
 
   const now = new Date();
-  const existingDoc = await sitesCollection.findOne({ githubId: repo.id });
 
   let updateOperation = {
     $setOnInsert: {
@@ -107,10 +93,6 @@ async function processRepository(repo, githubOrg, authHeaderValue, sitesCollecti
       updatedAt: true
     },
   };
-
-  if (existingDoc && (existingDoc.gitHubOrg !== githubOrg || existingDoc.domain !== domain)) {
-    console.info(`Organization, or domain has changed. Updating the document in the database.`);
-  }
 
   bulkOps.push({
     updateOne: {
@@ -152,10 +134,10 @@ async function fetchAndProcessRepositories(githubOrg, authHeaderValue, sitesColl
 
       console.info(`Fetched ${repos.length} repos from Github page ${page}.`);
 
-      for (const repo of repos) {
+      await Promise.all(repos.map(repo => {
         console.info(`Processing repo id: ${repo.id} name: ${repo.name}`);
-        await processRepository(repo, githubOrg, authHeaderValue, sitesCollection, bulkOps);
-      }
+        return processRepository(repo, githubOrg, authHeaderValue, sitesCollection, bulkOps);
+      }));
 
       if (bulkOps.length > 0) {
         await sitesCollection.bulkWrite(bulkOps, { ordered: false }).catch(err => console.error(err));
