@@ -1,3 +1,4 @@
+ docker login "$DOCKER_REGISTRY_URL" -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
  docker image tag franklin-site-status-server:$1 docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-server:$1
  docker image push docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-server:$1
 

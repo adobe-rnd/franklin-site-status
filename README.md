@@ -92,32 +92,54 @@ There are two main collections in the MongoDB database:
 
 For production deployment, we recommend using Kubernetes. We've provided a set of Kubernetes manifests in the `k8s` directory for deploying the application to a Kubernetes cluster.
 
-To use the Kubernetes manifests, you'll need to replace the placeholders in the `secrets.yaml` file with your actual secrets.
+Pre-requisites for deployment:
+- docker and kubectl > 1.21
+- .env file composed of
+  ```shell 
+  cat <<EOT >> .env
+  MONGODB_URI=
+  AUDIT_TTL_DAYS=
+  PAGESPEED_API_KEY=
+  GITHUB_CLIENT_ID=
+  GITHUB_CLIENT_SECRET=
+  GITHUB_ORG=
+  USER_API_KEY=
+  ADMIN_API_KEY=
+  SLACK_SIGNING_SECRET=
+  SLACK_BOT_TOKEN=
+  DOCKER_REGISTRY_URL=
+  DOCKER_USERNAME=
+  DOCKER_PASSWORD=
+  EOT
 
-This can be done using `kubectl` with the following commands:
+DOCKER_PASSWORD is the artifactory token.
+
+The command to release and deploy the server, importer and audit worker and is:
+
+`npm run release:deploy`
+
+After deploying you may need to manually trigger a new cron job from https://dashboard.corp.ethos05-prod-va7.ethos.adobe.net/#/cronjob?namespace=ns-team-sites-xp-space-cat and delete the old jobs from https://dashboard.corp.ethos05-prod-va7.ethos.adobe.net/#/job?namespace=ns-team-sites-xp-space-cat
+
+Deploying the secret can be manually done using `kubectl` with the following commands:
 
 ```bash
-kubectl create secret generic franklin-status-secrets \
+kubectl create secret generic franklin-status-secrets --context ethos05-prod-va7 -n ns-team-sites-xp-space-cat \
   --from-literal=MONGODB_URI=your-mongodb-connection-string \
   --from-literal=PAGESPEED_API_KEY=your-pagespeed-api-key \
   --from-literal=GITHUB_CLIENT_ID=your-github-app-id \
   --from-literal=GITHUB_CLIENT_SECRET=your-github-app-secret \
   --from-literal=GITHUB_ORG=your-github-org \
   --from-literal=USER_API_KEY=your-user-api-key \
-  --from-literal=ADMIN_API_KEY=your-admin-api-key
+  --from-literal=ADMIN_API_KEY=your-admin-api-key \
+  --from-literal=slack-signing-secret=your-slack-signing-secret \
+  --from-literal=slack-bot-token=your-slack-bot-token
 ```
 
 Replace the `your-*` placeholders with your actual values. This command will create a Kubernetes Secret called `franklin-status-secrets` in your current namespace, which will be used by the deployment.
 
+If a secret already exists please run `kubectl delete secret franklin-status-secrets` and re-run the create command
+
 Once the secret is created, you can deploy the application using `kubectl`:
-
-```bash
-kubectl apply -f k8s
-```
-
-This command will create the deployments and services defined in the `k8s` directory. Ensure that your Kubernetes context is set to the correct cluster and namespace before running this command.
-
-After deployment, the application should be accessible via the service `franklin-status-service`.
 
 Please note that you'll need to have a valid Kubernetes context and appropriate permissions to create resources in your Kubernetes cluster.
 
