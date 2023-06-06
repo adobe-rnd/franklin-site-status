@@ -108,10 +108,8 @@ function AddRepoCommand(bot, axios) {
       }
 
       const repoInfo = await fetchRepoInfo(repoUrl);
-
-      console.debug(`Fetched repository information: ${JSON.stringify(repoInfo)}`);
-
       const existingSite = await getSiteByGitHubRepoId(repoInfo.id);
+
       if (existingSite) {
         await say(`:notification_bell: A site with the GitHub repository '${repoUrl}' already exists.`);
         return;

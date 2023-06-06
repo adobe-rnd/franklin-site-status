@@ -46,22 +46,25 @@ async function stop(workerName, signal) {
 }
 
 /**
- * Waits for the next audit if the last audit was less than 24 hours ago.
+ * Determines if a site needs to be audited.
  *
  * @param {object} site - The site to audit.
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} - True if the site needs an audit.
  */
-async function waitForNextAuditIfRequired(site) {
+async function isAuditRequired(site) {
   const lastAudited = site.lastAudited ? new Date(site.lastAudited) : null;
   const now = new Date();
   const oneDayInMilliseconds = 1000 * 60 * 60 * 24;
   const timeSinceLastAudit = lastAudited ? now - lastAudited : oneDayInMilliseconds;
 
+  // If the time since the last audit is less than 24 hours, it does not require an audit
   if (timeSinceLastAudit < oneDayInMilliseconds) {
-    const timeToWait = oneDayInMilliseconds - timeSinceLastAudit;
-    console.info(`Last site audit was less than 24 hours ago. Waiting for ${timeToWait / (1000 * 60)} minutes.`);
-    await sleep(timeToWait);
+    console.info(`Last site audit was less than 24 hours ago. Skipping ${site.domain}.`);
+    return false;
   }
+
+  console.info(`Audit required for site ${site.domain}`);
+  return true;
 }
 
 /**
@@ -102,6 +105,8 @@ async function auditWorker(workerName) {
     console.info('Audit worker started');
 
     while (isRunning) {
+      console.info('Starting audit cycle...');
+
       const site = await getNextSiteToAudit();
 
       if (!site) {
@@ -110,13 +115,16 @@ async function auditWorker(workerName) {
         continue;
       }
 
-      await waitForNextAuditIfRequired(site);
-
-      try {
-        await auditSite(site);
-      } catch (err) {
-        console.error(`Error in main audit for domain ${site.domain}:`, err);
+      if (await isAuditRequired(site)) {
+        try {
+          await auditSite(site);
+        } catch (err) {
+          console.error(`Error in main audit for domain ${site.domain}:`, err);
+        }
       }
+
+      console.info('Audit cycle completed, sleeping for 1 minute');
+      await sleep(SLEEP_TIME_ONE_MINUTE);
     }
   } catch (error) {
     console.error(error);
@@ -127,6 +135,13 @@ async function auditWorker(workerName) {
 }
 
 /**
+ * Determines if a site needs to be audited.
+ *
+ * @param
+
+
+
+  /**
  * Handles the SIGINT signal.
  */
 process.on('SIGINT', () => stop(WORKER_NAME, 'SIGINT'));
