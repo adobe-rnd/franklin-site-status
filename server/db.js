@@ -1,3 +1,8 @@
+/**
+ * MongoDB related functions and configurations.
+ * @module MongoDB
+ */
+
 const { MongoClient } = require('mongodb');
 
 const MONGODB_URI = process.env.MONGODB_URI;

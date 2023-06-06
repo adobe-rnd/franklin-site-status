@@ -135,13 +135,6 @@ async function auditWorker(workerName) {
 }
 
 /**
- * Determines if a site needs to be audited.
- *
- * @param
-
-
-
-  /**
  * Handles the SIGINT signal.
  */
 process.on('SIGINT', () => stop(WORKER_NAME, 'SIGINT'));
