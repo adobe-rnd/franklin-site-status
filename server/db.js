@@ -91,6 +91,28 @@ function sortSites(sites, sortConfig) {
   });
 }
 
+/**
+ * Saves a site to the "sites" collection.
+ *
+ * @param {Object} site - The site data.
+ * @returns {Promise} A promise that resolves when the operation is complete.
+ */
+function saveSite(site) {
+  const db = getDb();
+  return db.collection('sites').insertOne(site);
+}
+
+/**
+ * Retrieves a site from the "sites" collection by its GitHub repo ID.
+ *
+ * @param {number|string} repoId - The GitHub repo ID associated with the site.
+ * @returns {Promise} A promise that resolves with the site data.
+ */
+function getSiteByGitHubRepoId(repoId) {
+  const db = getDb();
+  return db.collection('sites').findOne({ githubId: repoId });
+}
+
 async function getSiteStatus(domain) {
   const db = getDb();
 
@@ -118,7 +140,8 @@ async function getSitesWithAudits() {
 
 module.exports = {
   connectToDb,
-  disconnectFromDb,
+  getSiteByGitHubRepoId,
   getSiteStatus,
   getSitesWithAudits,
+  saveSite,
 };

@@ -1,14 +1,11 @@
-const { URL } = require('url');
-
 const BaseCommand = require('./base-command.js');
 const { getSiteStatus } = require('../../db.js');
 const { extractAuditScores } = require('../../utils/auditUtils.js');
 const { formatDate, formatScore, getLastWord } = require('../../utils/formatUtils.js');
-const { sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
+const { extractDomainFromInput, sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
 
 const BACKTICKS = '```';
 const CHARACTER_LIMIT = 2500;
-const SLACK_URL_FORMAT_REGEX = /<([^|>]+)\|[^>]+>/;
 const PADDING_EXTRA_SPACE = 2;
 const PHRASES = ['get domain', 'get site with domain'];
 
@@ -81,29 +78,6 @@ function formatAudits(audits) {
   }
 
   return `${BACKTICKS}\n${formattedTable}\n${BACKTICKS}`;
-}
-
-/**
- * Extracts the domain from the input message. If the input follows a specific Slack URL format, it extracts the
- * domain from the URL. If not, it assumes the input is the domain. If no input is provided, it returns null.
- *
- * @param {string} message - The input message.
- * @returns {string|null} The domain extracted from the input message or null.
- */
-function extractDomainFromInput(message) {
-  const input = getLastWord(message);
-
-  if (!input) {
-    return null;
-  }
-
-  const linkedFormMatch = input.match(SLACK_URL_FORMAT_REGEX);
-
-  if (linkedFormMatch) {
-    return new URL(linkedFormMatch[1]).hostname;
-  } else {
-    return input.trim();
-  }
 }
 
 /**
