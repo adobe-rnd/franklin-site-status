@@ -94,9 +94,9 @@ For production deployment, we recommend using Kubernetes. We've provided a set o
 
 Pre-requisites for deployment:
 - docker and kubectl > 1.21
-- .env file composed of
+- .env.production file composed of
   ```shell 
-  cat <<EOT >> .env
+  cat <<EOT >> .env.production
   MONGODB_URI=
   AUDIT_TTL_DAYS=
   PAGESPEED_API_KEY=
