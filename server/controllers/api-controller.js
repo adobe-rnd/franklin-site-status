@@ -3,6 +3,15 @@ const exporters = require('../utils/exportUtils.js');
 const { getSiteStatus } = require('../db');
 const { extractAuditScores } = require('../utils/auditUtils.js');
 
+/**
+ * Provides a specific site's status.
+ *
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Object} JSON response with site's status.
+ * @throws {Error} If the site is not found.
+ */
 async function getSite(req, res, next) {
   const domain = req.params.domain;
 
@@ -36,6 +45,15 @@ async function getSite(req, res, next) {
   }
 }
 
+/**
+ * Provides all sites' status.
+ *
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Object} JSON response with all sites' status.
+ * @throws {Error} If there is a problem retrieving the data.
+ */
 async function getSites(req, res, next) {
   try {
     const sites = await getCachedSitesWithAudits();
@@ -47,6 +65,16 @@ async function getSites(req, res, next) {
   }
 }
 
+/**
+ * Exports all sites.
+ *
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @param {Function} exportFunction - Function to generate the file to be exported.
+ * @param {string} mimeType - The MIME type of the file to be exported.
+ * @param {string} filename - The name of the file to be exported.
+ * @throws {Error} If there is a problem exporting the data.
+ */
 async function exportSites(res, next, exportFunction, mimeType, filename) {
   try {
     const file = await exportFunction();
@@ -60,10 +88,24 @@ async function exportSites(res, next, exportFunction, mimeType, filename) {
   }
 }
 
+/**
+ * Exports all sites to Excel.
+ *
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 async function exportSitesToExcel(req, res, next) {
   await exportSites(res, next, exporters.exportSitesToExcel, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'franklin-site-status.xlsx');
 }
 
+/**
+ * Exports all sites to CSV.
+ *
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 async function exportSitesToCSV(req, res, next) {
   await exportSites(res, next, exporters.exportSitesToCSV, 'text/csv', 'franklin-site-status.csv');
 }
