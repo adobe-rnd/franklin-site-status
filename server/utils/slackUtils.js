@@ -1,3 +1,33 @@
+const { getLastWord } = require('./formatUtils.js');
+const { URL } = require('url');
+
+const SLACK_URL_FORMAT_REGEX = /<([^|>]+)(?:\|[^>]+)?>/;
+
+/**
+ * Extracts the domain from the input message. If the input follows a specific Slack URL format, it extracts the
+ * domain from the URL. If not, it assumes the input is the domain. If no input is provided, it returns null.
+ *
+ * @param {string} message - The input message.
+ * @param domainOnly - If true, only the domain is returned. If false, the entire input is returned.
+ * @returns {string|null} The domain extracted from the input message or null.
+ */
+function extractDomainFromInput(message, domainOnly = true) {
+  const input = getLastWord(message);
+
+  if (!input) {
+    return null;
+  }
+
+  const linkedFormMatch = input.match(SLACK_URL_FORMAT_REGEX);
+
+  if (linkedFormMatch) {
+    const url = new URL(linkedFormMatch[1]);
+    return domainOnly ? url.hostname : url.href;
+  } else {
+    return input.trim();
+  }
+}
+
 /**
  * Sends an error message to the user and logs the error.
  *
@@ -39,6 +69,7 @@ const sendMessageBlocks = async (say, textSections, additionalBlocks = []) => {
 };
 
 module.exports = {
+  extractDomainFromInput,
   postErrorMessage,
   sendMessageBlocks,
 };

@@ -1,7 +1,7 @@
 const BaseCommand = require('./base-command.js');
 
-const { getSiteById, saveSite } = require('../../db.js');
-const { postErrorMessage } = require('../../utils/slackUtils.js');
+const { getSiteByGitHubRepoId, saveSite } = require('../../db.js');
+const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 
 const PHRASES = ['add repo', 'save repo', 'add domain by repo'];
 
@@ -21,7 +21,9 @@ function AddRepoCommand(bot, axios) {
    * @returns {string} The GitHub repository URL.
    */
   function extractRepoUrlFromMessage(message) {
-    return message.split(' ').slice(-1)[0];
+    const url = extractDomainFromInput(message, false);
+    console.info(`Extracted repo URL from message: ${url}`);
+    return url;
   }
 
   /**
@@ -107,7 +109,9 @@ function AddRepoCommand(bot, axios) {
 
       const repoInfo = await fetchRepoInfo(repoUrl);
 
-      const existingSite = await getSiteById(repoInfo.id);
+      console.debug(`Fetched repository information: ${JSON.stringify(repoInfo)}`);
+
+      const existingSite = await getSiteByGitHubRepoId(repoInfo.id);
       if (existingSite) {
         await say(`:notification_bell: A site with the GitHub repository '${repoUrl}' already exists.`);
         return;

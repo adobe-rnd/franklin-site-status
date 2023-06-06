@@ -103,14 +103,14 @@ function saveSite(site) {
 }
 
 /**
- * Retrieves a site by ID from the "sites" collection.
+ * Retrieves a site from the "sites" collection by its GitHub repo ID.
  *
- * @param {number|string} id - The ID of the site.
+ * @param {number|string} repoId - The GitHub repo ID associated with the site.
  * @returns {Promise} A promise that resolves with the site data.
  */
-function getSiteById(id) {
+function getSiteByGitHubRepoId(repoId) {
   const db = getDb();
-  return db.collection('sites').findOne({ id });
+  return db.collection('sites').findOne({ githubId: repoId });
 }
 
 async function getSiteStatus(domain) {
@@ -140,7 +140,7 @@ async function getSitesWithAudits() {
 
 module.exports = {
   connectToDb,
-  getSiteById,
+  getSiteByGitHubRepoId,
   getSiteStatus,
   getSitesWithAudits,
   saveSite,
