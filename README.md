@@ -116,7 +116,7 @@ Pre-requisites for deployment:
 DOCKER_PASSWORD is the artifactory token.
 
 ## Ethos Contexts and Namespaces
-- Development: ethos09-prod-va7, ns-team-sites-xp-space-cat-dev
+- Development: ethos09-prod-va7, ns-team-ns-team-sites-xp-space-cat-dev
 - Production: ethos05-prod-va7, ns-team-sites-xp-space-cat
 
 ## Deployment
