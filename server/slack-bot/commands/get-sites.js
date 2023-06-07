@@ -256,7 +256,7 @@ function GetSitesCommand(bot) {
     *Franklin Sites Status:* ${totalSites} total sites
 
     Columns: Rank: Performance - SEO - Accessibility - Best Practices >> Domain
-    _Sites are ordered by performance score, then all other scores, descending._
+    _Sites are ordered by performance score, then all other scores, ascending._
     ${formatSites(sites, start, end)}
     `,
         accessory: generateOverflowAccessory(),
