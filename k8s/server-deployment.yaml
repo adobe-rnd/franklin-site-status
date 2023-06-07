@@ -61,7 +61,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: franklin-site-status-service
-  namespace: ns-team-sites-xp-space-cat
   labels:
     app: franklin-site-status-service
 spec:
@@ -78,7 +77,6 @@ apiVersion: contour.heptio.com/v1beta1
 kind: IngressRoute
 metadata:
   name: franklin-site-status-server-ingress-public
-  namespace: ns-team-sites-xp-space-cat
   annotations:
     kubernetes.io/ingress.class: contour-public
 spec:
