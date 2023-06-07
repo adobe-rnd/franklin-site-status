@@ -88,10 +88,11 @@ There are two main collections in the MongoDB database:
 
 - `sites`: This collection contains a document for each website. Each document contains the domain, the associated Github URL, and a timestamp for the last audit. It also contains the audits property. This property contains the audit results. Each audit is an entry containing the domain, the audit result (a JSON object returned by the PageSpeed Insights API), a flag indicating if an error occurred during the audit, the error message (if any), and a timestamp.
 
-# Production Deployment
+# Deployment
 
-For production deployment, we recommend using Kubernetes. We've provided a set of Kubernetes manifests in the `k8s` directory for deploying the application to a Kubernetes cluster.
+For deployment, we recommend using Kubernetes. We've provided a set of Kubernetes manifests in the `k8s` directory for deploying the application to a Kubernetes cluster.
 
+## Pre-requisites
 Pre-requisites for deployment:
 - docker, kubectl > 1.21 and jq
 - .env.production or .env.development file composed of
@@ -114,6 +115,12 @@ Pre-requisites for deployment:
 
 DOCKER_PASSWORD is the artifactory token.
 
+## Ethos Contexts and Namespaces
+- Development: ethos09-prod-va7, ns-team-sites-xp-space-cat-dev
+- Production: ethos05-prod-va7, ns-team-sites-xp-space-cat
+
+## Deployment
+
 The command to release and deploy the server, importer and audit worker and is:
 
 `npm run release-deploy:dev` for dev deployment
@@ -124,7 +131,7 @@ After deploying you may need to manually trigger a new cron job from https://das
 Deploying the secret can be manually done using `kubectl` with the following commands:
 
 ```bash
-kubectl create secret generic franklin-status-secrets --context ethos05-prod-va7 -n ns-team-sites-xp-space-cat-dev \
+kubectl create secret generic franklin-status-secrets --context <context> -n <namespace> \
   --from-literal=MONGODB_URI=your-mongodb-connection-string \
   --from-literal=PAGESPEED_API_KEY=your-pagespeed-api-key \
   --from-literal=GITHUB_CLIENT_ID=your-github-app-id \
