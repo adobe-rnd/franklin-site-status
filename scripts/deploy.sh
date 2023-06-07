@@ -1,15 +1,18 @@
 #!/bin/bash
-
 set -e
-trap 'echo "Error in deploy.sh line $LINENO"' ERR
+trap 'echo "Deploy script failed on line $LINENO"' ERR
 
-CONTEXT=$1
-NAMESPACE=$2
-DOCKER_REGISTRY_URL=$3
-VERSION=$4
+KUBE_CONTEXT="$1"
+KUBE_NAMESPACE="$2"
+DOCKER_REGISTRY_URL="$3"
+DOCKER_USERNAME="$4"
+DOCKER_PASSWORD="$5"
+VERSION="$6"
 
-if ! kubectl get secret regcred --context "$CONTEXT" -n "$NAMESPACE" >/dev/null 2>&1; then
-  kubectl create secret docker-registry regcred --context "$CONTEXT" -n "$NAMESPACE" \
+echo "Deploying version $VERSION"
+
+if ! kubectl get secret regcred --context "$KUBE_CONTEXT" -n "$KUBE_NAMESPACE" >/dev/null 2>&1; then
+  kubectl create secret docker-registry regcred --context "$KUBE_CONTEXT" -n "$KUBE_NAMESPACE" \
     --docker-server="$DOCKER_REGISTRY_URL" \
     --docker-username="$DOCKER_USERNAME" \
     --docker-password="$DOCKER_PASSWORD"
