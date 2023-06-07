@@ -1,9 +1,14 @@
- docker login "$DOCKER_REGISTRY_URL" -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
- docker image tag franklin-site-status-server:$1 docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-server:$1
- docker image push docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-server:$1
+#!/bin/bash
 
- docker image tag franklin-site-status-audit-worker:$1 docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-audit-worker:$1
- docker image push docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-audit-worker:$1
+DOCKER_REGISTRY_URL=$1
+VERSION=$2
 
- docker image tag franklin-site-status-import-worker:$1 docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-import-worker:$1
- docker image push docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-import-worker:$1
+docker login "$DOCKER_REGISTRY_URL" -u "$DOCKER_USERNAME" -p "$DOCKER_PASSWORD"
+docker image tag franklin-site-status-server:"$VERSION" "$DOCKER_REGISTRY_URL"/franklin/site-status-server:"$VERSION"
+docker image push "$DOCKER_REGISTRY_URL"/franklin/site-status-server:"$VERSION"
+
+docker image tag franklin-site-status-audit-worker:"$VERSION" "$DOCKER_REGISTRY_URL"/franklin/site-status-audit-worker:"$VERSION"
+docker image push "$DOCKER_REGISTRY_URL"/franklin/site-status-audit-worker:"$VERSION"
+
+docker image tag franklin-site-status-import-worker:"$VERSION" "$DOCKER_REGISTRY_URL"/franklin/site-status-import-worker:"$VERSION"
+docker image push "$DOCKER_REGISTRY_URL"/franklin/site-status-import-worker:"$VERSION"
