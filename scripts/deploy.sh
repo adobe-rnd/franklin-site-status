@@ -5,8 +5,6 @@ trap 'echo "Deploy script failed on line $LINENO"' ERR
 source "$1"
 VERSION="$2"
 
-echo "$KUBE_CONTEXT"
-
 echo "Deploying version $VERSION"
 
 if ! kubectl get secret regcred --context "$KUBE_CONTEXT" -n "$KUBE_NAMESPACE" >/dev/null 2>&1; then
