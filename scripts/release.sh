@@ -2,10 +2,8 @@
 set -e
 trap 'echo "Release script failed on line $LINENO"' ERR
 
-DOCKER_REGISTRY_URL="$1"
-DOCKER_USERNAME="$2"
-DOCKER_PASSWORD="$3"
-VERSION="$4"
+source "$1"
+VERSION="$2"
 
 echo "Releasing version $VERSION"
 

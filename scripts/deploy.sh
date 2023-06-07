@@ -2,12 +2,10 @@
 set -e
 trap 'echo "Deploy script failed on line $LINENO"' ERR
 
-KUBE_CONTEXT="$1"
-KUBE_NAMESPACE="$2"
-DOCKER_REGISTRY_URL="$3"
-DOCKER_USERNAME="$4"
-DOCKER_PASSWORD="$5"
-VERSION="$6"
+source "$1"
+VERSION="$2"
+
+echo "$KUBE_CONTEXT"
 
 echo "Deploying version $VERSION"
 
@@ -18,8 +16,8 @@ if ! kubectl get secret regcred --context "$KUBE_CONTEXT" -n "$KUBE_NAMESPACE" >
     --docker-password="$DOCKER_PASSWORD"
 fi
 
-if ! kubectl get secret franklin-site-status-secrets --context "$CONTEXT" -n "$NAMESPACE" >/dev/null 2>&1; then
-  kubectl create secret -n "$NAMESPACE" generic franklin-site-status-secrets \
+if ! kubectl get secret franklin-site-status-secrets --context "$KUBE_CONTEXT" -n "$KUBE_NAMESPACE" >/dev/null 2>&1; then
+  kubectl create secret -n "$KUBE_NAMESPACE" generic franklin-site-status-secrets \
     --from-literal=mongodb-uri="$MONGODB_URI" \
     --from-literal=audit-ttl-days="$AUDIT_TTL_DAYS" \
     --from-literal=pagespeed-api-key="$PAGESPEED_API_KEY" \
@@ -32,7 +30,7 @@ if ! kubectl get secret franklin-site-status-secrets --context "$CONTEXT" -n "$N
     --from-literal=slack-bot-token="$SLACK_BOT_TOKEN"
 fi
 
-kubectl apply -f k8s -n "$NAMESPACE"
-kubectl set image deployment/franklin-site-status-audit-worker audit-worker="$DOCKER_REGISTRY_URL"/site-status-audit-worker:"$VERSION" -n "$NAMESPACE"
-kubectl set image cronjob/franklin-status-import-worker-cronjob import-worker="$DOCKER_REGISTRY_URL"/site-status-import-worker:"$VERSION" -n "$NAMESPACE"
-kubectl set image deployment/franklin-site-status-server node-express-server="$DOCKER_REGISTRY_URL"/site-status-server:"$VERSION" -n "$NAMESPACE"
+kubectl apply -f k8s -n "$KUBE_NAMESPACE"
+kubectl set image deployment/franklin-site-status-audit-worker audit-worker="$DOCKER_REGISTRY_URL"/site-status-audit-worker:"$VERSION" -n "$KUBE_NAMESPACE"
+kubectl set image cronjob/franklin-status-import-worker-cronjob import-worker="$DOCKER_REGISTRY_URL"/site-status-import-worker:"$VERSION" -n "$KUBE_NAMESPACE"
+kubectl set image deployment/franklin-site-status-server node-express-server="$DOCKER_REGISTRY_URL"/site-status-server:"$VERSION" -n "$KUBE_NAMESPACE"
