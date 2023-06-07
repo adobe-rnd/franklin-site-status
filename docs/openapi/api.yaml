@@ -17,7 +17,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SiteList'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Site'
   /sites/{domain}:
     get:
       summary: Get specific site by domain
@@ -35,6 +37,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Site'
+  /sites.xlsx:
+    get:
+      summary: Export all sites to Excel
+      responses:
+        200:
+          description: The Excel file with all sites
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+  /sites.csv:
+    get:
+      summary: Export all sites to CSV
+      responses:
+        200:
+          description: The CSV file with all sites
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
 
 components:
   securitySchemes:
@@ -50,15 +74,16 @@ components:
         domain:
           type: string
           description: The domain of the website
-        githubUrl:
+        gitHubURL:
           type: string
           description: The GitHub URL where the website's codebase is hosted
         lastAudited:
           type: string
           format: date-time
           description: The date and time when the website was last audited
-        auditHistory:
+        audits:
           type: array
+          description: The array of audit results
           items:
             $ref: '#/components/schemas/Audit'
         auditError:
@@ -72,6 +97,12 @@ components:
           type: string
           format: date-time
           description: The date and time when the audit was performed
+        isError:
+          type: boolean
+          description: Whether there was an error during the audit
+        errorMessage:
+          type: string
+          description: The error message, if any
         scores:
           $ref: '#/components/schemas/Scores'
     Scores:
@@ -90,27 +121,6 @@ components:
         seo:
           type: number
           description: SEO score for the site
-    SiteList:
-      type: object
-      description: List of sites with their last audit summary
-      properties:
-        domain:
-          type: string
-          description: The domain of the website
-        gitHubURL:
-          type: string
-          description: The GitHub URL where the website's codebase is hosted
-        lastAudited:
-          type: string
-          format: date-time
-          description: The date and time when the website was last audited
-        scores:
-          $ref: '#/components/schemas/Scores'
-        auditError:
-          type: string
-          description: Any error that occurred during the most recent audit of the site
-        totalAudits:
-          type: number
-          description: The total number of audits performed on the site
+
 security:
   - ApiKeyAuth: [ ]  # Use the security scheme named "ApiKeyAuth" for all API paths
