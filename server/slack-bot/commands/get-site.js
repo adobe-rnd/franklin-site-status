@@ -131,10 +131,13 @@ function GetSiteCommand(bot) {
         return;
       }
 
+      const psiURL = `https://developers.google.com/speed/pagespeed/insights/?url=${site.domain}&strategy=mobile`;
+
       let textSections = [{
         text: `
       *Franklin Site Status*: ${site.domain}
       :github-4173: GitHub: ${site.gitHubURL}
+      :lighthouse: <${psiURL}|Run PSI>
       :clock1: Last audit on ${formatDate(site.lastAudited)}
 
       _Audits are sorted by date descending._\n${formatAudits(site.audits)}
