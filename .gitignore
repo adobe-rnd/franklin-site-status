@@ -129,4 +129,4 @@ dist
 .yarn/install-state.gz
 .pnp.*
 /.env.production
-/.env.dev
+/.env.development
