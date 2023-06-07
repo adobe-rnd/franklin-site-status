@@ -45,7 +45,10 @@ function formatAudits(audits) {
   const rows = audits.map((audit) => {
     const { auditedAt, errorMessage, isError } = audit;
 
-    if (!isError) {
+    if (isError) {
+      // When isError is true, return only two columns
+      return [formatDate(auditedAt), errorMessage];
+    } else {
       const { performance, seo, accessibility, bestPractices } = extractAuditScores(audit);
       return [
         formatDate(auditedAt),
@@ -54,18 +57,22 @@ function formatAudits(audits) {
         formatScore(accessibility),
         formatScore(bestPractices),
       ];
-    } else {
-      return [formatDate(auditedAt), errorMessage, "", "", ""];
     }
   });
 
   const table = [headers, ...rows];
   const columnWidths = table.reduce((widths, row) => {
     return row.map((cell, i) => {
-      const colSpan = row.length === 2 && i === 1 ? 4 : 1;
+      // if the row has only 2 elements (colspan case), and the cell is not the first one
+      const colSpan = row.length === 2 && i !== 0 ? 4 : 1;
+      // Ignore columns that are part of a colspanned cell
+      if (colSpan > 1 && i !== 0) {
+        return widths[i] || 0;
+      }
       return Math.max(widths[i] || 0, cell.length / colSpan);
     });
   }, []);
+
 
   let formattedTable = table
     .map((row) => formatRows(row, columnWidths))
