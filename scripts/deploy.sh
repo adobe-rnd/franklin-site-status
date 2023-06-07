@@ -7,6 +7,8 @@ VERSION="$2"
 
 echo "Deploying version $VERSION"
 
+kubectl config use-context "$KUBE_CONTEXT"
+
 if ! kubectl get secret regcred --context "$KUBE_CONTEXT" -n "$KUBE_NAMESPACE" >/dev/null 2>&1; then
   kubectl create secret docker-registry regcred --context "$KUBE_CONTEXT" -n "$KUBE_NAMESPACE" \
     --docker-server="$DOCKER_REGISTRY_URL" \
