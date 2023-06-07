@@ -8,7 +8,7 @@ services:
       - "27017:27017"
 
   import-worker:
-    image: franklin-site-status-import-worker:latest
+    image: franklin-site-status-import-worker:${VERSION}
     environment:
       MONGODB_URI: ${MONGODB_URI}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
@@ -18,7 +18,7 @@ services:
       - mongo
 
   server:
-    image: franklin-site-status-server:latest
+    image: franklin-site-status-server:${VERSION}
     ports:
       - "8000:8000"
     environment:
@@ -31,7 +31,7 @@ services:
       - mongo
 
   audit-worker:
-    image: franklin-site-status-audit-worker:latest
+    image: franklin-site-status-audit-worker:${VERSION}
     environment:
       MONGODB_URI: ${MONGODB_URI}
       PAGESPEED_API_KEY: ${PAGESPEED_API_KEY}

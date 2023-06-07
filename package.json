@@ -9,6 +9,7 @@
     "build:docker": "npm run build:docker:server && npm run build:docker:audit-worker && npm run build:docker:import-worker",
     "release-deploy:prod": "npm version patch && npm run build:docker && ./scripts/release-deploy.sh production",
     "release-deploy:dev": "npm version patch && npm run build:docker && ./scripts/release-deploy.sh development",
+    "docker-compose:up": "VERSION=$npm_package_version docker-compose up",
     "start:dev": "docker-compose -f docker-compose.dev.yaml up",
     "start": "concurrently \"npm run start-server\" \"npm run start-worker\" \"npm run start-import-worker\"",
     "start-server": "cd server && npm start",
