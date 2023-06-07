@@ -93,8 +93,8 @@ There are two main collections in the MongoDB database:
 For production deployment, we recommend using Kubernetes. We've provided a set of Kubernetes manifests in the `k8s` directory for deploying the application to a Kubernetes cluster.
 
 Pre-requisites for deployment:
-- docker and kubectl > 1.21
-- .env.production file composed of
+- docker, kubectl > 1.21 and jq
+- .env.production or .env.development file composed of
   ```shell 
   cat <<EOT >> .env.production
   MONGODB_URI=
@@ -116,14 +116,15 @@ DOCKER_PASSWORD is the artifactory token.
 
 The command to release and deploy the server, importer and audit worker and is:
 
-`npm run release:deploy`
+`npm run release-deploy:dev` for dev deployment
+`npm run release-deploy:prod` for production deployment
 
 After deploying you may need to manually trigger a new cron job from https://dashboard.corp.ethos05-prod-va7.ethos.adobe.net/#/cronjob?namespace=ns-team-sites-xp-space-cat and delete the old jobs from https://dashboard.corp.ethos05-prod-va7.ethos.adobe.net/#/job?namespace=ns-team-sites-xp-space-cat
 
 Deploying the secret can be manually done using `kubectl` with the following commands:
 
 ```bash
-kubectl create secret generic franklin-status-secrets --context ethos05-prod-va7 -n ns-team-sites-xp-space-cat \
+kubectl create secret generic franklin-status-secrets --context ethos05-prod-va7 -n ns-team-sites-xp-space-cat-dev \
   --from-literal=MONGODB_URI=your-mongodb-connection-string \
   --from-literal=PAGESPEED_API_KEY=your-pagespeed-api-key \
   --from-literal=GITHUB_CLIENT_ID=your-github-app-id \
