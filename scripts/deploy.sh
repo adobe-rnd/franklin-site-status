@@ -29,6 +29,6 @@ if ! kubectl get secret franklin-site-status-secrets --context "$KUBE_CONTEXT" -
 fi
 
 kubectl apply -f k8s -n "$KUBE_NAMESPACE"
-kubectl set image deployment/franklin-site-status-audit-worker audit-worker="$DOCKER_REGISTRY_URL"/site-status-audit-worker:"$VERSION" -n "$KUBE_NAMESPACE"
-kubectl set image cronjob/franklin-status-import-worker-cronjob import-worker="$DOCKER_REGISTRY_URL"/site-status-import-worker:"$VERSION" -n "$KUBE_NAMESPACE"
-kubectl set image deployment/franklin-site-status-server node-express-server="$DOCKER_REGISTRY_URL"/site-status-server:"$VERSION" -n "$KUBE_NAMESPACE"
+kubectl set image deployment/franklin-site-status-audit-worker audit-worker="$DOCKER_REGISTRY_URL"/franklin/site-status-audit-worker:"$VERSION" -n "$KUBE_NAMESPACE"
+kubectl set image cronjob/franklin-status-import-worker-cronjob import-worker="$DOCKER_REGISTRY_URL"/franklin/site-status-import-worker:"$VERSION" -n "$KUBE_NAMESPACE"
+kubectl set image deployment/franklin-site-status-server node-express-server="$DOCKER_REGISTRY_URL"/franklin/site-status-server:"$VERSION" -n "$KUBE_NAMESPACE"
