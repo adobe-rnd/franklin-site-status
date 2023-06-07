@@ -1,6 +1,6 @@
 {
   "name": "franklin-site-status",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "",
   "scripts": {
     "build:docker:server": "docker build -f server/Dockerfile -t franklin-site-status-server:$npm_package_version .",
