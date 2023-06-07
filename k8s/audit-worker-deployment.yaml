@@ -12,9 +12,11 @@ spec:
       labels:
         app: franklin-site-status-audit-worker
     spec:
+      imagePullSecrets:
+        - name: regcred
       containers:
         - name: audit-worker
-          image: franklin-site-status-audit-worker:latest
+          image: docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-audit-worker:latest
           resources:
             requests:
               cpu: "1"

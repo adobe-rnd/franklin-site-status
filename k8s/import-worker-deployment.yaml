@@ -1,4 +1,4 @@
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: franklin-status-import-worker-cronjob
@@ -8,9 +8,11 @@ spec:
     spec:
       template:
         spec:
+          imagePullSecrets:
+            - name: regcred
           containers:
             - name: import-worker
-              image: franklin-site-status-import-worker:latest
+              image: docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-import-worker:latest
               resources:
                 requests:
                   cpu: "1"

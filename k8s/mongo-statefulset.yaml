@@ -3,50 +3,55 @@ kind: StatefulSet
 metadata:
   name: mongo
 spec:
-  serviceName: "mongo"
-  replicas: 1
   selector:
     matchLabels:
       app: mongo
+  serviceName: "mongo"
+  replicas: 1
   template:
     metadata:
       labels:
         app: mongo
     spec:
+      terminationGracePeriodSeconds: 10
       containers:
         - name: mongo
           image: mongo:4.2
+          command:
+            - mongod
+            - "--bind_ip_all"
           resources:
             requests:
-              cpu: "0.5"
-              memory: "2Gi"
-            limits:
-              cpu: "1"
+              cpu: "2"
               memory: "4Gi"
-          command: ["mongod"]
-          args: ["--config", "/etc/mongod.conf"]
+            limits:
+              cpu: "4"
+              memory: "8Gi"
           ports:
             - containerPort: 27017
           volumeMounts:
-            - name: mongo-persistent-storage
+            - name: mongo-volume
               mountPath: /data/db
   volumeClaimTemplates:
     - metadata:
-        name: mongo-persistent-storage
+        name: mongo-volume
       spec:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 1Gi
+            storage: 10Gi
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: mongo
+  labels:
+    app: mongo
 spec:
-  clusterIP: None
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 27017
   selector:
     app: mongo
-  ports:
-    - port: 27017

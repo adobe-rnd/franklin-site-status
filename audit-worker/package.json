@@ -1,6 +1,6 @@
 {
   "name": "franklin-site-status-audit-worker",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "",
   "main": "",
   "scripts": {
@@ -11,4 +11,3 @@
     "mongodb": "3.6.6"
   }
 }
-
