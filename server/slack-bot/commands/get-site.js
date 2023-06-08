@@ -53,7 +53,20 @@ function formatAudits(audits) {
   });
 
   const table = [headers, ...rows];
-  const columnWidths = table[0].map((_, i) => Math.max(...table.map(row => (row[i] || '').length)));
+  const columnWidths = table.reduce((widths, row) => {
+    const rowLength = row.length;
+    return row.map((cell, i) => {
+      const currentWidth = widths[i] || 0;
+      const isColspanCase = rowLength === 2 && i !== 0;
+      const colSpan = isColspanCase ? 4 : 1;
+
+      if (isColspanCase && i !== 0) {
+        return currentWidth;
+      }
+
+      return Math.max(currentWidth, cell.length / colSpan);
+    });
+  }, []);
 
   const formattedTable = `${BACKTICKS}\n${table.map(row => formatRows(row, columnWidths)).join("\n")}\n${BACKTICKS}`;
 
