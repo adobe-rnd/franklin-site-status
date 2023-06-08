@@ -108,10 +108,11 @@ function GetSiteCommand(bot) {
 
       const textSections = [{
         text: `
-    *Franklin Site Status*: ${site.domain}
+    *Franklin Site Status*: 
+    :mars-team: Franklin .live Domain: ${site.domain}
+    ${site.prodDomain ? `:earth_americas: Production Domain: ${site.prodDomain}` : ''}
     :github-4173: GitHub: ${site.gitHubURL}
     ${site.isLive ? ':white_check_mark:' : ':x:'} Is Live: ${site.isLive ? 'Yes' : 'No'}
-    ${site.prodDomain ? `:earth_americas: Production Domain: ${site.prodDomain}` : ''}
     :lighthouse: <${psiURL}|Run PSI (.live)> ${psiProdURL ? ` | <${psiProdURL}|Run PSI (Prod)>` : ''}
     :clock1: Last audit on ${formatDate(site.lastAudited)}
 

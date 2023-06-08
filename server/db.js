@@ -135,7 +135,12 @@ function getSiteByGitHubRepoId(repoId) {
 async function getSiteByDomain(domain) {
   const db = getDb();
 
-  const site = await db.collection(COLLECTION_SITES).findOne({ domain: domain });
+  const site = await db.collection(COLLECTION_SITES).findOne({
+    $or: [
+      { domain: domain },
+      { prodDomain: domain }
+    ]
+  });
 
   if (site && Array.isArray(site.audits)) {
     site.audits.sort((a, b) => new Date(b.auditedAt) - new Date(a.auditedAt));

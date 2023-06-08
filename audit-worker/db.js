@@ -96,6 +96,11 @@ function processLighthouseResult({
 async function createIndexes() {
   try {
     await db.collection(COLLECTION_SITES).createIndex({ domain: 1 }, { unique: true });
+    await db.collection(COLLECTION_SITES).createIndex({ prodDomain: 1 }, { unique: true, sparse: true });
+    await db.collection(COLLECTION_SITES).createIndex({
+      domain: 1,
+      prodDomain: 1
+    });
     await db.collection(COLLECTION_SITES).createIndex({ githubId: 1 }, { unique: true });
     await db.collection(COLLECTION_SITES).createIndex({ lastAudited: 1 });
     await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': -1 });
