@@ -19,10 +19,10 @@ function SetLiveStatusCommand(bot) {
   });
 
   /**
-   * Execute function for SetLiveStatusCommand. Validates input, fetches the site by domain,
+   * Validates input, fetches the site by domain,
    * and updates the "isLive" status and "prodDomain" of the site.
    *
-   * @param {Array} args - The arguments provided to the command.
+   * @param {string[]} args - The arguments provided to the command ([siteDomain, isLive, prodDomain]).
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
@@ -34,8 +34,13 @@ function SetLiveStatusCommand(bot) {
       const isLive = isLiveInput === 'true';
       const prodDomain = extractDomainFromInput(prodDomainInput);
 
-      if (!siteDomain || (isLiveInput !== 'true' && isLiveInput !== 'false')) {
-        await say(baseCommand.usage());
+      if (!siteDomain) {
+        await say(':warning: Please provide a valid site domain.');
+        return;
+      }
+
+      if (isLiveInput !== 'true' && isLiveInput !== 'false') {
+        await say(':warning: Please specify the live status as either "true" or "false".');
         return;
       }
 
@@ -61,10 +66,12 @@ function SetLiveStatusCommand(bot) {
 
       await updateSite(site._id, updatedSite);
 
-      await say(`
-        :white_check_mark: Successfully updated the live status of the site '${siteDomain}'.
-        isLive: ${isLive}${isLive ? `, prodDomain: ${prodDomain}` : ''}
-      `);
+      let message = `:white_check_mark: Successfully updated the live status of the site '${siteDomain}'.\n\n`;
+      message += isLive
+        ? `:rocket: _Site was set live and audits will now be run against the production domain '${prodDomain}'._\n\n`
+        : ':submarine: _Site was set to not live and audits will now be run against the .live domain._\n\n';
+
+      await say(message);
 
     } catch (error) {
       await postErrorMessage(say, error);
