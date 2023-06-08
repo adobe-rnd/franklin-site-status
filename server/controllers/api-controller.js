@@ -1,6 +1,6 @@
 const getCachedSitesWithAudits = require('../cache');
 const exporters = require('../utils/exportUtils.js');
-const { getSiteStatus } = require('../db');
+const { getSiteByDomain } = require('../db');
 const { extractAuditScores } = require('../utils/auditUtils.js');
 
 /**
@@ -16,7 +16,7 @@ async function getSite(req, res, next) {
   const domain = req.params.domain;
 
   try {
-    const site = await getSiteStatus(domain);
+    const site = await getSiteByDomain(domain);
 
     if (!site) {
       const error = new Error('Site not found');

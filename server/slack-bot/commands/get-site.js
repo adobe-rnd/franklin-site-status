@@ -1,7 +1,7 @@
 const BaseCommand = require('./base-command.js');
-const { getSiteStatus } = require('../../db.js');
+const { getSiteByDomain } = require('../../db.js');
 const { extractAuditScores } = require('../../utils/auditUtils.js');
-const { formatDate, formatScore, getLastWord } = require('../../utils/formatUtils.js');
+const { formatDate, formatScore } = require('../../utils/formatUtils.js');
 const { extractDomainFromInput, sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
 
 const BACKTICKS = '```';
@@ -109,13 +109,14 @@ function GetSiteCommand(bot) {
    * retrieves the site status from the database using the domain, and responds back to the user with
    * either the site status or an error message if the domain was not found.
    *
-   * @param {Object} message - The incoming message object from the bot.
+   * @param {Array} args - The arguments provided to the command.
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
-  const execute = async (message, say) => {
+  const handleExecution = async (args, say) => {
     try {
-      const domain = extractDomainFromInput(message);
+      const [domainInput] = args;
+      const domain = extractDomainFromInput(domainInput);
 
       if (!domain) {
         await say(baseCommand.usage());
@@ -124,7 +125,7 @@ function GetSiteCommand(bot) {
 
       await say(`:hourglass: Retrieving status for domain: ${domain}, please wait...`);
 
-      const site = await getSiteStatus(domain);
+      const site = await getSiteByDomain(domain);
 
       if (!site) {
         await say(`:warning: No site found with domain: ${domain}`);
@@ -154,7 +155,7 @@ function GetSiteCommand(bot) {
 
   return {
     ...baseCommand,
-    execute,
+    handleExecution,
   };
 }
 

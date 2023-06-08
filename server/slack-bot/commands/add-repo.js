@@ -1,7 +1,8 @@
 const BaseCommand = require('./base-command.js');
 
-const { getSiteByGitHubRepoId, saveSite } = require('../../db.js');
+const { getSiteByGitHubRepoId, createSite } = require('../../db.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
+const { getLastWord } = require('../../utils/formatUtils.js');
 
 const PHRASES = ['add repo', 'save repo', 'add domain by repo'];
 
@@ -21,7 +22,7 @@ function AddRepoCommand(bot, axios) {
    * @returns {string} The GitHub repository URL.
    */
   function extractRepoUrlFromMessage(message) {
-    const url = extractDomainFromInput(message, false);
+    const url = extractDomainFromInput(getLastWord(message), false);
     console.info(`Extracted repo URL from message: ${url}`);
     return url;
   }
@@ -80,7 +81,7 @@ function AddRepoCommand(bot, axios) {
       audits: [],
     };
 
-    await saveSite(site);
+    await createSite(site);
 
     return site;
   }
@@ -89,13 +90,14 @@ function AddRepoCommand(bot, axios) {
    * Execute function for AddRepoCommand. This function validates the input, fetches the repository
    * information from the GitHub API, and saves it as a site in the database.
    *
-   * @param {string} message - The incoming message.
+   * @param {Array} args - The arguments provided to the command.
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
-  const execute = async (message, say) => {
+  const handleExecution = async (args, say) => {
     try {
-      const repoUrl = extractRepoUrlFromMessage(message);
+      const [repoUrlInput] = args;
+      const repoUrl = extractRepoUrlFromMessage(repoUrlInput);
 
       if (!repoUrl) {
         await say(baseCommand.usage());
@@ -132,7 +134,7 @@ function AddRepoCommand(bot, axios) {
 
   return {
     ...baseCommand,
-    execute,
+    handleExecution,
   };
 }
 

@@ -4,16 +4,14 @@ const { URL } = require('url');
 const SLACK_URL_FORMAT_REGEX = /<([^|>]+)(?:\|[^>]+)?>/;
 
 /**
- * Extracts the domain from the input message. If the input follows a specific Slack URL format, it extracts the
+ * Extracts the domain from the input string. If the input follows a specific Slack URL format, it extracts the
  * domain from the URL. If not, it assumes the input is the domain. If no input is provided, it returns null.
  *
- * @param {string} message - The input message.
+ * @param {string} input - The input string.
  * @param domainOnly - If true, only the domain is returned. If false, the entire input is returned.
  * @returns {string|null} The domain extracted from the input message or null.
  */
-function extractDomainFromInput(message, domainOnly = true) {
-  const input = getLastWord(message);
-
+function extractDomainFromInput(input, domainOnly = true) {
   if (!input) {
     return null;
   }

@@ -32,11 +32,12 @@ function HelpCommand(bot) {
    * Executes the help command.
    * Sends a help message to the user.
    *
-   * @param {string} message - The incoming message.
+   * @param {Array} args - The arguments passed to the command.
    * @param {Function} say - The function to send a message to the user.
    * @param {Array} commands - The list of commands the bot can execute.
+   * @returns {Promise<void>} A Promise that resolves when the command is executed.
    */
-  const execute = async (message, say, commands) => {
+  const handleExecution = async (args, say, commands) => {
     let blocks = [{
       "type": "section",
       "text": {
@@ -62,7 +63,7 @@ function HelpCommand(bot) {
 
   return {
     ...baseCommand,
-    execute,
+    handleExecution,
   };
 }
 

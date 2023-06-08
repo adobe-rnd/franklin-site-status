@@ -1,8 +1,8 @@
 const express = require('express');
 const apiRoutes = require('./routes/api-routes');
-const { connectToDb } = require('./db');
 const errorHandler = require('./middlewares/error-handler.js');
 const slackBotRouter = require('./slack-bot/slack-bot');
+const { connectToDb, disconnectFromDb } = require('./db');
 
 const app = express();
 app.use(errorHandler);

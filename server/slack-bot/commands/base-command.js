@@ -18,25 +18,48 @@ function BaseCommand({
                        usageText,
                        phrases = [],
                      }) {
+
+  const extractArguments = (message) => {
+    const triggeringPhrase = phrases.find(phrase => message.startsWith(phrase));
+
+    if (triggeringPhrase) {
+      const argsStartIndex = triggeringPhrase.length;
+      const argsString = message.slice(argsStartIndex).trim();
+
+      return argsString.split(' ');
+    }
+
+    return [];
+  };
+
   /**
    * Determines if a message should be accepted by this command.
    *
    * @param {string} message - The incoming message.
-   * @returns {boolean} true if the message includes one of the phrases, false otherwise.
+   * @returns {boolean} true if the message starts with one of the phrases, false otherwise.
    */
   const accepts = (message) => {
-    return phrases.some(phrase => message.includes(phrase));
+    return phrases.some(phrase => message.startsWith(phrase));
   };
 
   /**
    * Stub for the command's execution function.
    * Throws an error by default. This method should be overridden by a specific command.
    *
+   * @param {string} message - The incoming message.
+   * @param {Function} say - The function provided by the bot to send messages.
+   * @param {Array[Object]} commands - List of commands existing.
    * @throws {Error} Always thrown, since this method must be overridden.
    */
-  const execute = () => {
-    throw new Error(`Command '${id}' must implement the 'execute' method.`);
-  };
+  function execute(message, say, commands) {
+    const args = extractArguments(message);
+
+    return this.handleExecution(args, say, commands);
+  }
+
+  const handleExecution = async (args, say, commands) => {
+    throw new Error('Execute method must be overridden by a specific command.');
+  }
 
   /**
    * Returns the usage instructions for the command.
@@ -69,6 +92,7 @@ function BaseCommand({
     phrases,
     accepts,
     execute,
+    handleExecution,
     usage,
     init,
   };

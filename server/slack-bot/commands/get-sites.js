@@ -233,10 +233,11 @@ function GetSitesCommand(bot) {
    * Execute the command to get all Franklin sites. This includes retrieving the sites, formatting the sites,
    * generating the necessary Slack message blocks, and sending the message.
    *
-   * @param {Object} message - The Slack message object.
+   * @param {Array} args - The arguments provided to the command.
    * @param {function} say - The function to send a message to Slack.
+   * @returns {Promise<void>} A Promise that resolves when the command is executed.
    */
-  const execute = async (message, say) => {
+  const handleExecution = async (args, say) => {
     await say(':hourglass: Retrieving all sites, please wait...');
 
     try {
@@ -275,7 +276,7 @@ function GetSitesCommand(bot) {
 
   return {
     ...baseCommand,
-    execute,
+    handleExecution,
     init
   };
 }

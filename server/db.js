@@ -97,14 +97,28 @@ function sortSites(sites, sortConfig) {
 }
 
 /**
- * Saves a site to the "sites" collection.
+ * Creates a site in the "sites" collection.
  *
  * @param {Object} site - The site data.
  * @returns {Promise} A promise that resolves when the operation is complete.
  */
-function saveSite(site) {
+function createSite(site) {
   const db = getDb();
   return db.collection('sites').insertOne(site);
+}
+
+function updateSite(siteId, updatedSite) {
+  const db = getDb();
+  return db.collection('sites').updateOne(
+    { _id: siteId },
+    {
+      $set: updatedSite,
+      $currentDate: {
+        updatedAt: true
+      },
+    },
+    { upsert: false }
+  );
 }
 
 /**
@@ -118,7 +132,7 @@ function getSiteByGitHubRepoId(repoId) {
   return db.collection('sites').findOne({ githubId: repoId });
 }
 
-async function getSiteStatus(domain) {
+async function getSiteByDomain(domain) {
   const db = getDb();
 
   const site = await db.collection(COLLECTION_SITES).findOne({ domain: domain });
@@ -145,8 +159,10 @@ async function getSitesWithAudits() {
 
 module.exports = {
   connectToDb,
+  disconnectFromDb,
   getSiteByGitHubRepoId,
-  getSiteStatus,
+  getSiteByDomain,
   getSitesWithAudits,
-  saveSite,
+  createSite,
+  updateSite,
 };
