@@ -78,6 +78,9 @@ async function setWorkerRunningState(workerName, isRunning) {
 
 async function cleanupOldAudits() {
   const TTL_DAYS = 30;
+
+  console.info(`Cleaning up audits older than ${TTL_DAYS} days...`);
+
   const db = getDb();
   const ttlDate = new Date(Date.now() - (TTL_DAYS * 24 * 60 * 60 * 1000));
 
@@ -88,6 +91,10 @@ async function cleanupOldAudits() {
 
     // Remove audits older than TTL
     site.audits = site.audits.filter(audit => audit.auditedAt > ttlDate);
+
+    if (site.audits.length > 0) {
+      console.info(`Cleaning up ${site.audits.length} audits for ${site.domain}...`);
+    }
 
     await updateSiteAudits(site._id, site.audits);
   }

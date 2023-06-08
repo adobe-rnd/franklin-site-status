@@ -57,7 +57,10 @@ function createGithubAuthHeaderValue(githubId, githubSecret) {
 }
 
 /**
- * Processes a single repository from the GitHub API response.
+ * Processes a single repository from the GitHub API response, synchronizing it with the database.
+ * If the repository is archived, it removes the associated site from the database.
+ * Otherwise, it constructs the domain for the repository and updates/inserts relevant data
+ * into the MongoDB collection.
  *
  * @param {Object} repo - The repository object from GitHub API.
  * @param {string} githubOrg - The GitHub organization name.
@@ -82,6 +85,8 @@ async function processRepository(repo, githubOrg, authHeaderValue, sitesCollecti
       githubId: repo.id,
       createdAt: now,
       lastAudited: null,
+      prodDomain: null,
+      isLive: false,
       audits: [],
     },
     $set: {
@@ -106,7 +111,9 @@ async function processRepository(repo, githubOrg, authHeaderValue, sitesCollecti
 }
 
 /**
- * Fetches and processes repositories from the GitHub API.
+ * Iteratively fetches and processes repositories from the GitHub API. Fetches a page of repositories,
+ * processes each repository, and continues to the next page until all pages have been processed.
+ * Performs bulk writes to the MongoDB collection to optimize database write operations.
  *
  * @param {string} githubOrg - The GitHub organization name.
  * @param {string} authHeaderValue - The Authorization header value for GitHub API requests.
@@ -176,7 +183,7 @@ async function importWorker(workerName) {
     const githubOrg = process.env.GITHUB_ORG;
 
     if (!githubId || !githubSecret || !githubOrg) {
-      throw new Error('Environment variables not set properly');
+      throw new Error('Invalid configuration');
     }
 
     await connectToDb();
