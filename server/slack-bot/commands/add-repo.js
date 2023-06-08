@@ -1,8 +1,6 @@
 const BaseCommand = require('./base-command.js');
-
 const { getSiteByGitHubRepoId, createSite } = require('../../db.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
-const { getLastWord } = require('../../utils/formatUtils.js');
 
 const PHRASES = ['add repo', 'save repo', 'add domain by repo'];
 
@@ -16,26 +14,13 @@ function AddRepoCommand(bot, axios) {
   });
 
   /**
-   * Extracts the last part of the incoming message.
-   *
-   * @param {string} message - The incoming message.
-   * @returns {string} The GitHub repository URL.
-   */
-  function extractRepoUrlFromMessage(message) {
-    const url = extractDomainFromInput(getLastWord(message), false);
-    console.info(`Extracted repo URL from message: ${url}`);
-    return url;
-  }
-
-  /**
    * Validates if the URL is a valid GitHub repository URL.
    *
    * @param {string} repoUrl - The GitHub repository URL.
    * @returns {boolean} true if the URL is valid, false otherwise.
    */
   function validateRepoUrl(repoUrl) {
-    const repoUrlParts = repoUrl.split('github.com/');
-    return repoUrlParts.length === 2 && /^[\w-]+\/[\w-]+(\.git)?$/.test(repoUrlParts[1]);
+    return /^https:\/\/github\.com\/[\w-]+\/[\w-]+(\.git)?$/.test(repoUrl);
   }
 
   /**
@@ -97,7 +82,7 @@ function AddRepoCommand(bot, axios) {
   const handleExecution = async (args, say) => {
     try {
       const [repoUrlInput] = args;
-      const repoUrl = extractRepoUrlFromMessage(repoUrlInput);
+      const repoUrl = extractDomainFromInput(repoUrlInput, false);
 
       if (!repoUrl) {
         await say(baseCommand.usage());
@@ -122,7 +107,7 @@ function AddRepoCommand(bot, axios) {
       await say(`
       :white_check_mark: Successfully added the site '${site.domain}' from the repository '${repoUrl}'.
       
-      _Note: It may take up to 24 hours for the site to be audited the first time._
+      _Note: It may take a few hours for the site to be audited the first time._
       `);
 
     } catch (error) {
