@@ -117,14 +117,14 @@ function GetSiteCommand(bot) {
       }
 
       const psiURL = `https://developers.google.com/speed/pagespeed/insights/?url=${site.domain}&strategy=mobile`;
-      const psiProdURL = site.isLive && site.prodDomain ? `https://developers.google.com/speed/pagespeed/insights/?url=${site.prodDomain}&strategy=mobile` : null;
+      const psiProdURL = site.isLive && site.prodURL ? `https://developers.google.com/speed/pagespeed/insights/?url=${site.prodURL}&strategy=mobile` : null;
 
       const textSections = [{
         text: `
     *Franklin Site Status*:
-    :mars-team: .live Domain: https://${site.domain}${site.prodDomain ? `\n    :earth_americas: Production Domain: ${site.prodDomain}` : ''}
+    :mars-team: .live Domain: ${site.domain}${site.prodURL ? `\n    :earth_americas: Production URL: ${site.prodURL}` : ''}
     :github-4173: GitHub: ${site.gitHubURL}
-    ${site.isLive ? ':white_check_mark:' : ':x:'} Is Live: ${site.isLive ? 'Yes' : 'No'}
+    ${site.isLive ? ':rocket:' : ':submarine:'} Is Live: ${site.isLive ? 'Yes' : 'No'}
     :lighthouse: <${psiURL}|Run PSI (.live)> ${psiProdURL ? ` | <${psiProdURL}|Run PSI (Prod)>` : ''}
     :clock1: Last audit on ${formatDate(site.lastAudited)}
 

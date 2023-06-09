@@ -85,7 +85,7 @@ async function processRepository(repo, githubOrg, authHeaderValue, sitesCollecti
       githubId: repo.id,
       createdAt: now,
       lastAudited: null,
-      prodDomain: null,
+      prodURL: null,
       isLive: false,
       audits: [],
     },

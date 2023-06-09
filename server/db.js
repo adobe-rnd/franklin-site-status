@@ -138,7 +138,7 @@ async function getSiteByDomain(domain) {
   const site = await db.collection(COLLECTION_SITES).findOne({
     $or: [
       { domain: domain },
-      { prodDomain: domain }
+      { prodURL: domain }
     ]
   });
 

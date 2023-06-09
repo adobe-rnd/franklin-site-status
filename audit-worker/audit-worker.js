@@ -72,7 +72,7 @@ async function isAuditRequired(site) {
  * @returns {string} - The domain to audit.
  */
 function getDomainToAudit(site) {
-  return site.isLive ? (site.prodDomain || site.domain) : site.domain;
+  return site.isLive ? (site.prodURL || site.domain) : site.domain;
 }
 
 /**
