@@ -139,17 +139,18 @@ async function getNextSiteToAudit() {
 
 /**
  * Save a regular Lighthouse audit result to the MongoDB database.
- * @param {string} domain - The domain of the site.
+ * @param {object} site - The site to be audited.
  * @param {object} audit - The Lighthouse audit result.
  */
-async function saveAudit(domain, audit) {
+async function saveAudit(site, audit) {
   const now = new Date();
   const newAudit = {
     auditedAt: now,
     isError: false,
+    isLive: site.isLive,
     auditResult: processLighthouseResult(audit.lighthouseResult),
   };
-  await saveAuditRecord(domain, newAudit);
+  await saveAuditRecord(site.domain, newAudit);
 }
 
 /**

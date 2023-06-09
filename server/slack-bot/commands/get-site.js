@@ -34,7 +34,7 @@ function formatAudits(audits) {
     return "No audit history available";
   }
 
-  const headers = ["Audited At (UTC)", "Performance", "SEO", "Accessibility", "Best Practices"];
+  const headers = ["Audited At (UTC)", "Perf.", "SEO", "A11y", "Best Pr.", "Live"];
   const rows = audits.map(audit => {
     const { auditedAt, errorMessage, isError } = audit;
 
@@ -48,6 +48,7 @@ function formatAudits(audits) {
         formatScore(seo),
         formatScore(accessibility),
         formatScore(bestPractices),
+        audit.isLive ? "Yes" : "No",
       ];
     }
   });
@@ -58,7 +59,7 @@ function formatAudits(audits) {
     return row.map((cell, i) => {
       const currentWidth = widths[i] || 0;
       const isColspanCase = rowLength === 2 && i !== 0;
-      const colSpan = isColspanCase ? 4 : 1;
+      const colSpan = isColspanCase ? headers.length - 1 : 1;
 
       if (isColspanCase && i !== 0) {
         return currentWidth;

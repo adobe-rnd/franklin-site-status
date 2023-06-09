@@ -92,7 +92,7 @@ async function auditSite(site) {
 
   try {
     const audit = await performPSICheck(domain);
-    await saveAudit(site.domain, audit);
+    await saveAudit(site, audit);
 
     const endTime = Date.now();
     const elapsedTime = (endTime - startTime) / 1000; // in seconds
