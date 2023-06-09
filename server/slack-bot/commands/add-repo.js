@@ -1,5 +1,5 @@
 const BaseCommand = require('./base-command.js');
-const { getSiteByGitHubRepoId, createSite } = require('../../db.js');
+const { getSiteByGitHubRepoId, createSite, removeSiteByRepoId } = require('../../db.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 const { printSiteDetails } = require('../../utils/formatUtils.js');
 
@@ -105,6 +105,15 @@ function AddRepoCommand(bot, axios) {
 
       const repoInfo = await fetchRepoInfo(repoUrl);
       const existingSite = await getSiteByGitHubRepoId(repoInfo.id);
+
+      if (repoInfo.archived && existingSite) {
+        await say(`:warning: The GitHub repository '${repoUrl}' is archived. The site will be removed.`);
+        await removeSiteByRepoId(repoInfo.id);
+        return;
+      } else if (repoInfo.archived) {
+        await say(`:warning: The GitHub repository '${repoUrl}' is archived. Please unarchive it before adding it as a site.`);
+        return;
+      }
 
       if (existingSite) {
         await say(`:notification_bell: A site with the GitHub repository '${repoUrl}' already exists.`);

@@ -162,6 +162,11 @@ async function getSitesWithAudits() {
   return sortSites(sites, SITES_SORT_CONFIG);
 }
 
+async function removeSiteByRepoId(repoId) {
+  const db = getDb();
+  return db.collection(COLLECTION_SITES).deleteOne({ githubId: repoId });
+}
+
 module.exports = {
   connectToDb,
   disconnectFromDb,
@@ -170,4 +175,5 @@ module.exports = {
   getSitesWithAudits,
   createSite,
   updateSite,
+  removeSiteByRepoId,
 };
