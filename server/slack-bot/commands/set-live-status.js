@@ -2,7 +2,7 @@ const BaseCommand = require('./base-command.js');
 const { getSiteByDomain, updateSite } = require('../../db.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 
-const PHRASES = ['set live status'];
+const PHRASES = ['toggle live status'];
 
 /**
  * Factory function to create the SetLiveStatusCommand object.
@@ -12,10 +12,10 @@ const PHRASES = ['set live status'];
 function SetLiveStatusCommand(bot) {
   const baseCommand = BaseCommand({
     id: 'set-live-status',
-    name: 'Set Live Status',
-    description: 'Sets or unsets a site\'s "isLive" flag. If setting to isLive = true, a value for the site\'s production domain must be provided. If a site is set to live, the performance audit will use the specified production domain instead of the Franklin .live domain',
+    name: 'Toggle Live Status',
+    description: 'Toggles a site\'s "isLive" flag. If toggling to live, a value for the site\'s production domain must be provided. If a site is set to live, the performance audit will use the specified production domain instead of the Franklin .live domain',
     phrases: PHRASES,
-    usageText: `${PHRASES[0]} {siteDomain} {isLive} [prodURL]`,
+    usageText: `${PHRASES[0]} {siteDomain} [prodURL]`,
   });
 
   /**
@@ -28,24 +28,13 @@ function SetLiveStatusCommand(bot) {
    */
   const handleExecution = async (args, say) => {
     try {
-      const [siteDomainInput, isLiveInput, prodURLInput] = args;
+      const [siteDomainInput, prodURLInput] = args;
 
       const siteDomain = extractDomainFromInput(siteDomainInput);
-      const isLive = isLiveInput === 'true';
       const prodURL = extractDomainFromInput(prodURLInput, false);
 
       if (!siteDomain) {
         await say(':warning: Please provide a valid site domain.');
-        return;
-      }
-
-      if (isLiveInput !== 'true' && isLiveInput !== 'false') {
-        await say(':warning: Please specify the live status as either "true" or "false".');
-        return;
-      }
-
-      if (isLive && !prodURL) {
-        await say(':warning: If setting isLive to true, a value for prodURL must be provided.');
         return;
       }
 
@@ -56,8 +45,15 @@ function SetLiveStatusCommand(bot) {
         return;
       }
 
+      const isLive = !site.isLive;
+
+      if (isLive && !prodURL) {
+        await say(':warning: Toggling to live status, a value for prodURL must be provided.');
+        return;
+      }
+
       const updatedSite = {
-        isLive: isLive,
+        isLive,
       };
 
       if (isLive) {
