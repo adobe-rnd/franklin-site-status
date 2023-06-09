@@ -24,7 +24,7 @@ const EXPORT_FORMATS = {
 function formatSites(sites = [], start, end) {
   return sites.slice(start, end).reduce((message, site, index) => {
     const { domain } = site;
-    const domainText = domain.replace(/main--/, '').replace(/--hlxsites.hlx.live/, '');
+    const domainText = domain.replace(/^main--/, '').replace(/--.*/, '');
     const rank = start + index + 1;
 
     let siteMessage = `${rank}. No audits found for ${domainText}`;
