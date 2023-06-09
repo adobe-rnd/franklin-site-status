@@ -3,10 +3,10 @@ const exporters = require('../../utils/exportUtils.js');
 const getCachedSitesWithAudits = require('../../cache.js');
 
 const { extractAuditScores } = require('../../utils/auditUtils.js');
-const { formatScore } = require('../../utils/formatUtils.js');
+const { formatScore, formatURL } = require('../../utils/formatUtils.js');
 const { sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 const PHRASES = ['get sites', 'get all sites'];
 const EXPORT_FORMATS = {
   CSV: 'csv',
@@ -24,8 +24,10 @@ const EXPORT_FORMATS = {
 function formatSites(sites = [], start, end) {
   return sites.slice(start, end).reduce((message, site, index) => {
     const { domain } = site;
+    const domainText = domain.replace(/main--/, '').replace(/--hlxsites.hlx.live/, '');
     const rank = start + index + 1;
-    let siteMessage = `${rank}. No audits found for ${domain}`;
+
+    let siteMessage = `${rank}. No audits found for ${domainText}`;
 
     if (site.audits.length !== 0) {
       const lastAudit = site.audits[0];
@@ -35,9 +37,11 @@ function formatSites(sites = [], start, end) {
         const scores = extractAuditScores(lastAudit);
         const { performance = 0, accessibility = 0, bestPractices = 0, seo = 0 } = scores;
 
-        siteMessage = `${rank}. ${icon} ${formatScore(performance)} - ${formatScore(seo)} - ${formatScore(accessibility)} - ${formatScore(bestPractices)}: <https://${domain}|${domain}>`;
+        siteMessage = `${rank}. ${icon} ${formatScore(performance)} - ${formatScore(seo)} - ${formatScore(accessibility)} - ${formatScore(bestPractices)}: <${formatURL(domain)}|${domainText}>`;
+        siteMessage += ` (<${site.gitHubURL}|GH>)`;
+        siteMessage += site.isLive ? ` (<${site.prodURL}|Prod>)` : '';
       } else {
-        siteMessage = `${rank}. ${icon} :warning: audit error (site has 404 or other): <https://${domain}|${domain}>`;
+        siteMessage = `${rank}. ${icon} :warning: audit error (site has 404 or other): <${formatURL(domain)}|${domain}>`;
       }
     }
 

@@ -53,9 +53,20 @@ const printSiteDetails = (site) => {
     `
 };
 
+const formatURL = (input) => {
+  const urlPattern = /^https?:\/\//i;
+
+  if (urlPattern.test(input)) {
+    return input.replace(/^http:/i, 'https:');
+  } else {
+    return `https://${input}`;
+  }
+}
+
 module.exports = {
   formatDate,
   formatScore,
+  formatURL,
   getLastWord,
   printSiteDetails,
 };

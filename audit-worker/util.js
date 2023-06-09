@@ -1,9 +1,19 @@
 const axios = require('axios');
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+const formatURL = (input) => {
+  const urlPattern = /^https?:\/\//i;
+
+  if (urlPattern.test(input)) {
+    return input.replace(/^http:/i, 'https:');
+  } else {
+    return `https://${input}`;
+  }
+}
+
 const getApiUrl = (siteUrl) => {
   const urlParameters = new URLSearchParams({
-    url: siteUrl,
+    url: formatURL(siteUrl),
     key: process.env.PAGESPEED_API_KEY,
   });
 
