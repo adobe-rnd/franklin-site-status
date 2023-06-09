@@ -18,7 +18,7 @@
     "docs:build": "npx @redocly/cli build-docs -o ./docs/index.html --config docs/openapi/redocly-config.yaml"
   },
   "devDependencies": {
-    "@redocly/cli": "1.0.0-beta.127",
+    "@redocly/cli": "1.0.0-beta.128",
     "cross-var": "1.1.0",
     "dotenv-cli": "6.0.0",
     "concurrently": "6.5.1"
