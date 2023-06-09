@@ -29,14 +29,15 @@ function formatSites(sites = [], start, end) {
 
     if (site.audits.length !== 0) {
       const lastAudit = site.audits[0];
+      const icon = site.isLive ? ':rocket:' : ':submarine:';
 
       if (!lastAudit.isError) {
         const scores = extractAuditScores(lastAudit);
         const { performance = 0, accessibility = 0, bestPractices = 0, seo = 0 } = scores;
 
-        siteMessage = `${rank}. ${formatScore(performance)} - ${formatScore(seo)} - ${formatScore(accessibility)} - ${formatScore(bestPractices)}: <https://${domain}|${domain}>`;
+        siteMessage = `${rank}. ${icon} ${formatScore(performance)} - ${formatScore(seo)} - ${formatScore(accessibility)} - ${formatScore(bestPractices)}: <https://${domain}|${domain}>`;
       } else {
-        siteMessage = `${rank}. :warning: audit error (site has 404 or other): <https://${domain}|${domain}>`;
+        siteMessage = `${rank}. ${icon} :warning: audit error (site has 404 or other): <https://${domain}|${domain}>`;
       }
     }
 
@@ -256,7 +257,8 @@ function GetSitesCommand(bot) {
         text: `
     *Franklin Sites Status:* ${totalSites} total sites
 
-    Columns: Rank: Performance - SEO - Accessibility - Best Practices >> Domain
+    Columns: Rank: (Live-Status) Performance - SEO - Accessibility - Best Practices >> Domain
+
     _Sites are ordered by performance score, then all other scores, ascending._
     ${formatSites(sites, start, end)}
     `,
