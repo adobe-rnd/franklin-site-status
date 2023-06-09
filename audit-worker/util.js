@@ -36,7 +36,7 @@ const processAuditData = (data) => {
 }
 
 const performPSICheck = async (domain) => {
-  const apiURL = getApiUrl(`https://${domain}`);
+  const apiURL = getApiUrl(domain);
 
   const { data: lhs } = await axios.get(apiURL);
 

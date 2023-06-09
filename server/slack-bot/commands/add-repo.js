@@ -1,6 +1,7 @@
 const BaseCommand = require('./base-command.js');
 const { getSiteByGitHubRepoId, createSite } = require('../../db.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
+const { printSiteDetails } = require('../../utils/formatUtils.js');
 
 const PHRASES = ['add repo', 'save repo', 'add domain by repo'];
 
@@ -8,9 +9,9 @@ function AddRepoCommand(bot, axios) {
   const baseCommand = BaseCommand({
     id: 'add-github-repo',
     name: "Add GitHub Repo",
-    description: 'Adds a new site from a GitHub repository. Do not add repos from the _hlxsites_ Org, as those are automatically imported.',
+    description: 'Adds a new site from a GitHub repository. Do not add repos from the _hlxsites_ Org, as those are automatically imported. You can optionally provide a production URL in which case the site will be set to live and audits be run on the production URL.',
     phrases: PHRASES,
-    usageText: `${PHRASES.join(' or ')} {githubRepoURL};`,
+    usageText: `${PHRASES.join(' or ')} {githubRepoURL} [prodURL]`,
   });
 
   /**
@@ -49,9 +50,10 @@ function AddRepoCommand(bot, axios) {
    * Saves the repository information as a site in the database.
    *
    * @param {Object} repoInfo - The repository information.
+   * @param prodURL - The production URL, if provided.
    * @returns {Object} The site information.
    */
-  async function saveRepoAsSite(repoInfo) {
+  async function saveRepoAsSite(repoInfo, prodURL) {
     const { owner, name, id, html_url } = repoInfo;
     const domain = `main--${name}--${owner.login}.hlx.live`;
 
@@ -65,6 +67,12 @@ function AddRepoCommand(bot, axios) {
       lastAudited: null,
       audits: [],
     };
+
+    if (prodURL) {
+      console.debug(`Setting site ${domain} to live with prodURL ${prodURL}.`);
+      site.isLive = true;
+      site.prodURL = prodURL;
+    }
 
     await createSite(site);
 
@@ -81,8 +89,9 @@ function AddRepoCommand(bot, axios) {
    */
   const handleExecution = async (args, say) => {
     try {
-      const [repoUrlInput] = args;
+      const [repoUrlInput, prodURLInput] = args;
       const repoUrl = extractDomainFromInput(repoUrlInput, false);
+      const prodURL = extractDomainFromInput(prodURLInput, false);
 
       if (!repoUrl) {
         await say(baseCommand.usage());
@@ -102,10 +111,12 @@ function AddRepoCommand(bot, axios) {
         return;
       }
 
-      const site = await saveRepoAsSite(repoInfo);
+      const site = await saveRepoAsSite(repoInfo, prodURL);
 
       await say(`
-      :white_check_mark: Successfully added the site '${site.domain}' from the repository '${repoUrl}'.
+      :white_check_mark: Successfully added the site!
+      
+${printSiteDetails(site)}
       
       _Note: It may take a few hours for the site to be audited the first time._
       `);
