@@ -74,6 +74,7 @@ function processLighthouseResult({
                                    runWarnings,
                                    configSettings,
                                    timing,
+                                   audits = {},
                                  } = {}) {
   return {
     categories,
@@ -87,6 +88,9 @@ function processLighthouseResult({
     runWarnings,
     configSettings,
     timing,
+    audits: {
+      'third-party-summary': audits['third-party-summary'],
+    }
   };
 }
 
