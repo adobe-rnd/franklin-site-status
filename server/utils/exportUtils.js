@@ -7,6 +7,8 @@ const { extractAuditScores } = require('./auditUtils.js');
 const SITES_EXPORT_PROPERTIES = [
   { name: 'domain', path: 'domain' },
   { name: 'gitHubURL', path: 'gitHubURL' },
+  { name: 'isLive', path: 'isLive' },
+  { name: 'prodURL', path: 'prodURL' },
   { name: 'performance', path: 'lastAudit.scores.performance' },
   { name: 'seo', path: 'lastAudit.scores.seo' },
   { name: 'accessibility', path: 'lastAudit.scores.accessibility' },
