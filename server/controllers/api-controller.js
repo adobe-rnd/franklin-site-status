@@ -27,6 +27,7 @@ async function getSite(req, res, next) {
     const audits = site.audits.map(audit => ({
       auditedAt: audit.auditedAt,
       isError: audit.isError,
+      isLive: audit.isLive,
       errorMessage: audit.errorMessage,
       scores: extractAuditScores(audit),
     }));
@@ -35,6 +36,8 @@ async function getSite(req, res, next) {
       domain,
       gitHubURL: site.gitHubURL,
       lastAudited: site.lastAudited,
+      isLive: site.isLive,
+      prodURL: site.prodURL,
       audits,
       auditError: audits[0]?.isError ? audits[0].errorMessage : null,
     };

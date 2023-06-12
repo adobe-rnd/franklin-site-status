@@ -21,10 +21,11 @@ const SITES_EXPORT_PROPERTIES = [
  * @return {Object[]} - The transformed sites data.
  */
 function transformSitesData(sites) {
-  return sites.map(({ domain, gitHubURL, lastAudit }) => {
+  return sites.map(({ domain, gitHubURL, lastAudit, isLive, prodURL }) => {
     const auditInfo = lastAudit ? {
       auditedAt: lastAudit.auditedAt,
       isError: lastAudit.isError,
+      isLive: lastAudit.isLive,
       errorMessage: lastAudit.errorMessage,
       scores: extractAuditScores(lastAudit),
     } : null;
@@ -33,6 +34,8 @@ function transformSitesData(sites) {
       domain,
       gitHubURL,
       lastAudit: auditInfo,
+      isLive,
+      prodURL,
     };
   });
 }
