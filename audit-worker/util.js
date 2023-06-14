@@ -1,10 +1,14 @@
 const axios = require('axios');
 const jsdiff = require('diff');
 
-const SECONDS_IN_A_DAY = 86400; // 24 * 60 * 60
-const MAX_DIFF_SIZE = 102400; // 100 * 1024
+const SECONDS_IN_A_DAY = 86400;
+const MAX_DIFF_SIZE = 102400;
+const GITHUB_API_BASE_URL = 'https://api.github.com';
+const PAGESPEED_API_BASE_URL = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed';
 
-const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const AUDIT_TTL_DEFAULT_DAYS = 30;
+
+const sleep = async (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const formatURL = (input) => {
   const urlPattern = /^https?:\/\//i;
@@ -17,48 +21,55 @@ const formatURL = (input) => {
 }
 
 const getPSIApiUrl = (siteUrl) => {
-  const urlParameters = new URLSearchParams({
+  const params = new URLSearchParams({
     url: formatURL(siteUrl),
     key: process.env.PAGESPEED_API_KEY,
+    strategy: 'mobile'
   });
 
-  return `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${urlParameters.toString()}&category=performance&category=accessibility&category=best-practices&category=seo&strategy=mobile`;
-}
+  ['performance', 'accessibility', 'best-practices', 'seo'].forEach(category => {
+    params.append('category', category);
+  });
+
+  return `${PAGESPEED_API_BASE_URL}?${params.toString()}`;
+};
 
 const getAuditTTL = () => {
-  let auditTtlDays = parseInt(process.env.AUDIT_TTL_DAYS) || 30;
+  let auditTtlDays = parseInt(process.env.AUDIT_TTL_DAYS) || AUDIT_TTL_DEFAULT_DAYS;
 
   if (!Number.isInteger(auditTtlDays) || auditTtlDays <= 0) {
-    console.warn(`Invalid AUDIT_TTL_DAYS environment variable value: ${process.env.AUDIT_TTL_DAYS}. Using default value of 30.`);
-    auditTtlDays = 30;
+    console.warn(`Invalid AUDIT_TTL_DAYS environment variable value: ${process.env.AUDIT_TTL_DAYS}. Using default value of ${AUDIT_TTL_DEFAULT_DAYS}.`);
+    auditTtlDays = AUDIT_TTL_DEFAULT_DAYS;
   }
 
-  return auditTtlDays * 24 * 60 * 60;
-}
+  return auditTtlDays * SECONDS_IN_A_DAY;
+};
 
 const processAuditData = (data) => {
-  for (let key in data) {
-    if (typeof data[key] === 'object' && data[key] !== null) {
-      processAuditData(data[key]);
+  const newData = { ...data };
+
+  for (let key in newData) {
+    if (typeof newData[key] === 'object' && newData[key] !== null) {
+      newData[key] = processAuditData(newData[key]);
     }
 
     if (key.includes('.')) {
       const newKey = key.replace('.', '_');
-      data[newKey] = data[key];
-      delete data[key];
+      newData[newKey] = newData[key];
+      delete newData[key];
     }
   }
-}
+
+  return newData;
+};
 
 const performPSICheck = async (domain) => {
   const apiURL = getPSIApiUrl(domain);
 
   const { data: lhs } = await axios.get(apiURL);
 
-  processAuditData(lhs);
-
-  return lhs;
-}
+  return processAuditData(lhs);
+};
 
 /**
  * Fetches the Markdown content from the specified URL and creates a diff with the Markdown content from the latest audit.
@@ -218,4 +229,4 @@ module.exports = {
   getAuditTTL,
   performPSICheck,
   sleep,
-}
+};
