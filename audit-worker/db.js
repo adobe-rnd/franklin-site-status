@@ -90,6 +90,7 @@ function processLighthouseResult({
     timing,
     audits: {
       'third-party-summary': audits['third-party-summary'],
+      'total-blocking-time': audits['total-blocking-time'],
     }
   };
 }
