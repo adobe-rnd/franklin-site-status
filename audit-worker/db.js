@@ -145,13 +145,19 @@ async function getNextSiteToAudit() {
  * Save a regular Lighthouse audit result to the MongoDB database.
  * @param {object} site - The site to be audited.
  * @param {object} audit - The Lighthouse audit result.
+ * @param {object} markdownContext - The markdown content and diff of content changes since last audit.
+ * @param {string} githubDiff - Diff of code changes since last audit in patch format.
  */
-async function saveAudit(site, audit) {
+async function saveAudit(site, audit, markdownContext, githubDiff) {
+  const { diff: markdownDiff, content: markdownContent } = markdownContext;
   const now = new Date();
   const newAudit = {
     auditedAt: now,
     isError: false,
     isLive: site.isLive,
+    markdownContent,
+    markdownDiff,
+    githubDiff,
     auditResult: processLighthouseResult(audit.lighthouseResult),
   };
   await saveAuditRecord(site.domain, newAudit);

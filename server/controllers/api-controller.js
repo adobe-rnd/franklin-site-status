@@ -28,6 +28,9 @@ async function getSite(req, res, next) {
       auditedAt: audit.auditedAt,
       isError: audit.isError,
       isLive: audit.isLive,
+      markdownContent: audit.markdownContent,
+      markdownDiff: audit.markdownDiff,
+      githubDiff: audit.githubDiff,
       errorMessage: audit.errorMessage,
       scores: extractAuditScores(audit),
     }));
