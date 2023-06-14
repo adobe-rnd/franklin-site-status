@@ -126,7 +126,7 @@ async function fetchMarkdownDiff(site, audit) {
  * @returns {string} The created GitHub API URL.
  */
 function createGithubApiUrl(githubOrg, repoName = '', path = '', page = 1) {
-  let baseUrl = `https://api.github.com/repos/${githubOrg}/${repoName}`;
+  let baseUrl = `${GITHUB_API_BASE_URL}/repos/${githubOrg}/${repoName}`;
 
   if (path) {
     baseUrl += `/${path}`;
