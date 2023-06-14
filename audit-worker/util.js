@@ -8,8 +8,20 @@ const PAGESPEED_API_BASE_URL = 'https://www.googleapis.com/pagespeedonline/v5/ru
 
 const AUDIT_TTL_DEFAULT_DAYS = 30;
 
+/**
+ * Sleeps for the specified amount of milliseconds.
+ *
+ * @param {number} ms - The number of milliseconds to sleep.
+ * @returns {Promise} A promise that resolves after the specified number of milliseconds.
+ */
 const sleep = async (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+/**
+ * Formats an input URL to be HTTPS.
+ *
+ * @param {string} input - The input URL.
+ * @returns {string} The formatted URL with HTTPS.
+ */
 const formatURL = (input) => {
   const urlPattern = /^https?:\/\//i;
 
@@ -20,6 +32,12 @@ const formatURL = (input) => {
   }
 }
 
+/**
+ * Builds a PageSpeed Insights API URL with the necessary parameters.
+ *
+ * @param {string} siteUrl - The URL of the site to analyze.
+ * @returns {string} The full API URL with parameters.
+ */
 const getPSIApiUrl = (siteUrl) => {
   const params = new URLSearchParams({
     url: formatURL(siteUrl),
@@ -34,6 +52,11 @@ const getPSIApiUrl = (siteUrl) => {
   return `${PAGESPEED_API_BASE_URL}?${params.toString()}`;
 };
 
+/**
+ * Retrieves the audit time-to-live (TTL) in seconds.
+ *
+ * @returns {number} The audit TTL in seconds.
+ */
 const getAuditTTL = () => {
   let auditTtlDays = parseInt(process.env.AUDIT_TTL_DAYS) || AUDIT_TTL_DEFAULT_DAYS;
 
@@ -45,6 +68,12 @@ const getAuditTTL = () => {
   return auditTtlDays * SECONDS_IN_A_DAY;
 };
 
+/**
+ * Processes audit data by replacing keys with dots with underscore.
+ *
+ * @param {object} data - The audit data object.
+ * @returns {object} The processed audit data.
+ */
 const processAuditData = (data) => {
   const newData = { ...data };
 
@@ -63,6 +92,12 @@ const processAuditData = (data) => {
   return newData;
 };
 
+/**
+ * Performs a PageSpeed Insights check on the specified domain.
+ *
+ * @param {string} domain - The domain to perform the PSI check on.
+ * @returns {Promise<object>} The processed PageSpeed Insights audit data.
+ */
 const performPSICheck = async (domain) => {
   const apiURL = getPSIApiUrl(domain);
 
