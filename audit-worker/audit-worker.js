@@ -11,10 +11,11 @@ const {
   performPSICheck,
   sleep
 } = require('./util');
+const { getMarkdownContent, fetchDiffs } = require('./util.js');
 
 const WORKER_NAME = 'auditWorker';
 const ONE_DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
-const INITIAL_SLEEP_TIME = 1000 * 60;
+const INITIAL_SLEEP_TIME = 1000 * 10;
 
 let isRunning = true;
 
@@ -86,13 +87,19 @@ function getDomainToAudit(site) {
  */
 async function auditSite(site) {
   const domain = getDomainToAudit(site);
+  const githubId = process.env.GITHUB_CLIENT_ID;
+  const githubSecret = process.env.GITHUB_CLIENT_SECRET;
+
   console.info(`Auditing ${domain} (live: ${site.isLive})...`);
 
   const startTime = Date.now();
 
   try {
     const audit = await performPSICheck(domain);
-    await saveAudit(site, audit);
+    const mdContent = await getMarkdownContent(audit);
+    const githubDiff = await fetchDiffs(site, audit, githubId, githubSecret);
+
+    await saveAudit(site, audit, mdContent, githubDiff);
 
     const endTime = Date.now();
     const elapsedTime = (endTime - startTime) / 1000; // in seconds
