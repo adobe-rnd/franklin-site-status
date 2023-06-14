@@ -11,7 +11,7 @@ const {
   performPSICheck,
   sleep
 } = require('./util');
-const { getMarkdownContent, fetchDiffs } = require('./util.js');
+const { fetchMarkdownDiff, fetchGithubDiff } = require('./util.js');
 
 const WORKER_NAME = 'auditWorker';
 const ONE_DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
@@ -96,10 +96,10 @@ async function auditSite(site) {
 
   try {
     const audit = await performPSICheck(domain);
-    const mdContent = await getMarkdownContent(audit);
-    const githubDiff = await fetchDiffs(site, audit, githubId, githubSecret);
+    const markdownDiff = await fetchMarkdownDiff(site, audit);
+    const githubDiff = await fetchGithubDiff(site, audit, githubId, githubSecret);
 
-    await saveAudit(site, audit, mdContent, githubDiff);
+    await saveAudit(site, audit, markdownDiff, githubDiff);
 
     const endTime = Date.now();
     const elapsedTime = (endTime - startTime) / 1000; // in seconds

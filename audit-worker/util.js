@@ -1,4 +1,5 @@
 const axios = require('axios');
+const jsdiff = require('diff');
 
 const SECONDS_IN_A_DAY = 86400; // 24 * 60 * 60
 const MAX_DIFF_SIZE = 102400; // 100 * 1024
@@ -60,13 +61,15 @@ const performPSICheck = async (domain) => {
 }
 
 /**
- * Downloads the Markdown content from the specified URL.
+ * Fetches the Markdown content from the specified URL and creates a diff with the Markdown content from the latest audit.
  *
+ * @param {object} site - The site that was audited.
+ * @param {Array} site.audits - Array of audits.
  * @param {object} audit - The audit object containing the lighthouse result.
  * @param {string} audit.lighthouseResult.finalUrl - The final URL to process.
- * @returns {Promise<string>} - The downloaded Markdown content.
+ * @returns {Promise<Object>} - The current markdown content and the diff.
  */
-async function getMarkdownContent(audit) {
+async function fetchMarkdownDiff(site, audit) {
   const url = audit.lighthouseResult?.finalUrl;
 
   if (!url) {
@@ -74,13 +77,28 @@ async function getMarkdownContent(audit) {
     return null;
   }
 
-  // Add ".md" to the URL if it doesn't end with a slash, otherwise add "index.md"
+  // Download the markdown content
   const markdownUrl = url.endsWith('/') ? `${url}index.md` : `${url}.md`;
 
   try {
     const response = await axios.get(markdownUrl);
+    const markdownContent = response.data;
+    let markdownDiff = null;
+
     console.info(`Downloaded Markdown content from ${markdownUrl}`);
-    return response.data;
+
+    // Check if there is a latest audit with markdownContent
+    const latestAudit = site.audits?.slice(-1)[0];
+
+    if (latestAudit && latestAudit.markdownContent) {
+      // Create a patch format diff
+      markdownDiff = jsdiff.createPatch(markdownUrl, latestAudit.markdownContent, markdownContent)
+    }
+
+    return {
+      diff: markdownDiff,
+      content: markdownContent,
+    };
   } catch (err) {
     console.error('Error while downloading Markdown content:', err);
     return null;
@@ -135,7 +153,7 @@ function createGithubAuthHeaderValue(githubId, githubSecret) {
  * @param {string} githubSecret - The GitHub client secret.
  * @returns {Promise<string>} - The diffs between the given date-times in patch format.
  */
-async function fetchDiffs(site, audit, githubId, githubSecret) {
+async function fetchGithubDiff(site, audit, githubId, githubSecret) {
   try {
     const until = new Date(audit.lighthouseResult.fetchTime);
     const since = site.lastAudited ? new Date(site.lastAudited) : new Date(until - SECONDS_IN_A_DAY * 1000); // 24 hours before until
@@ -195,9 +213,9 @@ async function fetchDiffs(site, audit, githubId, githubSecret) {
 }
 
 module.exports = {
-  performPSICheck,
-  fetchDiffs,
+  fetchGithubDiff,
+  fetchMarkdownDiff,
   getAuditTTL,
-  getMarkdownContent,
+  performPSICheck,
   sleep,
 }
