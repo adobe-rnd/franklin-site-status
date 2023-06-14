@@ -1,4 +1,8 @@
 const axios = require('axios');
+
+const SECONDS_IN_A_DAY = 86400; // 24 * 60 * 60
+const MAX_DIFF_SIZE = 102400; // 100 * 1024
+
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const formatURL = (input) => {
@@ -75,7 +79,7 @@ async function getMarkdownContent(audit) {
 
   try {
     const response = await axios.get(markdownUrl);
-    console.log(`Downloaded Markdown content from ${markdownUrl}`);
+    console.info(`Downloaded Markdown content from ${markdownUrl}`);
     return response.data;
   } catch (err) {
     console.error('Error while downloading Markdown content:', err);
@@ -134,10 +138,10 @@ function createGithubAuthHeaderValue(githubId, githubSecret) {
 async function fetchDiffs(site, audit, githubId, githubSecret) {
   try {
     const until = new Date(audit.lighthouseResult.fetchTime);
-    const since = site.lastAudited ? new Date(site.lastAudited) : new Date(until - 24 * 60 * 60 * 1000); // 24 hours before until
+    const since = site.lastAudited ? new Date(site.lastAudited) : new Date(until - SECONDS_IN_A_DAY * 1000); // 24 hours before until
     const repoPath = new URL(site.gitHubURL).pathname.slice(1); // Removes leading '/'
 
-    console.log(`Fetching diffs for ${repoPath} between ${since.toISOString()} and ${until.toISOString()}`);
+    console.info(`Fetching diffs for ${repoPath} between ${since.toISOString()} and ${until.toISOString()}`);
 
     const [githubOrg, repoName] = repoPath.split('/');
 
@@ -157,12 +161,11 @@ async function fetchDiffs(site, audit, githubId, githubSecret) {
     const commitSHAs = response.data.map(commit => commit.sha);
     let diffs = '';
     let totalSize = 0;
-    const maxSize = 100 * 1024; // 100kb
 
     console.log(`Found ${commitSHAs.length} commits.`);
 
     for (const sha of commitSHAs) {
-      console.log(`Fetching diff for commit ${sha}`);
+      console.info(`Fetching diff for commit ${sha}`);
 
       const diffUrl = createGithubApiUrl(githubOrg, repoName, `commits/${sha}`);
 
@@ -174,12 +177,12 @@ async function fetchDiffs(site, audit, githubId, githubSecret) {
       });
 
       // Skip binary files and check the size of the diff
-      if (!diffResponse.data.includes("Binary files differ") && (totalSize + diffResponse.data.length) < maxSize) {
+      if (!diffResponse.data.includes("Binary files differ") && (totalSize + diffResponse.data.length) < MAX_DIFF_SIZE) {
         diffs += diffResponse.data + '\n';
         totalSize += diffResponse.data.length;
-        console.log(`Added commit ${sha} (${totalSize} of ${maxSize}) to diff.`);
+        console.info(`Added commit ${sha} (${totalSize} of ${MAX_DIFF_SIZE}) to diff.`);
       } else {
-        console.log(`Skipping commit ${sha} because it is binary or too large (${totalSize} of ${maxSize}).`);
+        console.warn(`Skipping commit ${sha} because it is binary or too large (${totalSize} of ${MAX_DIFF_SIZE}).`);
         break;
       }
     }
