@@ -125,7 +125,6 @@ const performPSICheck = async (domain) => {
  *   }
  * @throws Will throw an error if there's a network issue or some other error while downloading the Markdown content.
  */
-
 async function fetchMarkdownDiff(site, audit) {
   const url = audit.lighthouseResult?.finalUrl;
 
@@ -146,8 +145,8 @@ async function fetchMarkdownDiff(site, audit) {
     // Check if there is a latest audit with markdownContent
     const latestAudit = site.audits && site.audits[site.audits.length - 1];
 
-    // Only calculate the diff if content has changed
-    if (latestAudit && latestAudit.markdownContent !== markdownContent) {
+    // Only calculate the diff if content has changed and markdownContent exists
+    if (latestAudit && latestAudit.markdownContent && latestAudit.markdownContent !== markdownContent) {
       // Create a patch format diff
       const markdownDiff = jsdiff.createPatch(markdownUrl, latestAudit.markdownContent, markdownContent);
       return {
