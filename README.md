@@ -131,21 +131,8 @@ After deploying you may need to manually trigger a new cron job from https://das
 Deploying the secret can be manually done using `kubectl` with the following commands:
 
 ```bash
-kubectl create secret generic franklin-status-secrets --context <context> -n <namespace> \
-  --from-literal=MONGODB_URI=your-mongodb-connection-string \
-  --from-literal=PAGESPEED_API_KEY=your-pagespeed-api-key \
-  --from-literal=GITHUB_CLIENT_ID=your-github-app-id \
-  --from-literal=GITHUB_CLIENT_SECRET=your-github-app-secret \
-  --from-literal=GITHUB_ORG=your-github-org \
-  --from-literal=USER_API_KEY=your-user-api-key \
-  --from-literal=ADMIN_API_KEY=your-admin-api-key \
-  --from-literal=slack-signing-secret=your-slack-signing-secret \
-  --from-literal=slack-bot-token=your-slack-bot-token
+while IFS= read -r line; do export "${line%%=*}=$(echo -n "${line#*=}" | base64)"; done < .env.development && envsubst < ./k8s/secrets.yaml | kubectl apply -f - -n my-namespace
 ```
-
-Replace the `your-*` placeholders with your actual values. This command will create a Kubernetes Secret called `franklin-status-secrets` in your current namespace, which will be used by the deployment.
-
-If a secret already exists please run `kubectl delete secret franklin-status-secrets` and re-run the create command
 
 Once the secret is created, you can deploy the application using `kubectl`:
 

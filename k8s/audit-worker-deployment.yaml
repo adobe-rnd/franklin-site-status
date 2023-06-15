@@ -35,6 +35,11 @@ spec:
                 secretKeyRef:
                   name: franklin-site-status-secrets
                   key: audit-ttl-days
+            - name: AUDIT_INTERVAL_IN_HOURS
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-secrets
+                  key: audit-ttl-days
             - name: GITHUB_CLIENT_ID
               valueFrom:
                 secretKeyRef:

@@ -15,7 +15,9 @@ const {
 const { fetchMarkdownDiff, fetchGithubDiff } = require('./util.js');
 
 const WORKER_NAME = 'auditWorker';
-const ONE_DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
+
+const AUDIT_INTERVAL_IN_HOURS = process.env.AUDIT_INTERVAL_IN_HOURS || 24;
+const AUDIT_INTERVAL_IN_MILLISECONDS = AUDIT_INTERVAL_IN_HOURS * 60 * 60 * 1000;
 const INITIAL_SLEEP_TIME = 1000 * 10;
 
 let isRunning = true;
@@ -56,14 +58,16 @@ async function stop(workerName, signal) {
 async function isAuditRequired(site) {
   const lastAudited = site.lastAudited ? new Date(site.lastAudited) : null;
   const now = new Date();
-  const timeSinceLastAudit = lastAudited ? now - lastAudited : ONE_DAY_IN_MILLISECONDS;
+  const timeSinceLastAudit = lastAudited ? now - lastAudited : AUDIT_INTERVAL_IN_MILLISECONDS;
 
-  if (timeSinceLastAudit < ONE_DAY_IN_MILLISECONDS) {
-    log('info', `Last site audit was less than 24 hours ago. Skipping ${site.domain}.`);
+  const timeRemaining = AUDIT_INTERVAL_IN_MILLISECONDS - timeSinceLastAudit;
+
+  if (timeSinceLastAudit < AUDIT_INTERVAL_IN_MILLISECONDS) {
+    log('info', `Last site audit for ${site.domain} was less than ${AUDIT_INTERVAL_IN_HOURS} hours ago. Skipping. Next audit in ${(timeRemaining / (1000 * 60 * 60)).toFixed(2)} hours.`);
     return false;
   }
 
-  log('info', `Audit required for site ${site.domain}`);
+  log('info', `Audit required for site ${site.domain}. Current audit interval: ${AUDIT_INTERVAL_IN_HOURS} hours.`);
   return true;
 }
 

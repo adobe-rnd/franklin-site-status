@@ -1,4 +1,5 @@
 const { MongoClient } = require('mongodb');
+const { log } = require('./util.js');
 
 const MONGODB_URI = process.env.MONGODB_URI;
 if (!MONGODB_URI) throw new Error('Please set the MONGODB_URI environment variable');
@@ -18,9 +19,9 @@ async function connectToDb() {
     client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
     await client.connect();
     db = client.db(DATABASE_NAME);
-    console.info('Database connection established.');
+    log('info', 'Database connection established.');
   } catch (error) {
-    console.error('Error connecting to database: ', error);
+    log('error', 'Error connecting to database: ', error);
     throw error;
   }
 }
@@ -31,16 +32,16 @@ async function connectToDb() {
 async function disconnectFromDb() {
   try {
     if (!client) {
-      console.warn('Warning: Not connected to database');
+      log('warn', 'Warning: Not connected to database');
       return;
     }
     client.close();
     db = null;
     client = null;
 
-    console.info('Database connection closed.');
+    log('info', 'Database connection closed.');
   } catch (error) {
-    console.error('Error disconnecting from database: ', error);
+    log('error', 'Error disconnecting from database: ', error);
   }
 }
 
@@ -110,9 +111,9 @@ async function createIndexes() {
     await db.collection(COLLECTION_SITES).createIndex({ lastAudited: 1 });
     await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': -1 });
     await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': 1 });
-    console.log('Indexes created successfully');
+    log('info', 'Indexes created successfully');
   } catch (error) {
-    console.error('Error creating indexes: ', error);
+    log('error', 'Error creating indexes: ', error);
   }
 }
 
@@ -134,9 +135,9 @@ async function getNextSiteToAudit() {
   const site = sites.length > 0 ? sites[0] : null;
 
   if (site) {
-    console.info(`Next site to audit: ${site.domain}`);
+    log('info', `Next site to audit: ${site.domain}`);
   } else {
-    console.info('No sites to audit');
+    log('info', 'No sites to audit');
   }
 
   return site;
@@ -199,14 +200,14 @@ async function saveAuditRecord(domain, newAudit) {
     );
 
     if (result.matchedCount === 0) {
-      console.warn(`No site found with domain ${domain}. Audit was not saved.`);
+      log('warn', `No site found with domain ${domain}. Audit was not saved.`);
     } else if (result.modifiedCount === 0) {
-      console.warn(`Site found with domain ${domain}, but it was not updated.`);
+      log('warn', `Site found with domain ${domain}, but it was not updated.`);
     } else {
-      console.log(`Audit for domain ${domain} saved successfully at ${now}`);
+      log('info', `Audit for domain ${domain} saved successfully at ${now}`);
     }
   } catch (error) {
-    console.error('Error saving audit: ', error);
+    log('error', 'Error saving audit: ', error);
   }
 }
 
@@ -223,9 +224,9 @@ async function setWorkerRunningState(workerName, isRunning) {
       { $set: { isRunning: isRunning, lastUpdated: new Date() } },
       { upsert: true }
     );
-    console.log('Worker running state updated successfully');
+    log('info', 'Worker running state updated successfully');
   } catch (error) {
-    console.error('Error updating worker running state: ', error);
+    log('error', 'Error updating worker running state: ', error);
   }
 }
 
