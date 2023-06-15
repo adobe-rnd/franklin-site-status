@@ -1,5 +1,12 @@
 const PERCENT_MULTIPLIER = 100;
 
+function addEllipsis(string, limit = 20) {
+  if (string.length > limit - 2) {
+    return string.substring(0, 18) + '..';
+  }
+  return string;
+}
+
 /**
  * Extracts the last word from a sentence.
  *
@@ -63,9 +70,26 @@ const formatURL = (input) => {
   }
 }
 
+function formatSize(bytes) {
+  let kilobytes = bytes / 1024;
+  const decimals = 2;
+  const suffixes = ['KB', 'MB', 'GB', 'TB'];
+
+  let index = 0;
+  while (kilobytes >= 1024 && index < suffixes.length - 1) {
+    kilobytes /= 1024;
+    index++;
+  }
+
+  return kilobytes.toFixed(decimals) + ' ' + suffixes[index];
+}
+
+
 module.exports = {
+  addEllipsis,
   formatDate,
   formatScore,
+  formatSize,
   formatURL,
   getLastWord,
   printSiteDetails,
