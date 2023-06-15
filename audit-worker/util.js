@@ -161,6 +161,11 @@ async function fetchMarkdownDiff(site, audit) {
       content: markdownContent,
     };
   } catch (err) {
+    if (err.response && err.response.status === 404) {
+      log('info', 'Markdown content not found');
+      return null;
+    }
+
     log('error', 'Error while downloading Markdown content:', err);
     return null;
   }
