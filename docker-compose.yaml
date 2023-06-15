@@ -34,6 +34,8 @@ services:
     image: franklin-site-status-audit-worker:${VERSION}
     environment:
       MONGODB_URI: ${MONGODB_URI}
+      AUDIT_TTL_DAYS: ${AUDIT_TTL_DAYS}
+      AUDIT_INTERVAL_IN_HOURS: ${AUDIT_INTERVAL_IN_HOURS}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       PAGESPEED_API_KEY: ${PAGESPEED_API_KEY}

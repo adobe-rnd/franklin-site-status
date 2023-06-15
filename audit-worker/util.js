@@ -61,7 +61,7 @@ const getAuditTTL = () => {
   let auditTtlDays = parseInt(process.env.AUDIT_TTL_DAYS) || AUDIT_TTL_DEFAULT_DAYS;
 
   if (!Number.isInteger(auditTtlDays) || auditTtlDays <= 0) {
-    console.warn(`Invalid AUDIT_TTL_DAYS environment variable value: ${process.env.AUDIT_TTL_DAYS}. Using default value of ${AUDIT_TTL_DEFAULT_DAYS}.`);
+    log('warn', `Invalid AUDIT_TTL_DAYS environment variable value: ${process.env.AUDIT_TTL_DAYS}. Using default value of ${AUDIT_TTL_DEFAULT_DAYS}.`);
     auditTtlDays = AUDIT_TTL_DEFAULT_DAYS;
   }
 
@@ -107,19 +107,29 @@ const performPSICheck = async (domain) => {
 };
 
 /**
- * Fetches the Markdown content from the specified URL and creates a diff with the Markdown content from the latest audit.
+ * Asynchronously fetches the Markdown content from a specified audit URL and
+ * calculates the difference between this content and the Markdown content from
+ * the latest audit, if any exists.
  *
- * @param {object} site - The site that was audited.
- * @param {Array} site.audits - Array of audits.
- * @param {object} audit - The audit object containing the lighthouse result.
- * @param {string} audit.lighthouseResult.finalUrl - The final URL to process.
- * @returns {Promise<Object>} - The current markdown content and the diff.
+ * @async
+ * @function
+ * @param {Object} site - The site that was audited.
+ * @param {Object[]} site.audits - An array of previous audits. The last element, if present, contains the latest audit's Markdown content.
+ * @param {Object} audit - The current audit object containing lighthouse result.
+ * @param {Object} audit.lighthouseResult - The lighthouse result object.
+ * @param {string} audit.lighthouseResult.finalUrl - The final URL where the Markdown content is located.
+ * @returns {Promise<Object|null>} A promise that resolves to an object containing the Markdown content and its diff with the latest audit, or `null` if there was an error or the final URL was not found. The object has the following shape:
+ *   {
+ *     diff: string|null,      // The diff between the latest audit's Markdown content and the current Markdown content in patch format, or null if contents are identical or latest audit doesn't exist.
+ *     content: string         // The Markdown content fetched from the final URL.
+ *   }
+ * @throws Will throw an error if there's a network issue or some other error while downloading the Markdown content.
  */
 async function fetchMarkdownDiff(site, audit) {
   const url = audit.lighthouseResult?.finalUrl;
 
   if (!url) {
-    console.error('Final URL not found in the audit object.');
+    log('error', 'Final URL not found in the audit object.');
     return null;
   }
 
@@ -129,24 +139,34 @@ async function fetchMarkdownDiff(site, audit) {
   try {
     const response = await axios.get(markdownUrl);
     const markdownContent = response.data;
-    let markdownDiff = null;
+    const latestAudit = site.audits && site.audits[site.audits.length - 1];
 
-    console.info(`Downloaded Markdown content from ${markdownUrl}`);
+    log('info', `Downloaded Markdown content from ${markdownUrl}`);
 
-    // Check if there is a latest audit with markdownContent
-    const latestAudit = site.audits?.slice(-1)[0];
+    // Only calculate the diff if content has changed and markdownContent exists
+    if (latestAudit && latestAudit.markdownContent && latestAudit.markdownContent !== markdownContent) {
+      const markdownDiff = jsdiff.createPatch(markdownUrl, latestAudit.markdownContent, markdownContent);
+      log('info', `Found Markdown diff ${markdownDiff.length} characters long`);
 
-    if (latestAudit && latestAudit.markdownContent) {
-      // Create a patch format diff
-      markdownDiff = jsdiff.createPatch(markdownUrl, latestAudit.markdownContent, markdownContent)
+      return {
+        diff: markdownDiff,
+        content: markdownContent,
+      };
     }
 
+    log('info', 'No Markdown diff found');
+
     return {
-      diff: markdownDiff,
+      diff: null,
       content: markdownContent,
     };
   } catch (err) {
-    console.error('Error while downloading Markdown content:', err);
+    if (err.response && err.response.status === 404) {
+      log('info', 'Markdown content not found');
+      return null;
+    }
+
+    log('error', 'Error while downloading Markdown content:', err);
     return null;
   }
 }
@@ -188,16 +208,26 @@ function createGithubAuthHeaderValue(githubId, githubSecret) {
 }
 
 /**
- * Fetch diffs of all changes between two date-times for a particular repository via the GitHub API.
+ * Fetches and compiles the diffs of all changes made in a GitHub repository between two date-times using the GitHub API.
  *
- * @param {Object} site - The site object containing the GitHub URL and last audited time.
- * @param {string} site.gitHubURL - The GitHub repository URL (e.g. https://github.com/myOrg/myRepo).
- * @param {string} [site.lastAudited] - The last audited date-time in ISO format.
- * @param {Object} audit - The audit object containing the lighthouse results.
- * @param {string} audit.lighthouseResult.fetchTime - The time the audit was fetched in ISO format.
- * @param {string} githubId - The GitHub client ID.
- * @param {string} githubSecret - The GitHub client secret.
- * @returns {Promise<string>} - The diffs between the given date-times in patch format.
+ * @async
+ * @function
+ * @param {Object} site - An object containing information about the site and GitHub repository.
+ * @param {string} site.gitHubURL - The URL of the GitHub repository from which the diffs will be fetched (e.g. 'https://github.com/user/repo').
+ * @param {string} [site.lastAudited] - The start date-time in ISO format (e.g. 'YYYY-MM-DDTHH:mm:ss.sssZ'). If not provided, it defaults to 24 hours before the end date-time.
+ * @param {Object} audit - An object containing information about the audit.
+ * @param {string} audit.lighthouseResult.fetchTime - The end date-time in ISO format at which the audit was fetched (e.g. 'YYYY-MM-DDTHH:mm:ss.sssZ').
+ * @param {string} githubId - The GitHub client ID for authentication.
+ * @param {string} githubSecret - The GitHub client secret for authentication.
+ * @returns {Promise<string>} A promise that resolves to a string containing the compiled diffs in patch format between the given date-times. If there's an error fetching the data, the promise resolves to an empty string.
+ * @throws {Error} Will throw an error if there's a network issue or some other error while fetching data from the GitHub API.
+ * @example
+ * fetchGithubDiff(
+ *   { gitHubURL: 'https://github.com/myOrg/myRepo', lastAudited: '2023-06-15T00:00:00.000Z' },
+ *   { lighthouseResult: { fetchTime: '2023-06-16T00:00:00.000Z' } },
+ *   'yourGithubId',
+ *   'yourGithubSecret'
+ * ).then(diffs => console.log(diffs));
  */
 async function fetchGithubDiff(site, audit, githubId, githubSecret) {
   try {
@@ -205,7 +235,7 @@ async function fetchGithubDiff(site, audit, githubId, githubSecret) {
     const since = site.lastAudited ? new Date(site.lastAudited) : new Date(until - SECONDS_IN_A_DAY * 1000); // 24 hours before until
     const repoPath = new URL(site.gitHubURL).pathname.slice(1); // Removes leading '/'
 
-    console.info(`Fetching diffs for ${repoPath} between ${since.toISOString()} and ${until.toISOString()}`);
+    log('info', `Fetching diffs for ${repoPath} between ${since.toISOString()} and ${until.toISOString()}`);
 
     const [githubOrg, repoName] = repoPath.split('/');
 
@@ -226,10 +256,10 @@ async function fetchGithubDiff(site, audit, githubId, githubSecret) {
     let diffs = '';
     let totalSize = 0;
 
-    console.log(`Found ${commitSHAs.length} commits.`);
+    log('info', `Found ${commitSHAs.length} commits.`);
 
     for (const sha of commitSHAs) {
-      console.info(`Fetching diff for commit ${sha}`);
+      log('info', `Fetching diff for commit ${sha}`);
 
       const diffUrl = createGithubApiUrl(githubOrg, repoName, `commits/${sha}`);
 
@@ -244,19 +274,45 @@ async function fetchGithubDiff(site, audit, githubId, githubSecret) {
       if (!diffResponse.data.includes("Binary files differ") && (totalSize + diffResponse.data.length) < MAX_DIFF_SIZE) {
         diffs += diffResponse.data + '\n';
         totalSize += diffResponse.data.length;
-        console.info(`Added commit ${sha} (${totalSize} of ${MAX_DIFF_SIZE}) to diff.`);
+        log('info', `Added commit ${sha} (${totalSize} of ${MAX_DIFF_SIZE}) to diff.`);
       } else {
-        console.warn(`Skipping commit ${sha} because it is binary or too large (${totalSize} of ${MAX_DIFF_SIZE}).`);
+        log('warn', `Skipping commit ${sha} because it is binary or too large (${totalSize} of ${MAX_DIFF_SIZE}).`);
         break;
       }
     }
 
     return diffs;
   } catch (error) {
-    console.error('Error fetching data:', error.response ? error.response.data : error);
+    log('error', 'Error fetching data:', error.response ? error.response.data : error);
     return '';
   }
 }
+
+/**
+ * A utility log method to streamline logging.
+ *
+ * @param {string} level - The log level ('info', 'error', 'warn').
+ * @param {string} message - The message to log.
+ * @param {...any} args - Additional arguments to log.
+ */
+const log = (level, message, ...args) => {
+  const timestamp = new Date().toISOString();
+
+  switch (level) {
+    case 'info':
+      console.info(`[${timestamp}] INFO: ${message}`, ...args);
+      break;
+    case 'error':
+      console.error(`[${timestamp}] ERROR: ${message}`, ...args);
+      break;
+    case 'warn':
+      console.warn(`[${timestamp}] WARN: ${message}`, ...args);
+      break;
+    default:
+      console.log(`[${timestamp}] ${message}`, ...args);
+      break;
+  }
+};
 
 module.exports = {
   fetchGithubDiff,
@@ -264,4 +320,5 @@ module.exports = {
   getAuditTTL,
   performPSICheck,
   sleep,
+  log,
 };
