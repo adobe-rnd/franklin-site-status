@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.get('/sites', verifyAPIKey(process.env.USER_API_KEY), apiController.getSites);
 router.get('/sites/:domain', verifyAPIKey(process.env.USER_API_KEY), apiController.getSite);
+router.get('/sites/:domain/martech', verifyAPIKey(process.env.USER_API_KEY), apiController.getMartechImpact);
 router.get('/sites.xlsx', verifyAPIKey(process.env.USER_API_KEY), apiController.exportSitesToExcel);
 router.get('/sites.csv', verifyAPIKey(process.env.USER_API_KEY), apiController.exportSitesToCSV);
 

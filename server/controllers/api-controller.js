@@ -1,7 +1,7 @@
 const getCachedSitesWithAudits = require('../cache');
 const exporters = require('../utils/exportUtils.js');
 const { getSiteByDomain } = require('../db');
-const { extractAuditScores } = require('../utils/auditUtils.js');
+const { extractAuditScores, extractTotalBlockingTime, extractThirdPartySummary } = require('../utils/auditUtils.js');
 
 /**
  * Provides a specific site's status.
@@ -116,9 +116,50 @@ async function exportSitesToCSV(req, res, next) {
   await exportSites(res, next, exporters.exportSitesToCSV, 'text/csv', 'franklin-site-status.csv');
 }
 
+/**
+ * Provides martech impact report for a given site
+ *
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Object} JSON response with site's status.
+ * @throws {Error} If the site is not found.
+ */
+async function getMartechImpact(req, res, next) {
+  const domain = req.params.domain;
+
+  try {
+    const site = await getSiteByDomain(domain);
+
+    if (!site) {
+      const error = new Error('Site not found');
+      error.status = 404;
+      throw error;
+    }
+
+    const lastAudit = site.audits[0]?.auditResult?.audits;
+
+    const response = {
+      domain,
+      gitHubURL: site.gitHubURL,
+      lastAudited: site.lastAudited,
+      isLive: site.isLive,
+      prodURL: site.prodURL,
+      auditError: site.audits[0]?.isError ? site.audits[0].errorMessage : null,
+      totalBlockingTime: extractTotalBlockingTime(lastAudit),
+      thirdPartySummary: extractThirdPartySummary(lastAudit),
+    }
+
+    return res.json(response);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   exportSitesToCSV,
   exportSitesToExcel,
+  getMartechImpact,
   getSite,
   getSites,
 };
