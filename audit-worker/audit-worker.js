@@ -18,7 +18,7 @@ const WORKER_NAME = 'auditWorker';
 
 const AUDIT_INTERVAL_IN_HOURS = process.env.AUDIT_INTERVAL_IN_HOURS || 24;
 const AUDIT_INTERVAL_IN_MILLISECONDS = AUDIT_INTERVAL_IN_HOURS * 60 * 60 * 1000;
-const INITIAL_SLEEP_TIME = 1000 * 10;
+const INITIAL_SLEEP_TIME = 1000 * 60;
 
 let isRunning = true;
 
