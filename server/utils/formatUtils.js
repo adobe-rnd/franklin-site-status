@@ -1,6 +1,6 @@
 const PERCENT_MULTIPLIER = 100;
 
-function addEllipsis(string, limit = 20) {
+function addEllipsis(string, limit = 24) {
   if (string.length > limit - 2) {
     return string.substring(0, 18) + '..';
   }

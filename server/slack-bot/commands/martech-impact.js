@@ -22,7 +22,7 @@ function formatRows(row, columnWidths) {
 }
 
 function formatTotalBlockingTime(totalBlockingTime = []) {
-  return totalBlockingTime || 'unknown';
+  return totalBlockingTime || '_unknown_';
 }
 
 /**
@@ -35,7 +35,7 @@ function formatTotalBlockingTime(totalBlockingTime = []) {
  */
 function formatThirdPartySummary(summary = []) {
   if (summary.length === 0) {
-    return "No third party impact detected.";
+    return "  _No third party impact detected_";
   }
 
   const headers = ["Third Party", "Main Thread", "Blocking", "Transfer"];
