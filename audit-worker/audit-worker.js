@@ -9,7 +9,8 @@ const {
 } = require('./db');
 const {
   performPSICheck,
-  sleep
+  sleep,
+  log,
 } = require('./util');
 const { fetchMarkdownDiff, fetchGithubDiff } = require('./util.js');
 
@@ -30,7 +31,7 @@ async function updateWorkerStateAndDisconnect(workerName, runningState) {
     await setWorkerRunningState(workerName, runningState);
     await disconnectFromDb();
   } catch (err) {
-    console.error('Error updating worker running state:', err);
+    log('error', 'Error updating worker running state:', err);
   }
 }
 
@@ -41,7 +42,7 @@ async function updateWorkerStateAndDisconnect(workerName, runningState) {
  * @param {string} signal - The received signal.
  */
 async function stop(workerName, signal) {
-  console.log(`Received ${signal}. Flushing data before exit...`);
+  log('info', `Received ${signal}. Flushing data before exit...`);
   isRunning = false;
   await updateWorkerStateAndDisconnect(workerName, false);
 }
@@ -58,11 +59,11 @@ async function isAuditRequired(site) {
   const timeSinceLastAudit = lastAudited ? now - lastAudited : ONE_DAY_IN_MILLISECONDS;
 
   if (timeSinceLastAudit < ONE_DAY_IN_MILLISECONDS) {
-    console.info(`Last site audit was less than 24 hours ago. Skipping ${site.domain}.`);
+    log('info', `Last site audit was less than 24 hours ago. Skipping ${site.domain}.`);
     return false;
   }
 
-  console.info(`Audit required for site ${site.domain}`);
+  log('info', `Audit required for site ${site.domain}`);
   return true;
 }
 
@@ -90,7 +91,7 @@ async function auditSite(site) {
   const githubId = process.env.GITHUB_CLIENT_ID;
   const githubSecret = process.env.GITHUB_CLIENT_SECRET;
 
-  console.info(`Auditing ${domain} (live: ${site.isLive})...`);
+  log('info', `Auditing ${domain} (live: ${site.isLive})...`);
 
   const startTime = Date.now();
 
@@ -104,10 +105,10 @@ async function auditSite(site) {
     const endTime = Date.now();
     const elapsedTime = (endTime - startTime) / 1000; // in seconds
 
-    console.info(`Audited ${site.domain} in ${elapsedTime.toFixed(2)} seconds`);
+    log('info', `Audited ${site.domain} in ${elapsedTime.toFixed(2)} seconds`);
   } catch (err) {
     const errMsg = err.response?.data?.error || err.message || err;
-    console.error(`Error during site audit for domain ${site.domain}:`, errMsg);
+    log('error', `Error during site audit for domain ${site.domain}:`, errMsg);
     await saveAuditError(site.domain, errMsg);
 
     if (err.response?.status === 429) {
@@ -134,32 +135,32 @@ async function auditWorker(workerName) {
     await setWorkerRunningState(workerName, true);
     await createIndexes();
 
-    console.info('Audit worker started');
+    log('info', 'Audit worker started');
 
     while (isRunning) {
-      console.info('Starting audit cycle...');
+      log('info', 'Starting audit cycle...');
 
       const site = await getNextSiteToAudit();
 
       if (!site) {
-        console.info(`No sites to audit, sleeping for ${sleepTime / 1000} seconds`);
+        log('info', `No sites to audit, sleeping for ${sleepTime / 1000} seconds`);
       } else if (await isAuditRequired(site)) {
         try {
           await auditSite(site);
           sleepTime = INITIAL_SLEEP_TIME; // Reset sleep time if audit is successful
         } catch (err) {
-          console.error(`Error in main audit for domain ${site.domain}:`, err);
+          log('error', `Error in main audit for domain ${site.domain}:`, err);
           if (err.message === 'Rate limit exceeded') {
             sleepTime *= 2; // Exponential back-off
           }
         }
       }
 
-      console.info(`Audit cycle completed, sleeping for ${sleepTime / 1000} seconds`);
+      log('info', `Audit cycle completed, sleeping for ${sleepTime / 1000} seconds`);
       await sleep(sleepTime);
     }
   } catch (error) {
-    console.error(error);
+    log('error', error);
     isRunning = false;
   } finally {
     await updateWorkerStateAndDisconnect(workerName, false);

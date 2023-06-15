@@ -61,7 +61,7 @@ const getAuditTTL = () => {
   let auditTtlDays = parseInt(process.env.AUDIT_TTL_DAYS) || AUDIT_TTL_DEFAULT_DAYS;
 
   if (!Number.isInteger(auditTtlDays) || auditTtlDays <= 0) {
-    console.warn(`Invalid AUDIT_TTL_DAYS environment variable value: ${process.env.AUDIT_TTL_DAYS}. Using default value of ${AUDIT_TTL_DEFAULT_DAYS}.`);
+    log('warn', `Invalid AUDIT_TTL_DAYS environment variable value: ${process.env.AUDIT_TTL_DAYS}. Using default value of ${AUDIT_TTL_DEFAULT_DAYS}.`);
     auditTtlDays = AUDIT_TTL_DEFAULT_DAYS;
   }
 
@@ -130,7 +130,7 @@ async function fetchMarkdownDiff(site, audit) {
   const url = audit.lighthouseResult?.finalUrl;
 
   if (!url) {
-    console.error('Final URL not found in the audit object.');
+    log('error', 'Final URL not found in the audit object.');
     return null;
   }
 
@@ -141,7 +141,7 @@ async function fetchMarkdownDiff(site, audit) {
     const response = await axios.get(markdownUrl);
     const markdownContent = response.data;
 
-    console.info(`Downloaded Markdown content from ${markdownUrl}`);
+    log('info', `Downloaded Markdown content from ${markdownUrl}`);
 
     // Check if there is a latest audit with markdownContent
     const latestAudit = site.audits && site.audits[site.audits.length - 1];
@@ -161,7 +161,7 @@ async function fetchMarkdownDiff(site, audit) {
       content: markdownContent,
     };
   } catch (err) {
-    console.error('Error while downloading Markdown content:', err);
+    log('error', 'Error while downloading Markdown content:', err);
     return null;
   }
 }
@@ -230,7 +230,7 @@ async function fetchGithubDiff(site, audit, githubId, githubSecret) {
     const since = site.lastAudited ? new Date(site.lastAudited) : new Date(until - SECONDS_IN_A_DAY * 1000); // 24 hours before until
     const repoPath = new URL(site.gitHubURL).pathname.slice(1); // Removes leading '/'
 
-    console.info(`Fetching diffs for ${repoPath} between ${since.toISOString()} and ${until.toISOString()}`);
+    log('info', `Fetching diffs for ${repoPath} between ${since.toISOString()} and ${until.toISOString()}`);
 
     const [githubOrg, repoName] = repoPath.split('/');
 
@@ -251,10 +251,10 @@ async function fetchGithubDiff(site, audit, githubId, githubSecret) {
     let diffs = '';
     let totalSize = 0;
 
-    console.log(`Found ${commitSHAs.length} commits.`);
+    log('info', `Found ${commitSHAs.length} commits.`);
 
     for (const sha of commitSHAs) {
-      console.info(`Fetching diff for commit ${sha}`);
+      log('info', `Fetching diff for commit ${sha}`);
 
       const diffUrl = createGithubApiUrl(githubOrg, repoName, `commits/${sha}`);
 
@@ -269,19 +269,45 @@ async function fetchGithubDiff(site, audit, githubId, githubSecret) {
       if (!diffResponse.data.includes("Binary files differ") && (totalSize + diffResponse.data.length) < MAX_DIFF_SIZE) {
         diffs += diffResponse.data + '\n';
         totalSize += diffResponse.data.length;
-        console.info(`Added commit ${sha} (${totalSize} of ${MAX_DIFF_SIZE}) to diff.`);
+        log('info', `Added commit ${sha} (${totalSize} of ${MAX_DIFF_SIZE}) to diff.`);
       } else {
-        console.warn(`Skipping commit ${sha} because it is binary or too large (${totalSize} of ${MAX_DIFF_SIZE}).`);
+        log('warn', `Skipping commit ${sha} because it is binary or too large (${totalSize} of ${MAX_DIFF_SIZE}).`);
         break;
       }
     }
 
     return diffs;
   } catch (error) {
-    console.error('Error fetching data:', error.response ? error.response.data : error);
+    log('error', 'Error fetching data:', error.response ? error.response.data : error);
     return '';
   }
 }
+
+/**
+ * A utility log method to streamline logging.
+ *
+ * @param {string} level - The log level ('info', 'error', 'warn').
+ * @param {string} message - The message to log.
+ * @param {...any} args - Additional arguments to log.
+ */
+const log = (level, message, ...args) => {
+  const timestamp = new Date().toISOString();
+
+  switch (level) {
+    case 'info':
+      console.info(`[${timestamp}] INFO: ${message}`, ...args);
+      break;
+    case 'error':
+      console.error(`[${timestamp}] ERROR: ${message}`, ...args);
+      break;
+    case 'warn':
+      console.warn(`[${timestamp}] WARN: ${message}`, ...args);
+      break;
+    default:
+      console.log(`[${timestamp}] ${message}`, ...args);
+      break;
+  }
+};
 
 module.exports = {
   fetchGithubDiff,
@@ -289,4 +315,5 @@ module.exports = {
   getAuditTTL,
   performPSICheck,
   sleep,
+  log,
 };
