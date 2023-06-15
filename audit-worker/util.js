@@ -139,21 +139,22 @@ async function fetchMarkdownDiff(site, audit) {
   try {
     const response = await axios.get(markdownUrl);
     const markdownContent = response.data;
+    const latestAudit = site.audits && site.audits[site.audits.length - 1];
 
     log('info', `Downloaded Markdown content from ${markdownUrl}`);
 
-    // Check if there is a latest audit with markdownContent
-    const latestAudit = site.audits && site.audits[site.audits.length - 1];
-
     // Only calculate the diff if content has changed and markdownContent exists
     if (latestAudit && latestAudit.markdownContent && latestAudit.markdownContent !== markdownContent) {
-      // Create a patch format diff
       const markdownDiff = jsdiff.createPatch(markdownUrl, latestAudit.markdownContent, markdownContent);
+      log('info', `Found Markdown diff ${markdownDiff.length} characters long`);
+
       return {
         diff: markdownDiff,
         content: markdownContent,
       };
     }
+
+    log('info', 'No Markdown diff found');
 
     return {
       diff: null,
