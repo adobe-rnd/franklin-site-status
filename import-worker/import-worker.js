@@ -4,10 +4,10 @@ const {
   connectToDb,
   createIndexes,
   disconnectFromDb,
+  cleanupOldAudits,
   getDb,
   setWorkerRunningState,
 } = require('./db');
-const { cleanupOldAudits } = require('./db.js');
 
 const WORKER_NAME = 'importWorker';
 const WAIT_TIME_MS = 60 * 1000;

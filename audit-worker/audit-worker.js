@@ -16,7 +16,7 @@ const { fetchMarkdownDiff, fetchGithubDiff } = require('./util.js');
 
 const WORKER_NAME = 'auditWorker';
 
-const AUDIT_INTERVAL_IN_HOURS = process.env.AUDIT_INTERVAL_IN_HOURS || 24;
+const AUDIT_INTERVAL_IN_HOURS = process.env.AUDIT_INTERVAL_IN_HOURS ? parseFloat(process.env.AUDIT_INTERVAL_IN_HOURS) : 24;
 const AUDIT_INTERVAL_IN_MILLISECONDS = AUDIT_INTERVAL_IN_HOURS * 60 * 60 * 1000;
 const INITIAL_SLEEP_TIME = 1000 * 60;
 
@@ -70,6 +70,7 @@ async function isAuditRequired(site) {
   log('info', `Audit required for site ${site.domain}. Current audit interval: ${AUDIT_INTERVAL_IN_HOURS} hours.`);
   return true;
 }
+
 
 /**
  * Gets the domain to audit.

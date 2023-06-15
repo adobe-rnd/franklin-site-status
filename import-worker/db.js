@@ -114,6 +114,7 @@ async function updateSiteAudits(siteId, audits) {
 }
 
 module.exports = {
+  COLLECTION_SITES,
   cleanupOldAudits,
   connectToDb,
   createIndexes,
