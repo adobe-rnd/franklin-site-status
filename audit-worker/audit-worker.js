@@ -56,10 +56,12 @@ async function stop(workerName, signal) {
  * @returns {Promise<boolean>} - True if the site needs an audit.
  */
 async function isAuditRequired(site) {
-  const lastAudited = site.lastAudited ? new Date(site.lastAudited) : null;
   const now = new Date();
-  const timeSinceLastAudit = lastAudited ? now - lastAudited : AUDIT_INTERVAL_IN_MILLISECONDS;
+  const lastAudited = site.lastAudited ? new Date(site.lastAudited) : null;
 
+  log('info', `Last audit for ${site.domain}: ${lastAudited}`);
+
+  const timeSinceLastAudit = lastAudited ? now - lastAudited : AUDIT_INTERVAL_IN_MILLISECONDS;
   const timeRemaining = AUDIT_INTERVAL_IN_MILLISECONDS - timeSinceLastAudit;
 
   if (timeSinceLastAudit < AUDIT_INTERVAL_IN_MILLISECONDS) {
@@ -70,7 +72,6 @@ async function isAuditRequired(site) {
   log('info', `Audit required for site ${site.domain}. Current audit interval: ${AUDIT_INTERVAL_IN_HOURS} hours.`);
   return true;
 }
-
 
 /**
  * Gets the domain to audit.
@@ -140,7 +141,7 @@ async function auditWorker(workerName) {
     await setWorkerRunningState(workerName, true);
     await createIndexes();
 
-    log('info', 'Audit worker started');
+    log('info', `Audit worker started with interval ${AUDIT_INTERVAL_IN_HOURS} hours`);
 
     while (isRunning) {
       log('info', 'Starting audit cycle...');
