@@ -35,7 +35,7 @@ function formatTotalBlockingTime(totalBlockingTime = []) {
  */
 function formatThirdPartySummary(summary = []) {
   if (summary.length === 0) {
-    return "  _No third party impact detected_";
+    return "    _No third party impact detected_";
   }
 
   const headers = ["Third Party", "Main Thread", "Blocking", "Transfer"];
