@@ -141,7 +141,7 @@ async function auditWorker(workerName) {
     await setWorkerRunningState(workerName, true);
     await createIndexes();
 
-    log('info', `Audit worker started with interval ${AUDIT_INTERVAL_IN_HOURS} hours`);
+    log('info', `Audit worker started with interval ${AUDIT_INTERVAL_IN_HOURS}/${process.env.AUDIT_INTERVAL_IN_HOURS} hours`);
 
     while (isRunning) {
       log('info', 'Starting audit cycle...');
