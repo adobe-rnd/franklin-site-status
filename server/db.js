@@ -104,12 +104,12 @@ function sortSites(sites, sortConfig) {
  */
 function createSite(site) {
   const db = getDb();
-  return db.collection('sites').insertOne(site);
+  return db.collection(COLLECTION_SITES).insertOne(site);
 }
 
 function updateSite(siteId, updatedSite) {
   const db = getDb();
-  return db.collection('sites').updateOne(
+  return db.collection(COLLECTION_SITES).updateOne(
     { _id: siteId },
     {
       $set: updatedSite,
@@ -129,7 +129,7 @@ function updateSite(siteId, updatedSite) {
  */
 function getSiteByGitHubRepoId(repoId) {
   const db = getDb();
-  return db.collection('sites').findOne({ githubId: repoId });
+  return db.collection(COLLECTION_SITES).findOne({ githubId: repoId });
 }
 
 async function getSiteByDomain(domain) {
@@ -168,6 +168,7 @@ async function removeSiteByRepoId(repoId) {
 }
 
 module.exports = {
+  COLLECTION_SITES,
   connectToDb,
   disconnectFromDb,
   getSiteByGitHubRepoId,

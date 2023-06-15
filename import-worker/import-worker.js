@@ -1,5 +1,6 @@
 const axios = require('axios');
 const {
+  COLLECTION_SITES,
   connectToDb,
   createIndexes,
   disconnectFromDb,
@@ -189,7 +190,7 @@ async function importWorker(workerName) {
     await createIndexes();
 
     const db = getDb();
-    const sitesCollection = db.collection('sites');
+    const sitesCollection = db.collection(COLLECTION_SITES);
 
     await setWorkerRunningState(workerName, true);
 
