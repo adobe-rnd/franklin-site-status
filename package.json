@@ -5,16 +5,14 @@
   "scripts": {
     "build:docker:server": "docker build -f server/Dockerfile -t franklin-site-status-server:$npm_package_version .",
     "build:docker:audit-worker": "docker build -f audit-worker/Dockerfile -t franklin-site-status-audit-worker:$npm_package_version .",
-    "build:docker:import-worker": "docker build -f import-worker/Dockerfile -t franklin-site-status-import-worker:$npm_package_version .",
-    "build:docker": "npm run build:docker:server && npm run build:docker:audit-worker && npm run build:docker:import-worker",
+    "build:docker": "npm run build:docker:server && npm run build:docker:audit-worker",
     "release-deploy:prod": "npm version patch && npm run build:docker && ./scripts/release-deploy.sh production",
     "release-deploy:dev": "npm version patch && npm run build:docker && ./scripts/release-deploy.sh development",
     "docker-compose:up": "VERSION=$npm_package_version docker-compose up",
     "start:dev": "docker-compose -f docker-compose.dev.yaml up",
-    "start": "concurrently \"npm run start-server\" \"npm run start-worker\" \"npm run start-import-worker\"",
+    "start": "concurrently \"npm run start-server\" \"npm run start-worker\"",
     "start-server": "cd server && npm start",
     "start-worker": "cd audit-worker && npm start",
-    "start-import-worker": "cd import-worker && npm start",
     "docs:build": "npx @redocly/cli build-docs -o ./docs/index.html --config docs/openapi/redocly-config.yaml"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 # Franklin Site Status
 
-Franklin Site Status is a project to monitor the status of a set of websites. The system queries Github's APIs to get a list of websites, runs audits on these sites using Google's PageSpeed Insights API, and then stores the results in MongoDB.
+Franklin Site Status is a project to monitor the status of a set of websites. The system runs audits on a list of sites using Google's PageSpeed Insights API, and then stores the results in MongoDB.
 
 ## Dependencies
 
@@ -17,11 +17,10 @@ git clone https://github.com/adobe-rnd/franklin-site-status.git
 cd franklin-site-status
 ```
 
-2. Install dependencies for each module (server, import-worker, audit-worker).
+2. Install dependencies for each module (server, audit-worker).
 
 ```bash
 cd server && npm install
-cd ../import-worker && npm install
 cd ../audit-worker && npm install
 cd ..
 ```
@@ -41,7 +40,6 @@ Here is the list of environment variables in the `.env` file:
 - `PAGESPEED_API_KEY`: Your Google PageSpeed Insights API key.
 - `GITHUB_CLIENT_ID`: Your Github App client id.
 - `GITHUB_CLIENT_SECRET`: Your Github App client secret.
-- `GITHUB_ORG`: The name of the Github organization whose repositories should be audited.
 - `USER_API_KEY`: A secret key used for authorizing API requests.
 - `ADMIN_API_KEY`: A secret key used for authorizing admin operations.
 
@@ -76,11 +74,9 @@ curl -H "X-API-KEY: your-api-key" http://localhost:8000/api/status/example.com
 
 ## Workers
 
-There are two worker processes:
+There is one worker process:
 
-1. **Import Worker** (`import-worker`): This worker fetches a list of repositories from a Github organization, extracts the website URLs, and stores them in the database. The worker is scheduled to run daily. The import worker also purges audits older than the configured TTL.
-
-2. **Audit Worker** (`audit-worker`): This worker fetches one site at a time from the database, runs an audit using the PageSpeed Insights API, and stores the results in the database. The worker runs continuously, auditing each site once per day.
+1. **Audit Worker** (`audit-worker`): This worker fetches one site at a time from the database, runs an audit using the PageSpeed Insights API, and stores the results in the database. The worker runs continuously, auditing each site once per day.
 
 ## MongoDB Collections
 
@@ -103,7 +99,6 @@ Pre-requisites for deployment:
   PAGESPEED_API_KEY=
   GITHUB_CLIENT_ID=
   GITHUB_CLIENT_SECRET=
-  GITHUB_ORG=
   USER_API_KEY=
   ADMIN_API_KEY=
   SLACK_SIGNING_SECRET=
@@ -121,7 +116,7 @@ DOCKER_PASSWORD is the artifactory token.
 
 ## Deployment
 
-The command to release and deploy the server, importer and audit worker and is:
+The command to release and deploy the server and audit worker and is:
 
 `npm run release-deploy:dev` for dev deployment
 `npm run release-deploy:prod` for production deployment
@@ -196,38 +191,6 @@ Since MongoDB is a stateful application, data should persist across restarts. In
 - Regularly update MongoDB to the latest version to benefit from the latest security fixes and improvements.
 
 > Please note that these are general recommendations and may vary based on actual workload and performance analysis. It is recommended to take a more precise approach like performing load tests and observing the performance to decide the optimal resource allocation. Regular monitoring of the services is strongly recommended.
-
-## Import Worker
-
-The Import Worker is responsible for importing repositories from a GitHub organization and storing them in a MongoDB database.
-
-### Resource Recommendations
-
-#### CPU
-The import worker does not perform heavy computations, but it does make network requests. The CPU load will depend on the frequency and amount of data these requests return. The import worker could probably work well with a limit of 0.5 CPU.
-
-#### Memory
-The worker is fetching repository data from Github, which could lead to high memory consumption if the organization has a lot of repositories. A limit of 1GB should be enough in most cases. Please monitor and adjust accordingly.
-
-#### Disk
-The import worker itself does not need any dedicated disk space as it operates in-memory and directly writes to the MongoDB database. Hence, no additional disk space is needed for the worker.
-
-### Security Recommendations
-
-- **Environment Variables**: The worker uses environment variables for sensitive data such as GitHub Client ID and Secret. Ensure these are stored securely and are not exposed in any logs or error messages.
-
-- **GitHub API Rate Limiting**: Ensure that your application handles GitHub API rate limits gracefully. If a rate limit exceeded error occurs, you might need to implement a backoff and retry strategy. Additionally, consider using a GitHub App installation token to have a separate rate limit from user-to-server requests.
-
-- **Data Validation**: The worker trusts the response from the GitHub API. Consider validating the data before saving it into the MongoDB database to prevent possible issues.
-
-- **Bulk Operation Errors**: When executing the `bulkWrite` operation, ensure that you handle any possible errors that could arise. For example, MongoDB might reject an operation due to a duplicate key error, and this should be handled gracefully.
-
-- **Network Policies**: Consider restricting network access to the worker, allowing only necessary traffic. In Kubernetes, this can be achieved using Network Policies.
-
-### Worker Health Checks
-The worker has a `setWorkerRunningState` function which updates a `workerStates` collection in the MongoDB database. This can be used for monitoring the state of the worker. However, consider implementing proper health checks using Kubernetes Liveness and Readiness Probes for better reliability and observability.
-
-> **Note:** These are general recommendations. Actual resource usage can vary based on the data size and the number of repositories. Regular monitoring and adjusting resources based on usage is always a good practice.
 
 ## Node Express Server
 

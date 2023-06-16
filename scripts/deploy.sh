@@ -20,10 +20,10 @@ if ! kubectl get secret franklin-site-status-secrets --context "$KUBE_CONTEXT" -
   kubectl create secret -n "$KUBE_NAMESPACE" generic franklin-site-status-secrets \
     --from-literal=mongodb-uri="$MONGODB_URI" \
     --from-literal=audit-ttl-days="$AUDIT_TTL_DAYS" \
+    --from-literal=audit-interval-in-hours="$AUDIT_INTERVAL_IN_HOURS" \
     --from-literal=pagespeed-api-key="$PAGESPEED_API_KEY" \
     --from-literal=github-client-id="$GITHUB_CLIENT_ID" \
     --from-literal=github-client-secret="$GITHUB_CLIENT_SECRET" \
-    --from-literal=github-org="$GITHUB_ORG" \
     --from-literal=user-api-key="$USER_API_KEY" \
     --from-literal=admin-api-key="$ADMIN_API_KEY" \
     --from-literal=slack-signing-secret="$SLACK_SIGNING_SECRET" \
@@ -32,5 +32,4 @@ fi
 
 kubectl apply -f k8s -n "$KUBE_NAMESPACE"
 kubectl set image deployment/franklin-site-status-audit-worker audit-worker="$DOCKER_REGISTRY_URL"/franklin/site-status-audit-worker:"$VERSION" -n "$KUBE_NAMESPACE"
-kubectl set image cronjob/franklin-status-import-worker-cronjob import-worker="$DOCKER_REGISTRY_URL"/franklin/site-status-import-worker:"$VERSION" -n "$KUBE_NAMESPACE"
 kubectl set image deployment/franklin-site-status-server node-express-server="$DOCKER_REGISTRY_URL"/franklin/site-status-server:"$VERSION" -n "$KUBE_NAMESPACE"
