@@ -155,7 +155,11 @@ async function getSitesWithAudits() {
   let sites = await db.collection(COLLECTION_SITES).find().toArray();
 
   sites = sites.map(site => {
-    site.lastAudit = site.audits && site.audits.length > 0 ? site.audits[0] : null;
+
+    site.lastAudit = site && Array.isArray(site.audits) && site.audits.length > 0
+      ? site.audits.reduce((a1, a2) => a1.auditedAt > a2.auditedAt ? a1 : a2)
+      : null;
+
     return site;
   });
 
