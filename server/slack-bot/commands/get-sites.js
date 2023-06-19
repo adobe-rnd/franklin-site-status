@@ -30,7 +30,7 @@ function formatSites(sites = [], start, end) {
     let siteMessage = `${rank}. No audits found for ${domainText}`;
 
     if (site.audits.length !== 0) {
-      const lastAudit = site.audits[0];
+      const lastAudit = site.audits.reduce((a1, a2) => a1.auditedAt > a2.auditedAt ? a1 : a2);
       const icon = site.isLive ? ':rocket:' : ':submarine:';
 
       if (!lastAudit.isError) {
