@@ -9,6 +9,6 @@
   "dependencies": {
     "axios": "0.27.2",
     "diff": "5.1.0",
-    "mongodb": "3.6.6"
+    "mongodb": "5.8.1"
   }
 }
