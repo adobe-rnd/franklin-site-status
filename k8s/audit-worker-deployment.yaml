@@ -55,3 +55,23 @@ spec:
                 secretKeyRef:
                   name: franklin-site-status-secrets
                   key: pagespeed-api-key
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-secrets
+                  key: rabbitmq-username
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-secrets
+                  key: rabbitmq-password
+            - name: AUDIT_TASKS_QUEUE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: franklin-site-status-configs
+                  key: AUDIT_TASKS_QUEUE_NAME
+            - name: AUDIT_RESULTS_QUEUE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: franklin-site-status-configs
+                  key: AUDIT_RESULTS_QUEUE_NAME

@@ -42,6 +42,12 @@ Here is the list of environment variables in the `.env` file:
 - `GITHUB_CLIENT_SECRET`: Your Github App client secret.
 - `USER_API_KEY`: A secret key used for authorizing API requests.
 - `ADMIN_API_KEY`: A secret key used for authorizing admin operations.
+- `RABBITMQ_USERNAME`: Username needed for message broker
+- `RABBITMQ_PASSWORD`: Password needed for message broker
+- `RABBITMQ_SERVICE_SERVICE_HOST`: Hostname of broker
+- `RABBITMQ_SERVICE_SERVICE_PORT`: Port of broker - set to 5672
+- `AUDIT_TASKS_QUEUE_NAME`: Queue name to process audit tasks
+- `AUDIT_RESULTS_QUEUE_NAME`: Queue name for the audit results
 
 4. Build Docker images.
 

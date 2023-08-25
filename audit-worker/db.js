@@ -6,7 +6,7 @@ if (!MONGODB_URI) throw new Error('Please set the MONGODB_URI environment variab
 
 const DATABASE_NAME = 'franklin-status';
 const COLLECTION_SITES = 'sites';
-const COLLECTION_WORKERSTATES = 'workerStates';
+const COLLECTION_AUDITS = 'audits';
 
 let client;
 let db;
@@ -109,8 +109,8 @@ async function createIndexes() {
     });
     await db.collection(COLLECTION_SITES).createIndex({ githubId: 1 }, { unique: true });
     await db.collection(COLLECTION_SITES).createIndex({ lastAudited: 1 });
-    await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': -1 });
-    await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': 1 });
+    await db.collection(COLLECTION_AUDITS).createIndex({ auditedAt: -1 });
+    await db.collection(COLLECTION_AUDITS).createIndex({ auditedAt: 1 });
     log('info', 'Indexes created successfully');
   } catch (error) {
     log('error', 'Error creating indexes: ', error);
@@ -118,42 +118,17 @@ async function createIndexes() {
 }
 
 /**
- * Get the next site to be audited. The site selected will be the one
- * that has not been audited yet or the one that was last audited.
- * If all sites have been audited within the last 24 hours, it will return
- * the site that was audited the longest time ago.
- * @returns {Object} The site to be audited.
- */
-async function getNextSiteToAudit() {
-  const db = getDb();
-  const sites = await db.collection(COLLECTION_SITES)
-    .find()
-    .sort({ lastAudited: 1 })
-    .limit(1)
-    .toArray();
-
-  const site = sites.length > 0 ? sites[0] : null;
-
-  if (site) {
-    log('info', `Next site to audit: ${site.domain}`);
-  } else {
-    log('info', 'No sites to audit');
-  }
-
-  return site;
-}
-
-/**
  * Save a regular Lighthouse audit result to the MongoDB database.
- * @param {object} site - The site to be audited.
+ * @param {object} siteId - ID of the site audited.
  * @param {object} audit - The Lighthouse audit result.
  * @param {object} markdownContext - The markdown content and diff of content changes since last audit.
  * @param {string} githubDiff - Diff of code changes since last audit in patch format.
  */
-async function saveAudit(site, audit, markdownContext, githubDiff) {
+async function saveAudit(siteId, audit, markdownContext, githubDiff) {
   const { diff: markdownDiff, content: markdownContent } = markdownContext;
   const now = new Date();
   const newAudit = {
+    siteId,
     auditedAt: now,
     isError: false,
     isLive: site.isLive,
@@ -162,7 +137,7 @@ async function saveAudit(site, audit, markdownContext, githubDiff) {
     githubDiff,
     auditResult: processLighthouseResult(audit.lighthouseResult),
   };
-  await saveAuditRecord(site.domain, newAudit);
+  await saveAuditRecord(newAudit);
 }
 
 /**
@@ -183,50 +158,27 @@ async function saveAuditError(domain, error) {
 
 /**
  * Save an audit record to the MongoDB database.
- * @param {string} domain - The domain of the site.
  * @param {object} newAudit - The new audit record to save.
  */
-async function saveAuditRecord(domain, newAudit) {
+async function saveAuditRecord(newAudit) {
   const db = getDb();
-  const now = new Date();
 
   try {
-    const result = await db.collection(COLLECTION_SITES).updateOne(
-      { domain: domain },
-      {
-        $push: { audits: newAudit },
-        $set: { lastAudited: now },
-      }
-    );
-
-    if (result.matchedCount === 0) {
-      log('warn', `No site found with domain ${domain}. Audit was not saved.`);
-    } else if (result.modifiedCount === 0) {
-      log('warn', `Site found with domain ${domain}, but it was not updated.`);
-    } else {
-      log('info', `Audit for domain ${domain} saved successfully at ${now}`);
-    }
+    await db.collection(COLLECTION_AUDITS).insertOne(newAudit);
+    log('info', `Audit for domain ${domain} saved successfully at ${now}`);
   } catch (error) {
     log('error', 'Error saving audit: ', error);
   }
 }
 
-/**
- * Set the state of the audit worker in the MongoDB database.
- * @param {string} workerName - The name of the audit worker.
- * @param {boolean} isRunning - The running state of the audit worker.
- */
-async function setWorkerRunningState(workerName, isRunning) {
-  const db = getDb();
+async function getLatestAuditBySiteId(siteId) {
   try {
-    await db.collection(COLLECTION_WORKERSTATES).updateOne(
-      { name: workerName },
-      { $set: { isRunning: isRunning, lastUpdated: new Date() } },
-      { upsert: true }
-    );
-    log('info', 'Worker running state updated successfully');
+    const query = { siteId: siteId };
+    const sort = { auditedAt: -1 };
+
+    return db.collection('audits').findOne(query, { sort });
   } catch (error) {
-    log('error', 'Error updating worker running state: ', error);
+    console.error('Error getting latest audit by site id:', error.message);
   }
 }
 
@@ -234,8 +186,7 @@ module.exports = {
   connectToDb,
   disconnectFromDb,
   createIndexes,
+  getLatestAuditBySiteId,
   saveAudit,
   saveAuditError,
-  getNextSiteToAudit,
-  setWorkerRunningState,
 };

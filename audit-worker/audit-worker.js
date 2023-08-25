@@ -1,77 +1,18 @@
+const amqp = require('amqplib');
+
 const {
   connectToDb,
   disconnectFromDb,
   createIndexes,
-  getNextSiteToAudit,
+  getLatestAuditBySiteId,
   saveAudit,
   saveAuditError,
-  setWorkerRunningState,
 } = require('./db');
 const {
   performPSICheck,
-  sleep,
   log,
 } = require('./util');
 const { fetchMarkdownDiff, fetchGithubDiff } = require('./util.js');
-
-const WORKER_NAME = 'auditWorker';
-
-const AUDIT_INTERVAL_IN_HOURS = process.env.AUDIT_INTERVAL_IN_HOURS ? parseFloat(process.env.AUDIT_INTERVAL_IN_HOURS) : 24;
-const AUDIT_INTERVAL_IN_MILLISECONDS = AUDIT_INTERVAL_IN_HOURS * 60 * 60 * 1000;
-const INITIAL_SLEEP_TIME = 1000 * 60;
-
-let isRunning = true;
-
-/**
- * Update the worker state and disconnect from the database.
- *
- * @param {string} workerName - The name of the worker.
- * @param {boolean} runningState - The new running state of the worker.
- */
-async function updateWorkerStateAndDisconnect(workerName, runningState) {
-  try {
-    await setWorkerRunningState(workerName, runningState);
-    await disconnectFromDb();
-  } catch (err) {
-    log('error', 'Error updating worker running state:', err);
-  }
-}
-
-/**
- * Handles stop signals for the worker.
- *
- * @param {string} workerName - The name of the worker.
- * @param {string} signal - The received signal.
- */
-async function stop(workerName, signal) {
-  log('info', `Received ${signal}. Flushing data before exit...`);
-  isRunning = false;
-  await updateWorkerStateAndDisconnect(workerName, false);
-}
-
-/**
- * Determines if a site needs to be audited.
- *
- * @param {object} site - The site to audit.
- * @returns {Promise<boolean>} - True if the site needs an audit.
- */
-async function isAuditRequired(site) {
-  const now = new Date();
-  const lastAudited = site.lastAudited ? new Date(site.lastAudited) : null;
-
-  log('info', `Last audit for ${site.domain}: ${lastAudited}`);
-
-  const timeSinceLastAudit = lastAudited ? now - lastAudited : AUDIT_INTERVAL_IN_MILLISECONDS;
-  const timeRemaining = AUDIT_INTERVAL_IN_MILLISECONDS - timeSinceLastAudit;
-
-  if (timeSinceLastAudit < AUDIT_INTERVAL_IN_MILLISECONDS) {
-    log('info', `Last site audit for ${site.domain} was less than ${AUDIT_INTERVAL_IN_HOURS} hours ago. Skipping. Next audit in ${(timeRemaining / (1000 * 60 * 60)).toFixed(2)} hours.`);
-    return false;
-  }
-
-  log('info', `Audit required for site ${site.domain}. Current audit interval: ${AUDIT_INTERVAL_IN_HOURS} hours.`);
-  return true;
-}
 
 /**
  * Gets the domain to audit.
@@ -102,9 +43,10 @@ async function auditSite(site) {
   const startTime = Date.now();
 
   try {
+    const latestAudit = await getLatestAuditBySiteId(site._id);
     const audit = await performPSICheck(domain);
-    const markdownDiff = await fetchMarkdownDiff(site, audit);
-    const githubDiff = await fetchGithubDiff(site, audit, githubId, githubSecret);
+    const markdownDiff = await fetchMarkdownDiff(latestAudit, audit);
+    const githubDiff = await fetchGithubDiff(audit, latestAudit.auditedAt, site.gitHubURL, githubId, githubSecret);
 
     await saveAudit(site, audit, markdownDiff, githubDiff);
 
@@ -123,58 +65,69 @@ async function auditSite(site) {
   }
 }
 
-/**
- * The main worker function that continuously audits sites. It connects to the database,
- * sets the worker running state, and creates indexes. Then, it enters an infinite loop where it
- * attempts to audit sites. If a site is not available for audit or does not need an audit,
- * it sleeps for a specified duration before the next cycle. If a site is rate-limited,
- * the function employs an exponential back-off strategy.
- *
- * @param {string} workerName - The name of the worker.
- * @returns {Promise<void>} This function does not return a value.
- */
-async function auditWorker(workerName) {
-  let sleepTime = INITIAL_SLEEP_TIME;
+let connection;
 
+async function consumeMessages() {
   try {
-    await connectToDb();
-    await setWorkerRunningState(workerName, true);
-    await createIndexes();
+    const username = process.env.RABBITMQ_USERNAME;
+    const password = process.env.RABBITMQ_PASSWORD;
+    const host = process.env.RABBITMQ_SERVICE_SERVICE_HOST;
+    const port = process.env.RABBITMQ_SERVICE_SERVICE_PORT;
+    const queue = process.env.AUDIT_TASKS_QUEUE_NAME;
 
-    log('info', `Audit worker started with interval ${AUDIT_INTERVAL_IN_HOURS} hours`);
+    const connectionURL = `amqp://${username}:${password}@${host}:${port}`;
+    connection = await amqp.connect(connectionURL);
 
-    while (isRunning) {
-      log('info', 'Starting audit cycle...');
+    const channel = await connection.createChannel();
+    await channel.assertQueue(queue, { durable: true });
+    console.log('Waiting for messages. To exit press CTRL+C');
 
-      const site = await getNextSiteToAudit();
+    channel.consume(queue, async (message) => {
+      if (message !== null) {
+        const content = message.content.toString();
+        console.debug(`Received message: ${content}`);
 
-      if (!site) {
-        log('info', `No sites to audit, sleeping for ${sleepTime / 1000} seconds`);
-      } else if (await isAuditRequired(site)) {
-        try {
-          await auditSite(site);
-          sleepTime = INITIAL_SLEEP_TIME; // Reset sleep time if audit is successful
-        } catch (err) {
-          log('error', `Error in main audit for domain ${site.domain}:`, err);
-          if (err.message === 'Rate limit exceeded') {
-            sleepTime *= 2; // Exponential back-off
-          }
-        }
+        const site = JSON.parse(content);
+
+        // perform audit
+        await auditSite(site);
+
+        // acknowledge the message to remove it from the queue
+        // manual ack for all now, we can play with auto ack/nack + redelivery settings later on
+        channel.ack(message);
       }
+    });
 
-      log('info', `Audit cycle completed, sleeping for ${sleepTime / 1000} seconds`);
-      await sleep(sleepTime);
-    }
   } catch (error) {
-    log('error', error);
-    isRunning = false;
-  } finally {
-    await updateWorkerStateAndDisconnect(workerName, false);
+    console.error('Error:', error.message);
   }
 }
 
-process.on('SIGINT', () => stop(WORKER_NAME, 'SIGINT'));
+process.on('SIGINT', async () => {
+  console.log('Received SIGINT. Closing worker...');
+  await cleanup();
+});
 
-process.on('SIGTERM', () => stop(WORKER_NAME, 'SIGTERM'));
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM. Closing worker...');
+  await cleanup();
+});
 
-auditWorker(WORKER_NAME);
+async function cleanup() {
+  await disconnectFromDb();
+
+  if (connection) {
+    await connection.close();
+  }
+  console.log('Worker closed');
+  process.exit();
+}
+
+(async () => {
+  // connect to db
+  await connectToDb();
+  await createIndexes();
+
+  // start consuming messages
+  await consumeMessages();
+})();

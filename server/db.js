@@ -149,6 +149,20 @@ async function getSiteByDomain(domain) {
   return site;
 }
 
+async function getSitesToAudit() {
+  const db = getDb();
+
+  const projection = {
+    _id: 1,
+    isLive: 1,
+    prodURL: 1,
+    domain: 1,
+    gitHubURL: 1,
+  };
+
+  return db.collection(COLLECTION_SITES).find({}, { projection }).toArray();
+}
+
 async function getSitesWithAudits() {
   const db = getDb();
 
@@ -177,6 +191,7 @@ module.exports = {
   disconnectFromDb,
   getSiteByGitHubRepoId,
   getSiteByDomain,
+  getSitesToAudit,
   getSitesWithAudits,
   createSite,
   updateSite,

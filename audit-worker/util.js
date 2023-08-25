@@ -9,14 +9,6 @@ const PAGESPEED_API_BASE_URL = 'https://www.googleapis.com/pagespeedonline/v5/ru
 const AUDIT_TTL_DEFAULT_DAYS = 30;
 
 /**
- * Sleeps for the specified amount of milliseconds.
- *
- * @param {number} ms - The number of milliseconds to sleep.
- * @returns {Promise} A promise that resolves after the specified number of milliseconds.
- */
-const sleep = async (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-/**
  * Formats an input URL to be HTTPS.
  *
  * @param {string} input - The input URL.
@@ -113,8 +105,7 @@ const performPSICheck = async (domain) => {
  *
  * @async
  * @function
- * @param {Object} site - The site that was audited.
- * @param {Object[]} site.audits - An array of previous audits. The last element, if present, contains the latest audit's Markdown content.
+ * @param {Object} latestAudit - The latest audit, if present, contains the latest audit's Markdown content.
  * @param {Object} audit - The current audit object containing lighthouse result.
  * @param {Object} audit.lighthouseResult - The lighthouse result object.
  * @param {string} audit.lighthouseResult.finalUrl - The final URL where the Markdown content is located.
@@ -125,7 +116,7 @@ const performPSICheck = async (domain) => {
  *   }
  * @throws Will throw an error if there's a network issue or some other error while downloading the Markdown content.
  */
-async function fetchMarkdownDiff(site, audit) {
+async function fetchMarkdownDiff(latestAudit, audit) {
   const url = audit.lighthouseResult?.finalUrl;
 
   if (!url) {
@@ -139,7 +130,6 @@ async function fetchMarkdownDiff(site, audit) {
   try {
     const response = await axios.get(markdownUrl);
     const markdownContent = response.data;
-    const latestAudit = site.audits && site.audits[site.audits.length - 1];
 
     log('info', `Downloaded Markdown content from ${markdownUrl}`);
 
@@ -206,17 +196,15 @@ function createGithubAuthHeaderValue(githubId, githubSecret) {
   }
   return `Basic ${Buffer.from(`${githubId}:${githubSecret}`).toString('base64')}`;
 }
-
 /**
  * Fetches and compiles the diffs of all changes made in a GitHub repository between two date-times using the GitHub API.
  *
  * @async
  * @function
- * @param {Object} site - An object containing information about the site and GitHub repository.
- * @param {string} site.gitHubURL - The URL of the GitHub repository from which the diffs will be fetched (e.g. 'https://github.com/user/repo').
- * @param {string} [site.lastAudited] - The start date-time in ISO format (e.g. 'YYYY-MM-DDTHH:mm:ss.sssZ'). If not provided, it defaults to 24 hours before the end date-time.
  * @param {Object} audit - An object containing information about the audit.
  * @param {string} audit.lighthouseResult.fetchTime - The end date-time in ISO format at which the audit was fetched (e.g. 'YYYY-MM-DDTHH:mm:ss.sssZ').
+ * @param {string} lastAuditedAt - The start date-time in ISO format (e.g. 'YYYY-MM-DDTHH:mm:ss.sssZ'). If not provided, it defaults to 24 hours before the end date-time.
+ * @param {string} gitHubURL - The URL of the GitHub repository from which the diffs will be fetched (e.g. 'https://github.com/user/repo').
  * @param {string} githubId - The GitHub client ID for authentication.
  * @param {string} githubSecret - The GitHub client secret for authentication.
  * @returns {Promise<string>} A promise that resolves to a string containing the compiled diffs in patch format between the given date-times. If there's an error fetching the data, the promise resolves to an empty string.
@@ -229,11 +217,13 @@ function createGithubAuthHeaderValue(githubId, githubSecret) {
  *   'yourGithubSecret'
  * ).then(diffs => console.log(diffs));
  */
-async function fetchGithubDiff(site, audit, githubId, githubSecret) {
+
+async function fetchGithubDiff(audit, lastAuditedAt, gitHubURL, githubId, githubSecret) {
+
   try {
     const until = new Date(audit.lighthouseResult.fetchTime);
-    const since = site.lastAudited ? new Date(site.lastAudited) : new Date(until - SECONDS_IN_A_DAY * 1000); // 24 hours before until
-    const repoPath = new URL(site.gitHubURL).pathname.slice(1); // Removes leading '/'
+    const since = lastAuditedAt ? new Date(lastAuditedAt) : new Date(until - SECONDS_IN_A_DAY * 1000); // 24 hours before until
+    const repoPath = new URL(gitHubURL).pathname.slice(1); // Removes leading '/'
 
     log('info', `Fetching diffs for ${repoPath} between ${since.toISOString()} and ${until.toISOString()}`);
 
