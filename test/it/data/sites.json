@@ -1,0 +1,29 @@
+[
+  {
+    "_id": "64803cdb1d555b864b661cbc",
+    "githubId": 504268208,
+    "isLive": 1,
+    "prodURL": "blog.adobe.com",
+    "domain": "blog.adobe.com",
+    "gitHubURL": "https://github.com/hlxsites/theplayers",
+    "githubOrg": "blah"
+  },
+  {
+    "_id": "64803cdb1d555b864b661cbd",
+    "githubId": 504268208,
+    "isLive": 1,
+    "prodURL": "bamboohr.com",
+    "domain": "bamboohr.com",
+    "gitHubURL": "https://github.com/hlxsites/theplayers",
+    "githubOrg": "blah"
+  },
+  {
+    "_id": "64803cdb1d555b864b661cbe",
+    "githubId": 504268208,
+    "isLive": 1,
+    "prodURL": "aerotop-sg.com",
+    "domain": "aerotop-sg.com",
+    "gitHubURL": "https://github.com/hlxsites/theplayers",
+    "githubOrg": "blah"
+  }
+]
