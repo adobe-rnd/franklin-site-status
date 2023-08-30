@@ -46,6 +46,10 @@ function PSIClient(config) {
    * @returns {object} The processed audit data.
    */
   const processAuditData = (data) => {
+    if (!data) {
+      return null;
+    }
+
     const newData = { ...data };
 
     for (let key in newData) {
@@ -54,7 +58,7 @@ function PSIClient(config) {
       }
 
       if (key.includes('.')) {
-        const newKey = key.replace('.', '_');
+        const newKey = key.replace(/\./g, '_');
         newData[newKey] = newData[key];
         delete newData[key];
       }
@@ -78,7 +82,10 @@ function PSIClient(config) {
   };
 
   return {
+    formatURL,
+    getPSIApiUrl,
     performPSICheck,
+    processAuditData,
   }
 }
 
