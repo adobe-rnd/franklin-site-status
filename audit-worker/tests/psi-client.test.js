@@ -1,7 +1,7 @@
 const assert = require('assert');
 const sinon = require('sinon');
 const axios = require('axios');
-const PSIClient = require('../psi-client.js'); // Adjust this path
+const PSIClient = require('../psi-client.js');
 
 describe('PSIClient', function () {
   let client;

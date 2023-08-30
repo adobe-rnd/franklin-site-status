@@ -48,14 +48,19 @@ function Queue(config) {
         const content = message.content.toString();
         console.debug(`Received message: ${content}`);
 
-        const json = JSON.parse(content);
+        try {
+          const json = JSON.parse(content);
+          await handler(json);
 
-        await handler(json);
-
-        // acknowledge the message to remove it from the queue
-        // manual ack for all now, we can play with auto ack/nack + redelivery settings later on
-        channel.ack(message);
+          // acknowledge the message to remove it from the queue
+          // manual ack for all now, we can play with auto ack/nack + redelivery settings later on
+          channel.ack(message);
+        } catch (error) {
+          console.error('Error processing message:', error.message);
+          channel.nack(message, false, false);  // The last argument being `false` tells RabbitMQ not to requeue
+        }
       });
+
     } catch (error) {
       console.error('Error:', error.message);
     }
