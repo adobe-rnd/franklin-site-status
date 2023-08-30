@@ -154,10 +154,6 @@ async function getSitesToAudit() {
 
   const projection = {
     _id: 1,
-    isLive: 1,
-    prodURL: 1,
-    domain: 1,
-    gitHubURL: 1,
   };
 
   return db.collection(COLLECTION_SITES).find({}, { projection }).toArray();

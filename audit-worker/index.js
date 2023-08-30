@@ -55,15 +55,13 @@ const worker = AuditWorker(auditWorkerConfig, { db, queue, psiClient, githubClie
 
 (async () => {
   // set up exit hooks
-  process.on('SIGINT', async () => {
-    console.log('Received SIGINT. Closing worker...');
+  const exitHandler = async (signal) => {
+    console.log(`Received ${signal}. Closing worker...`);
     await worker.stop();
-  });
+  };
 
-  process.on('SIGTERM', async () => {
-    console.log('Received SIGTERM. Closing worker...');
-    await worker.stop()
-  });
+  process.on('SIGINT', exitHandler.bind(null, 'SIGINT'));
+  process.on('SIGTERM', exitHandler.bind(null, 'SIGTERM'));
 
   // start the worker
   await worker.start();

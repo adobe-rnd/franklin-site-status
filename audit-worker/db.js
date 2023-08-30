@@ -142,6 +142,7 @@ function DB(config) {
    * @param {object} newAudit - The new audit record to save.
    */
   async function saveAuditRecord(newAudit) {
+    const now = new Date();
     try {
       await db.collection(COLLECTION_AUDITS).insertOne(newAudit);
       log('info', `Audit for domain ${newAudit.domain} saved successfully at ${now}`);
@@ -150,23 +151,44 @@ function DB(config) {
     }
   }
 
-  async function getLatestAuditBySiteId(siteId) {
+  async function findSiteById(siteId) {
     try {
-      const query = { siteId: siteId };
-      const sort = { auditedAt: -1 };
+      const query = [
+        { $match: { _id: ObjectId(siteId) } },
+        {
+          $lookup: {
+            from: 'audits',
+            localField: '_id',
+            foreignField: 'siteId',
+            as: 'audits',
+          },
+        },
+        { $unwind: '$audits' },
+        { $sort: { 'audits.auditedAt': -1 } },
+        {
+          $group: {
+            _id: '$_id',
+            domain: { $first: '$domain' },
+            gitHubURL: { $first: '$gitHubURL' },
+            latestAudit: { $first: '$audits' },
+          },
+        },
+      ];
 
-      return db.collection('audits').findOne(query, { sort });
+      const result = await db.collection('sites').aggregate(query).toArray();
+
+      return result[0]; // error intended in case result is empty
     } catch (error) {
-      console.error('Error getting latest audit by site id:', error.message);
+      console.error('Error getting site by site id:', error.message);
     }
   }
 
   return {
     connect,
     close,
+    findSiteById,
     saveAudit,
     saveAuditError,
-    getLatestAuditBySiteId,
   };
 }
 
