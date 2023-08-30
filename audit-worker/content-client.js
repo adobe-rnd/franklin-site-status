@@ -1,5 +1,11 @@
+const axios = require('axios');
 const jsdiff = require('diff');
 
+const NOT_FOUND_STATUS = 404;
+
+/**
+ * Represents a utility for calculating content differences from Markdown files fetched via HTTP.
+ */
 function ContentClient() {
   /**
    * Asynchronously fetches the Markdown content from a specified audit URL and
@@ -20,6 +26,9 @@ function ContentClient() {
    * @throws Will throw an error if there's a network issue or some other error while downloading the Markdown content.
    */
   async function fetchMarkdownDiff(latestAudit, audit) {
+    let markdownDiff = null;
+    let markdownContent = null;
+
     const url = audit.lighthouseResult?.finalUrl;
 
     if (!url) {
@@ -32,35 +41,28 @@ function ContentClient() {
 
     try {
       const response = await axios.get(markdownUrl);
-      const markdownContent = response.data;
+      markdownContent = response.data;
 
       log('info', `Downloaded Markdown content from ${markdownUrl}`);
 
       // Only calculate the diff if content has changed and markdownContent exists
       if (latestAudit && latestAudit.markdownContent && latestAudit.markdownContent !== markdownContent) {
-        const markdownDiff = jsdiff.createPatch(markdownUrl, latestAudit.markdownContent, markdownContent);
+        markdownDiff = jsdiff.createPatch(markdownUrl, latestAudit.markdownContent, markdownContent);
         log('info', `Found Markdown diff ${markdownDiff.length} characters long`);
-
-        return {
-          diff: markdownDiff,
-          content: markdownContent,
-        };
+      } else {
+        log('info', 'No Markdown diff found');
       }
-
-      log('info', 'No Markdown diff found');
-
-      return {
-        diff: null,
-        content: markdownContent,
-      };
     } catch (err) {
-      if (err.response && err.response.status === 404) {
+      if (err.response && err.response.status === NOT_FOUND_STATUS) {
         log('info', 'Markdown content not found');
-        return null;
+      } else {
+        log('error', 'Error while downloading Markdown content:', err);
       }
+    }
 
-      log('error', 'Error while downloading Markdown content:', err);
-      return null;
+    return {
+      markdownDiff,
+      markdownContent,
     }
   }
 
