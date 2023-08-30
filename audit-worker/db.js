@@ -81,16 +81,19 @@ function DB(config) {
    */
   async function createIndexes() {
     try {
-      await db.collection(COLLECTION_SITES).createIndex({ domain: 1 }, { unique: true });
-      await db.collection(COLLECTION_SITES).createIndex({ prodURL: 1 }, { unique: true, sparse: true });
-      await db.collection(COLLECTION_SITES).createIndex({
-        domain: 1,
-        prodURL: 1
-      });
-      await db.collection(COLLECTION_SITES).createIndex({ githubId: 1 }, { unique: true });
-      await db.collection(COLLECTION_SITES).createIndex({ lastAudited: 1 });
-      await db.collection(COLLECTION_AUDITS).createIndex({ auditedAt: -1 });
-      await db.collection(COLLECTION_AUDITS).createIndex({ auditedAt: 1 });
+      let sitesCollection = db.collection(COLLECTION_SITES);
+      let auditsCollection = db.collection(COLLECTION_AUDITS);
+
+      // for 'sites' collection
+      await sitesCollection.createIndex({ domain: 1 }, { unique: true });
+      await sitesCollection.createIndex({ prodURL: 1 }, { unique: true, sparse: true });
+      await sitesCollection.createIndex({ domain: 1, prodURL: 1 });
+      await sitesCollection.createIndex({ githubId: 1 }, { unique: true });
+      await sitesCollection.createIndex({ lastAudited: 1 });
+
+      // for 'audits' collection
+      await auditsCollection.createIndex({ auditedAt: -1 });
+      await auditsCollection.createIndex({ auditedAt: 1 });
       log('info', 'Indexes created successfully');
     } catch (error) {
       log('error', 'Error creating indexes: ', error);
