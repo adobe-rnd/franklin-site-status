@@ -14,7 +14,8 @@
     "start-server": "cd server && npm start",
     "start-worker": "cd audit-worker && npm start",
     "docs:build": "npx @redocly/cli build-docs -o ./docs/index.html --config docs/openapi/redocly-config.yaml",
-    "test": "nyc mocha audit-worker/tests/**/*.js test/**/*.js"
+    "test": "nyc mocha */tests/**/*.js",
+    "test:it": "mocha test/**/*.js"
   },
   "devDependencies": {
     "@redocly/cli": "1.0.0-beta.128",

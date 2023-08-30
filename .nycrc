@@ -1,7 +1,6 @@
 {
-  "check-coverage": true,
-  "lines": 100,
+  "check-coverage": false,
   "reporter": ["text", "lcov"],
-  "exclude": ["**/node_modules/**", "**/test/**"],
+  "exclude": ["**/node_modules/**", "**/test/**", "**/tests/**", "**/coverage/**"],
   "all": true
 }

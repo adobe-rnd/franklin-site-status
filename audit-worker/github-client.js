@@ -1,3 +1,9 @@
+const axios = require('axios');
+const { log } = require('./util.js');
+
+const MAX_DIFF_SIZE = 102400; // Maximum size of diff in bytes
+const SECONDS_IN_A_DAY = 86400; // Number of seconds in a day
+
 function GithubClient(config) {
   const { baseUrl, githubId, githubSecret } = config;
 
@@ -11,15 +17,10 @@ function GithubClient(config) {
    * @returns {string} The created GitHub API URL.
    */
   function createGithubApiUrl(githubOrg, repoName = '', path = '', page = 1) {
-    let baseUrl = `${baseUrl}/repos/${githubOrg}/${repoName}`;
+    const repoPart = repoName ? `/${repoName}` : '';
+    const pathPart = path ? `/${path}` : '';
 
-    if (path) {
-      baseUrl += `/${path}`;
-    }
-
-    baseUrl += `?page=${page}&per_page=100`;
-
-    return baseUrl;
+    return `${baseUrl}/repos/${githubOrg}${repoPart}${pathPart}?page=${page}&per_page=100`;
   }
 
   /**
@@ -115,6 +116,8 @@ function GithubClient(config) {
   }
 
   return {
+    createGithubApiUrl,
+    createGithubAuthHeaderValue,
     fetchGithubDiff,
   }
 }
