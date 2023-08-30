@@ -6,7 +6,8 @@ const { createAuditWorker, publishMessages } = require('./init');
 
 const sandbox = sinon.createSandbox();
 
-describe('Integration Test', () => {
+describe('Integration Test', function () {
+  this.timeout(60000);
   let mongoContainer;
   let rabbitContainer;
   let mongoClient;
@@ -46,9 +47,10 @@ describe('Integration Test', () => {
 
   after(async () => {
     // Clean up
+    await mongoClient.close();
+    await auditWorker.stop();
     await mongoContainer.stop();
     await rabbitContainer.stop();
-    await network.stop();
   });
 
   it('should process data and validate audits collection', async () => {
