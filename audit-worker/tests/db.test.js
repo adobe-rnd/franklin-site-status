@@ -53,6 +53,8 @@ describe('DB Module', () => {
       assert.equal(logStub.callCount, 2, "Expected the log function to be called twice");
       assert(firstMessage.includes('Database connection established.'), `Unexpected first log message: ${firstMessage}`);
       assert(secondMessage.includes('Indexes created successfully'), `Unexpected second log message: ${secondMessage}`);
+
+      logStub.restore();
     });
 
     it('should log an error on connection failure', async () => {
@@ -66,6 +68,8 @@ describe('DB Module', () => {
       } catch (e) {
         assert(logStub.calledWithMatch('Error connecting to database: ', e));
       }
+
+      logStub.restore();
     });
   });
 
@@ -77,27 +81,36 @@ describe('DB Module', () => {
     });
 
     it('should log an error if closing the database connection fails', async () => {
+      const logStub = sinon.stub(console, 'error');
+
       mockClient.close.rejects(new Error('Close Connection Error'));
 
       await dbInstance.connect(); // Ensure the connection is opened first
       await dbInstance.close();
 
-      assert(console.error.calledWithMatch('Error closing MongoDB connection:', sinon.match.instanceOf(Error)));
+      assert(logStub.calledWithMatch('Error closing MongoDB connection:', sinon.match.instanceOf(Error)));
+
+      logStub.restore();
     });
   });
 
   describe('createIndexes()', () => {
     it('should log an error if index creation fails', async () => {
+      const logStub = sinon.stub(console, 'error');
+
       mockCollection.createIndex.rejects(new Error('Indexing Error'));
 
       await dbInstance.connect();
 
-      assert(console.error.calledWithMatch('Error creating indexes: ', sinon.match.instanceOf(Error)));
+      assert(logStub.calledWithMatch('Error creating indexes: ', sinon.match.instanceOf(Error)));
+
+      logStub.restore();
     });
   });
 
   describe('saveAudit()', () => {
     it('should save the provided audit', async () => {
+      const logStub = sinon.stub(console, 'info');
       const mockSite = { _id: new ObjectId().toString(), domain: 'test.com', isLive: true };
       const mockAudit = { lighthouseResult: {} };
       const mockMarkdownContext = { diff: 'diff', content: 'content' };
@@ -107,10 +120,14 @@ describe('DB Module', () => {
 
       await dbInstance.saveAudit(mockSite, mockAudit, mockMarkdownContext, mockGithubDiff);
 
-      assert(console.info.calledWithMatch(`Audit for domain ${mockSite.domain} saved successfully at ${new Date()}`));
+      assert(logStub.calledWithMatch(`Audit for domain ${mockSite.domain} saved successfully at ${new Date()}`));
+
+      logStub.restore();
     });
 
     it('should log an error if saving audit fails', async () => {
+      const logStub = sinon.stub(console, 'error');
+
       mockCollection.insertOne.rejects(new Error('Insertion Error'));
 
       const mockSite = { _id: new ObjectId().toString(), domain: 'test.com', isLive: true };
@@ -122,9 +139,11 @@ describe('DB Module', () => {
 
       await dbInstance.saveAudit(mockSite, mockAudit, mockMarkdownContext, mockGithubDiff);
 
-      assert(console.error.calledWithMatch('Error saving audit: ', sinon.match((value) => {
+      assert(logStub.calledWithMatch('Error saving audit: ', sinon.match((value) => {
         return value instanceof Error && value.message === 'Insertion Error';
       })));
+
+      logStub.restore();
     });
   });
 
@@ -175,12 +194,16 @@ describe('DB Module', () => {
     });
 
     it('should log an error if fetching the site fails', async () => {
+      const logStub = sinon.stub(console, 'error');
+
       mockCollection.aggregate.throws(new Error('Aggregation Error'));
 
       await dbInstance.connect();
       await dbInstance.findSiteById(new ObjectId().toString());
 
-      assert(console.error.calledWithMatch('Error getting site by site id:', 'Aggregation Error'));
+      assert(logStub.calledWithMatch('Error getting site by site id:', 'Aggregation Error'));
+
+      logStub.restore();
     });
   });
 });
