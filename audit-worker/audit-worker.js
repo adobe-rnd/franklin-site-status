@@ -33,8 +33,8 @@ function AuditWorker(config, dependencies) {
    * @throws {Error} Throws an error with the message 'Rate limit exceeded' if the audit was rate-limited.
    * @returns {Promise<void>} This function does not return a value.
    */
-  async function performAudit(siteId) {
-    const site = await db.findSiteById(siteId);
+  async function performAudit({ _id }) {
+    const site = await db.findSiteById(_id);
 
     const {
       domain,
@@ -51,7 +51,7 @@ function AuditWorker(config, dependencies) {
     await db.saveAudit(site, audit, markdownDiff, githubDiff);
   }
 
-  async function handleAuditError(error) {
+  async function handleAuditError(site, error) {
     const errMsg = error.response?.data?.error || error.message || error;
     log('error', `Error during site audit for domain ${site.domain}:`, errMsg);
     await db.saveAuditError(site, errMsg);
@@ -68,12 +68,12 @@ function AuditWorker(config, dependencies) {
 
     try {
       const startTime = process.hrtime();
-      await performAudit(site._id);
+      await performAudit(site);
       const endTime = process.hrtime(startTime);
       const elapsedTime = (endTime[0] + endTime[1] / 1e9).toFixed(2);
       log('info', `Audited ${site.domain} in ${elapsedTime} seconds`);
     } catch (e) {
-      await handleAuditError(e);
+      await handleAuditError(site, e);
     }
   }
 
@@ -92,6 +92,9 @@ function AuditWorker(config, dependencies) {
   }
 
   return {
+    getDomainToAudit,
+    handleAuditError,
+    auditSite,
     start,
     stop,
   }
