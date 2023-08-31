@@ -20,38 +20,40 @@ const {
   AUDIT_TASKS_QUEUE_NAME,
 } = process.env;
 
-const dbConfig = { mongodbUri: MONGODB_URI, dbName: DB_NAME };
-const rabbitMQConfig = {
-  username: RABBITMQ_USERNAME,
-  password: RABBITMQ_PASSWORD,
-  host: RABBITMQ_SERVICE_SERVICE_HOST,
-  port: RABBITMQ_SERVICE_SERVICE_PORT,
+const config = {
+  db: {
+    mongodbUri: MONGODB_URI,
+    dbName: DB_NAME
+  },
+  rabbitMQ: {
+    username: RABBITMQ_USERNAME,
+    password: RABBITMQ_PASSWORD,
+    host: RABBITMQ_SERVICE_SERVICE_HOST,
+    port: RABBITMQ_SERVICE_SERVICE_PORT,
+  },
+  pagespeedApi: {
+    apiKey: PAGESPEED_API_KEY,
+    baseUrl: PAGESPEED_API_BASE_URL,
+  },
+  githubApi: {
+    apiKey: GITHUB_API_BASE_URL,
+    githubId: GITHUB_CLIENT_ID,
+    githubSecret: GITHUB_CLIENT_SECRET,
+  },
+  auditWorker: {
+    auditTasksQueue: AUDIT_TASKS_QUEUE_NAME,
+  }
 };
-
-const pagespeedApiConfig = {
-  apiKey: PAGESPEED_API_KEY,
-  baseUrl: PAGESPEED_API_BASE_URL,
-};
-
-const githubApiConfig = {
-  apiKey: GITHUB_API_BASE_URL,
-  githubId: GITHUB_CLIENT_ID,
-  githubSecret: GITHUB_CLIENT_SECRET,
-};
-
-const auditWorkerConfig = {
-  auditTasksQueue: AUDIT_TASKS_QUEUE_NAME,
-}
 
 // initialize dependencies
-const db = DB(dbConfig);
-const queue = Queue(rabbitMQConfig);
-const psiClient = PSIClient(pagespeedApiConfig);
-const githubClient = GithubClient(githubApiConfig);
+const db = DB(config.db);
+const queue = Queue(config.rabbitMQ);
+const psiClient = PSIClient(config.pagespeedApi);
+const githubClient = GithubClient(config.githubApi);
 const contentClient = ContentClient();
 
 // initialize the worker
-const worker = AuditWorker(auditWorkerConfig, { db, queue, psiClient, githubClient, contentClient });
+const worker = AuditWorker(config.auditWorker, { db, queue, psiClient, githubClient, contentClient });
 
 (async () => {
   // set up exit hooks
