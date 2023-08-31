@@ -9,6 +9,13 @@ const NOT_FOUND_STATUS = 404;
  */
 function ContentClient() {
 
+  /**
+   * Creates a diff patch between two strings. Helper function for testability.
+   * @param url - The URL of the Markdown file.
+   * @param oldContent - The old Markdown content.
+   * @param newContent - The new Markdown content.
+   * @returns {string} The diff patch between the old and new content.
+   */
   function createDiffPatch(url, oldContent, newContent) {
     return jsdiff.createPatch(url, oldContent, newContent);
   }
