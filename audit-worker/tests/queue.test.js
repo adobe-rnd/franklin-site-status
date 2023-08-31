@@ -209,7 +209,7 @@ describe('Queue', function() {
       await queue.consumeMessages('test-queue', handlerSpy);
 
       sinon.assert.notCalled(handlerSpy);
-      sinon.assert.calledWithMatch(logStub, 'Error processing message:', 'Unexpected token I in JSON at position 0');
+      sinon.assert.calledWithMatch(logStub, 'Error processing message:', 'Unexpected token \'I\', "Invalid JSON" is not valid JSON');
     });
   });
 });
