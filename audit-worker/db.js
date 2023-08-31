@@ -46,8 +46,16 @@ function processLighthouseResult({
 function DB(config) {
   const { mongodbUri, dbName } = config;
 
-  const client = new MongoClient(mongodbUri, { useNewUrlParser: true, useUnifiedTopology: true });
+  let client = new MongoClient(mongodbUri, { useNewUrlParser: true, useUnifiedTopology: true });
   let db = null;
+
+  /**
+   * Set the MongoDB client. Used for testing.
+   * @param newClient - The new MongoDB client.
+   */
+  function setMongoClient(newClient) {
+    client = newClient;
+  }
 
   /**
    * Connect to the MongoDB database.
@@ -112,6 +120,7 @@ function DB(config) {
     const now = new Date();
     const newAudit = {
       siteId: new ObjectId(site._id),
+      domain: site.domain,
       auditedAt: now,
       isError: false,
       isLive: site.isLive,
@@ -132,12 +141,13 @@ function DB(config) {
     const now = new Date();
     const newAudit = {
       siteId: new ObjectId(site._id),
+      domain: site.domain,
       auditedAt: now,
       isError: true,
       errorMessage: error.message,
       auditResult: null,
     };
-    await saveAuditRecord(site.domain, newAudit);
+    await saveAuditRecord(newAudit);
   }
 
   /**
@@ -192,6 +202,7 @@ function DB(config) {
     findSiteById,
     saveAudit,
     saveAuditError,
+    setMongoClient,
   };
 }
 
