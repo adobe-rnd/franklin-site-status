@@ -1,5 +1,6 @@
 const axios = require('axios');
 const jsdiff = require('diff');
+const { log } = require('./util.js');
 
 const NOT_FOUND_STATUS = 404;
 
@@ -7,6 +8,11 @@ const NOT_FOUND_STATUS = 404;
  * Represents a utility for calculating content differences from Markdown files fetched via HTTP.
  */
 function ContentClient() {
+
+  function createDiffPatch(url, oldContent, newContent) {
+    return jsdiff.createPatch(url, oldContent, newContent);
+  }
+
   /**
    * Asynchronously fetches the Markdown content from a specified audit URL and
    * calculates the difference between this content and the Markdown content from
@@ -47,7 +53,7 @@ function ContentClient() {
 
       // Only calculate the diff if content has changed and markdownContent exists
       if (latestAudit && latestAudit.markdownContent && latestAudit.markdownContent !== markdownContent) {
-        markdownDiff = jsdiff.createPatch(markdownUrl, latestAudit.markdownContent, markdownContent);
+        markdownDiff = createDiffPatch(markdownUrl, latestAudit.markdownContent, markdownContent);
         log('info', `Found Markdown diff ${markdownDiff.length} characters long`);
       } else {
         log('info', 'No Markdown diff found');
@@ -67,6 +73,7 @@ function ContentClient() {
   }
 
   return {
+    createDiffPatch,
     fetchMarkdownDiff,
   };
 }
