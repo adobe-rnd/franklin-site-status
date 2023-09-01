@@ -2,7 +2,6 @@ const sinon = require('sinon');
 const assert = require('assert');
 
 // Pre-load modules to ensure they exist in the require.cache
-require('../db.js');
 require('../queue.js');
 require('../psi-client.js');
 require('../github-client.js');
@@ -10,7 +9,7 @@ require('../content-client.js');
 require('../audit-worker.js');
 
 describe('index.js', () => {
-  let dbInstance, queueInstance, psiClientInstance, githubClientInstance, contentClientInstance, workerInstance;
+  let queueInstance, psiClientInstance, githubClientInstance, contentClientInstance, workerInstance;
 
   beforeEach(() => {
     // Mock the dependencies
