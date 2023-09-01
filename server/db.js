@@ -29,6 +29,8 @@ async function connectToDb() {
     db = client.db(DATABASE_NAME);
     console.info('Database connection established.');
   } catch (error) {
+    client = null;
+    db = null;
     console.error('Error connecting to database: ', error);
     throw error;
   }
@@ -183,6 +185,9 @@ async function removeSiteByRepoId(repoId) {
 
 module.exports = {
   COLLECTION_SITES,
+  SITES_SORT_CONFIG,
+  getDb,
+  getNestedValue,
   connectToDb,
   disconnectFromDb,
   getSiteByGitHubRepoId,
@@ -190,6 +195,7 @@ module.exports = {
   getSitesToAudit,
   getSitesWithAudits,
   createSite,
+  sortSites,
   updateSite,
   removeSiteByRepoId,
 };
