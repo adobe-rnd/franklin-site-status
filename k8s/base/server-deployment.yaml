@@ -34,6 +34,11 @@ spec:
                 secretKeyRef:
                   name: franklin-site-status-secrets
                   key: mongodb-uri
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: franklin-site-status-configs
+                  key: db-name
             - name: USER_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -68,12 +73,12 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: franklin-site-status-configs
-                  key: AUDIT_TASKS_QUEUE_NAME
+                  key: audit-tasks-queue-name
             - name: AUDIT_RESULTS_QUEUE_NAME
               valueFrom:
                 configMapKeyRef:
                   name: franklin-site-status-configs
-                  key: AUDIT_RESULTS_QUEUE_NAME
+                  key: audit-results-queue-name
 
 ---
 apiVersion: v1
@@ -100,7 +105,7 @@ metadata:
     kubernetes.io/ingress.class: contour-public
 spec:
   virtualhost:
-    fqdn: franklin-site-status-server.ethos05-prod-va7.ethos.adobe.net
+    fqdn: franklin-site-status-server.ethos09-prod-va7.ethos.adobe.net
     tls:
       secretName: heptio-contour/cluster-ssl-public
   routes:

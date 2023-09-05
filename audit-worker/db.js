@@ -96,12 +96,10 @@ function DB(config) {
       await sitesCollection.createIndex({ domain: 1 }, { unique: true });
       await sitesCollection.createIndex({ prodURL: 1 }, { unique: true, sparse: true });
       await sitesCollection.createIndex({ domain: 1, prodURL: 1 });
-      await sitesCollection.createIndex({ githubId: 1 }, { unique: true });
-      await sitesCollection.createIndex({ lastAudited: 1 });
 
       // for 'audits' collection
-      await auditsCollection.createIndex({ auditedAt: -1 });
       await auditsCollection.createIndex({ auditedAt: 1 });
+      await auditsCollection.createIndex({ siteId: 1 });
       log('info', 'Indexes created successfully');
     } catch (error) {
       log('error', 'Error creating indexes: ', error);
