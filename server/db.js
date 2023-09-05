@@ -137,18 +137,41 @@ function getSiteByGitHubRepoId(repoId) {
 async function getSiteByDomain(domain) {
   const db = getDb();
 
-  const site = await db.collection(COLLECTION_SITES).findOne({
-    $or: [
-      { domain: domain },
-      { prodURL: domain }
-    ]
-  });
+  const query = [
+    {
+      $match: {
+        $or: [ { domain: domain }, { prodURL: domain } ],
+      },
+    },
+    {
+      $lookup: {
+        from: 'audits',
+        localField: '_id',
+        foreignField: 'siteId',
+        as: 'audits',
+      },
+    },
+    { $unwind: { path: '$audits', preserveNullAndEmptyArrays: true } },
+    { $sort: { 'audits.auditedAt': -1 } },
+    {
+      $group: {
+        _id: '$_id',
+        siteData: { $first: '$$ROOT' },
+        audits: { $push: '$audits' },
+      },
+    },
+    {
+      $replaceRoot: {
+        newRoot: {
+          $mergeObjects: ['$siteData', { audits: '$audits' }],
+        },
+      },
+    },
+    { $unset: ["_id", "audits._id", "audits.siteId"] },
+  ];
 
-  if (site && Array.isArray(site.audits)) {
-    site.audits.sort((a, b) => new Date(b.auditedAt) - new Date(a.auditedAt));
-  }
-
-  return site;
+  const result = await db.collection('sites').aggregate(query).toArray();
+  return result.length > 0 ? result[0] : null;
 }
 
 async function getSitesToAudit() {
@@ -164,18 +187,35 @@ async function getSitesToAudit() {
 async function getSitesWithAudits() {
   const db = getDb();
 
-  let sites = await db.collection(COLLECTION_SITES).find().toArray();
+  const query = [
+    {
+      $lookup: {
+        from: "audits",
+        localField: "_id",
+        foreignField: "siteId",
+        as: "audits",
+      },
+    },
+    { $unwind: { path: '$audits', preserveNullAndEmptyArrays: true } },
+    { $sort: { "audits.auditedAt": -1 } },
+    {
+      $group: {
+        _id: "$_id",
+        siteData: { $first: "$$ROOT" },
+        lastAudit: { $first: "$audits" },
+      },
+    },
+    {
+      $replaceRoot: {
+        newRoot: {
+          $mergeObjects: [ "$siteData", { lastAudit: "$lastAudit" } ],
+        },
+      },
+    },
+    { $unset: ["audits", "_id", "lastAudit._id", "lastAudit.siteId"] },
+  ];
 
-  sites = sites.map(site => {
-
-    site.lastAudit = site && Array.isArray(site.audits) && site.audits.length > 0
-      ? site.audits.reduce((a1, a2) => a1.auditedAt > a2.auditedAt ? a1 : a2)
-      : null;
-
-    return site;
-  });
-
-  return sortSites(sites, SITES_SORT_CONFIG);
+  return db.collection(COLLECTION_SITES).aggregate(query, { allowDiskUse : true }).toArray()
 }
 
 async function removeSiteByRepoId(repoId) {

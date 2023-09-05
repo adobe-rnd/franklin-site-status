@@ -15,9 +15,7 @@ spec:
       name: managementport
       port: 15672
       targetPort: 15672
-
 ---
-
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -62,3 +60,18 @@ spec:
         resources:
           requests:
             storage: 2Gi # Enough I guess?
+---
+apiVersion: contour.heptio.com/v1beta1
+kind: IngressRoute
+metadata:
+  name: spacecat-rabbitmq-ingress-corp
+spec:
+  virtualhost:
+    fqdn: spacecat-rabbitmq.corp.ethos09-prod-va7.ethos.adobe.net
+    tls:
+      secretName: heptio-contour/cluster-ssl-corp
+  routes:
+    - match: /
+      services:
+        - name: rabbitmq-service
+          port: 15672

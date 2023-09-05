@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ./../base
+
+namespace: ns-team-sites-xp-space-cat
+
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/virtualhost/fqdn
+        value: franklin-site-status-server.ethos05-prod-va7.ethos.adobe.net
+    target:
+      kind: IngressRoute
+      name: franklin-site-status-server-ingress-public

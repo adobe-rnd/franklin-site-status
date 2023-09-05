@@ -1,7 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: franklin-site-status-configs
-data:
-  AUDIT_TASKS_QUEUE_NAME: "audit-tasks-queue"
-  AUDIT_RESULTS_QUEUE_NAME: "audit-results-queue"

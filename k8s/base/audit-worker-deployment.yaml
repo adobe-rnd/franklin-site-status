@@ -30,16 +30,11 @@ spec:
                 secretKeyRef:
                   name: franklin-site-status-secrets
                   key: mongodb-uri
-            - name: AUDIT_TTL_DAYS
+            - name: DB_NAME
               valueFrom:
-                secretKeyRef:
-                  name: franklin-site-status-secrets
-                  key: audit-ttl-days
-            - name: AUDIT_INTERVAL_IN_HOURS
-              valueFrom:
-                secretKeyRef:
-                  name: franklin-site-status-secrets
-                  key: audit-interval-in-hours
+                configMapKeyRef:
+                  name: franklin-site-status-configs
+                  key: db-name
             - name: GITHUB_CLIENT_ID
               valueFrom:
                 secretKeyRef:
@@ -50,11 +45,21 @@ spec:
                 secretKeyRef:
                   name: franklin-site-status-secrets
                   key: github-client-secret
+            - name: GITHUB_API_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: franklin-site-status-configs
+                  key: github-api-base-url
             - name: PAGESPEED_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: franklin-site-status-secrets
                   key: pagespeed-api-key
+            - name: pagespeed-api-base-url
+              valueFrom:
+                configMapKeyRef:
+                  name: franklin-site-status-configs
+                  key: pagespeed-api-base-url
             - name: RABBITMQ_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -69,9 +74,9 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: franklin-site-status-configs
-                  key: AUDIT_TASKS_QUEUE_NAME
+                  key: audit-tasks-queue-name
             - name: AUDIT_RESULTS_QUEUE_NAME
               valueFrom:
                 configMapKeyRef:
                   name: franklin-site-status-configs
-                  key: AUDIT_RESULTS_QUEUE_NAME
+                  key: audit-results-queue-name

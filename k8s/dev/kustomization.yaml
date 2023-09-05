@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ./../base
+
+namespace: ns-team-ns-team-sites-xp-space-cat-dev
+
+configMapGenerator:
+  - name: franklin-site-status-configs
+    envs:
+      - configs.env
+
+secretGenerator:
+  - name: franklin-site-status-secrets
+    namespace: ns-team-ns-team-sites-xp-space-cat-dev
+    behavior: create
+    env: secrets.env
+    type: Opaque
+
+patches:
+  - patch: |-
+      - op: replace
+        path: /spec/virtualhost/fqdn
+        value: franklin-site-status-server.ethos09-prod-va7.ethos.adobe.net
+    target:
+      kind: IngressRoute
+      name: franklin-site-status-server-ingress-public
