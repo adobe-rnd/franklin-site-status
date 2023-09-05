@@ -29,6 +29,8 @@ async function connectToDb() {
     db = client.db(DATABASE_NAME);
     console.info('Database connection established.');
   } catch (error) {
+    client = null;
+    db = null;
     console.error('Error connecting to database: ', error);
     throw error;
   }
@@ -149,6 +151,16 @@ async function getSiteByDomain(domain) {
   return site;
 }
 
+async function getSitesToAudit() {
+  const db = getDb();
+
+  const projection = {
+    _id: 1,
+  };
+
+  return db.collection(COLLECTION_SITES).find({}, { projection }).toArray();
+}
+
 async function getSitesWithAudits() {
   const db = getDb();
 
@@ -173,12 +185,17 @@ async function removeSiteByRepoId(repoId) {
 
 module.exports = {
   COLLECTION_SITES,
+  SITES_SORT_CONFIG,
+  getDb,
+  getNestedValue,
   connectToDb,
   disconnectFromDb,
   getSiteByGitHubRepoId,
   getSiteByDomain,
+  getSitesToAudit,
   getSitesWithAudits,
   createSite,
+  sortSites,
   updateSite,
   removeSiteByRepoId,
 };

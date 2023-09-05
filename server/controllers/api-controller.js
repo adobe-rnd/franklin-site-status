@@ -1,6 +1,7 @@
 const getCachedSitesWithAudits = require('../cache');
 const exporters = require('../utils/exportUtils.js');
-const { getSiteByDomain } = require('../db');
+const { getSiteByDomain, getSitesToAudit } = require('../db');
+const { queueSitesToAudit } = require('../queue');
 const { extractAuditScores, extractTotalBlockingTime, extractThirdPartySummary } = require('../utils/auditUtils.js');
 
 /**
@@ -156,7 +157,16 @@ async function getMartechImpact(req, res, next) {
   }
 }
 
+async function auditAllSites(req, res) {
+  getSitesToAudit()
+    .then((sites) => queueSitesToAudit(sites))
+    .catch((err) => console.error(`Error during queueing sites to audit: ${err.message}`));
+
+  res.status(202).json({ message: 'Accepted' });
+}
+
 module.exports = {
+  auditAllSites,
   exportSitesToCSV,
   exportSitesToExcel,
   getMartechImpact,

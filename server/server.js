@@ -13,7 +13,8 @@ app.use(slackBotRouter);
   res.sendFile(__dirname + '/public/admin.html');
 });*/
 
-connectToDb()
+
+Promise.all([connectToDb(), connectToMessageBroker()])
   .then(() => {
     const server = app.listen(8000, () => {
       console.log('Server is running on port 8000');
@@ -24,16 +25,16 @@ connectToDb()
       server.close(async () => {
         console.log('Server stopped');
         try {
-          await disconnectFromDb();
-          console.log('Database connection closed');
+          await Promise.all([disconnectFromDb(), disconnectFromMessageBroker()]);
+          console.log('Database and message broker connections established');
           process.exit(0);
         } catch (err) {
-          console.error('Failed to close database connection', err);
+          console.error('Failed to close connections', err);
           process.exit(1);
         }
       });
     });
   })
   .catch((err) => {
-    console.error('Failed to connect to DB', err);
+    console.error('Failed to establish connections', err);
   });

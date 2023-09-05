@@ -13,12 +13,20 @@
     "start": "concurrently \"npm run start-server\" \"npm run start-worker\"",
     "start-server": "cd server && npm start",
     "start-worker": "cd audit-worker && npm start",
-    "docs:build": "npx @redocly/cli build-docs -o ./docs/index.html --config docs/openapi/redocly-config.yaml"
+    "docs:build": "npx @redocly/cli build-docs -o ./docs/index.html --config docs/openapi/redocly-config.yaml",
+    "test": "nyc mocha */tests/**/*.js",
+    "test:it": "mocha test/**/*.js"
   },
   "devDependencies": {
     "@redocly/cli": "1.0.0-beta.128",
+    "amqplib": "0.10.3",
+    "concurrently": "8.2.0",
     "cross-var": "1.1.0",
     "dotenv-cli": "6.0.0",
-    "concurrently": "8.2.0"
+    "mocha": "10.2.0",
+    "mongodb": "3.6.6",
+    "nyc": "15.1.0",
+    "sinon": "15.2.0",
+    "testcontainers": "10.2.1"
   }
 }

@@ -7,6 +7,15 @@ services:
     ports:
       - "27017:27017"
 
+  rabbitmq:
+    image: rabbitmq:3.9.5-management
+    environment:
+      - RABBITMQ_DEFAULT_USER=username
+      - RABBITMQ_DEFAULT_PASS=password
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
   server:
     image: franklin-site-status-server:${VERSION}
     ports:
@@ -17,8 +26,14 @@ services:
       ADMIN_API_KEY: ${ADMIN_API_KEY}
       SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN}
+      RABBITMQ_USERNAME: "username"
+      RABBITMQ_PASSWORD: "password"
+      RABBITMQ_SERVICE_SERVICE_HOST: "localhost"
+      RABBITMQ_SERVICE_SERVICE_PORT: "5672"
+      AUDIT_TASKS_QUEUE_NAME: "audit-tasks-queue"
     depends_on:
       - mongo
+      - rabbitmq
 
   audit-worker:
     image: franklin-site-status-audit-worker:${VERSION}
@@ -29,8 +44,14 @@ services:
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       PAGESPEED_API_KEY: ${PAGESPEED_API_KEY}
+      RABBITMQ_USERNAME: "username"
+      RABBITMQ_PASSWORD: "password"
+      RABBITMQ_SERVICE_SERVICE_HOST: "localhost"
+      RABBITMQ_SERVICE_SERVICE_PORT: "5672"
+      AUDIT_TASKS_QUEUE_NAME: "audit-tasks-queue"
     depends_on:
       - mongo
+      - rabbitmq
 
 volumes:
   mongo_data:

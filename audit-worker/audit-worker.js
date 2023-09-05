@@ -1,77 +1,7 @@
-const {
-  connectToDb,
-  disconnectFromDb,
-  createIndexes,
-  getNextSiteToAudit,
-  saveAudit,
-  saveAuditError,
-  setWorkerRunningState,
-} = require('./db');
-const {
-  performPSICheck,
-  sleep,
-  log,
-} = require('./util');
-const { fetchMarkdownDiff, fetchGithubDiff } = require('./util.js');
+const { log } = require('./util');
 
-const WORKER_NAME = 'auditWorker';
-
-const AUDIT_INTERVAL_IN_HOURS = process.env.AUDIT_INTERVAL_IN_HOURS ? parseFloat(process.env.AUDIT_INTERVAL_IN_HOURS) : 24;
-const AUDIT_INTERVAL_IN_MILLISECONDS = AUDIT_INTERVAL_IN_HOURS * 60 * 60 * 1000;
-const INITIAL_SLEEP_TIME = 1000 * 60;
-
-let isRunning = true;
-
-/**
- * Update the worker state and disconnect from the database.
- *
- * @param {string} workerName - The name of the worker.
- * @param {boolean} runningState - The new running state of the worker.
- */
-async function updateWorkerStateAndDisconnect(workerName, runningState) {
-  try {
-    await setWorkerRunningState(workerName, runningState);
-    await disconnectFromDb();
-  } catch (err) {
-    log('error', 'Error updating worker running state:', err);
-  }
-}
-
-/**
- * Handles stop signals for the worker.
- *
- * @param {string} workerName - The name of the worker.
- * @param {string} signal - The received signal.
- */
-async function stop(workerName, signal) {
-  log('info', `Received ${signal}. Flushing data before exit...`);
-  isRunning = false;
-  await updateWorkerStateAndDisconnect(workerName, false);
-}
-
-/**
- * Determines if a site needs to be audited.
- *
- * @param {object} site - The site to audit.
- * @returns {Promise<boolean>} - True if the site needs an audit.
- */
-async function isAuditRequired(site) {
-  const now = new Date();
-  const lastAudited = site.lastAudited ? new Date(site.lastAudited) : null;
-
-  log('info', `Last audit for ${site.domain}: ${lastAudited}`);
-
-  const timeSinceLastAudit = lastAudited ? now - lastAudited : AUDIT_INTERVAL_IN_MILLISECONDS;
-  const timeRemaining = AUDIT_INTERVAL_IN_MILLISECONDS - timeSinceLastAudit;
-
-  if (timeSinceLastAudit < AUDIT_INTERVAL_IN_MILLISECONDS) {
-    log('info', `Last site audit for ${site.domain} was less than ${AUDIT_INTERVAL_IN_HOURS} hours ago. Skipping. Next audit in ${(timeRemaining / (1000 * 60 * 60)).toFixed(2)} hours.`);
-    return false;
-  }
-
-  log('info', `Audit required for site ${site.domain}. Current audit interval: ${AUDIT_INTERVAL_IN_HOURS} hours.`);
-  return true;
-}
+const RATE_LIMIT_STATUS = 429;
+const RATE_LIMIT_ERROR_MSG = 'Rate limit exceeded';
 
 /**
  * Gets the domain to audit.
@@ -83,98 +13,91 @@ function getDomainToAudit(site) {
   return site.isLive ? (site.prodURL || site.domain) : site.domain;
 }
 
-/**
- * Attempts to audit a single site. It logs and stores the audit result if successful.
- * In case of an error during the audit, it logs the error and stores the error information.
- * If the audit was rate-limited, it throws an error indicating that the rate limit was exceeded.
- *
- * @param {Object} site - The site object to audit, which should contain information about the site.
- * @throws {Error} Throws an error with the message 'Rate limit exceeded' if the audit was rate-limited.
- * @returns {Promise<void>} This function does not return a value.
- */
-async function auditSite(site) {
-  const domain = getDomainToAudit(site);
-  const githubId = process.env.GITHUB_CLIENT_ID;
-  const githubSecret = process.env.GITHUB_CLIENT_SECRET;
+function AuditWorker(config, dependencies) {
+  const { auditTasksQueue } = config;
 
-  log('info', `Auditing ${domain} (live: ${site.isLive})...`);
+  const {
+    db,
+    queue,
+    psiClient,
+    githubClient,
+    contentClient,
+  } = dependencies;
 
-  const startTime = Date.now();
+  /**
+   * Attempts to audit a single site by given siteId. It logs and stores the audit result if successful.
+   * In case of an error during the audit, it logs the error and stores the error information.
+   * If the audit was rate-limited, it throws an error indicating that the rate limit was exceeded.
+   *
+   * @param {Object} siteId - The site object to audit, which should contain information about the site.
+   * @throws {Error} Throws an error with the message 'Rate limit exceeded' if the audit was rate-limited.
+   * @returns {Promise<void>} This function does not return a value.
+   */
+  async function performAudit({ _id }) {
+    const site = await db.findSiteById(_id);
 
-  try {
-    const audit = await performPSICheck(domain);
-    const markdownDiff = await fetchMarkdownDiff(site, audit);
-    const githubDiff = await fetchGithubDiff(site, audit, githubId, githubSecret);
+    const {
+      domain,
+      gitHubURL,
+      latestAudit,
+    } = site;
 
-    await saveAudit(site, audit, markdownDiff, githubDiff);
+    log('info', `Auditing ${domain}...`);
 
-    const endTime = Date.now();
-    const elapsedTime = (endTime - startTime) / 1000; // in seconds
+    const audit = await psiClient.performPSICheck(domain);
+    const markdownDiff = await contentClient.fetchMarkdownDiff(latestAudit, audit);
+    const githubDiff = await githubClient.fetchGithubDiff(audit, latestAudit?.auditedAt, gitHubURL);
 
-    log('info', `Audited ${site.domain} in ${elapsedTime.toFixed(2)} seconds`);
-  } catch (err) {
-    const errMsg = err.response?.data?.error || err.message || err;
+    await db.saveAudit(site, audit, markdownDiff, githubDiff);
+  }
+
+  async function handleAuditError(site, error) {
+    const errMsg = error.response?.data?.error || error.message || error;
     log('error', `Error during site audit for domain ${site.domain}:`, errMsg);
-    await saveAuditError(site.domain, errMsg);
+    await db.saveAuditError(site, errMsg);
 
-    if (err.response?.status === 429) {
-      throw new Error('Rate limit exceeded');
+    if (error.response?.status === RATE_LIMIT_STATUS) {
+      throw new Error(RATE_LIMIT_ERROR_MSG);
     }
+  }
+
+  async function auditSite(site) {
+    if (!site._id) {
+      log('warn', `Error deconstructing the message payload. '_id' does not exist!`);
+    }
+
+    try {
+      const startTime = process.hrtime();
+      await performAudit(site);
+      const endTime = process.hrtime(startTime);
+      const elapsedTime = (endTime[0] + endTime[1] / 1e9).toFixed(2);
+      log('info', `Audited ${site.domain} in ${elapsedTime} seconds`);
+    } catch (e) {
+      await handleAuditError(site, e);
+    }
+  }
+
+  async function start() {
+    await db.connect();
+    await queue.connect();
+
+    // start consuming messages
+    await queue.consumeMessages(auditTasksQueue, auditSite);
+  }
+
+  async function stop() {
+    await db.close();
+    await queue.close();
+    process.exit();
+  }
+
+  return {
+    getDomainToAudit,
+    handleAuditError,
+    auditSite,
+    start,
+    stop,
   }
 }
 
-/**
- * The main worker function that continuously audits sites. It connects to the database,
- * sets the worker running state, and creates indexes. Then, it enters an infinite loop where it
- * attempts to audit sites. If a site is not available for audit or does not need an audit,
- * it sleeps for a specified duration before the next cycle. If a site is rate-limited,
- * the function employs an exponential back-off strategy.
- *
- * @param {string} workerName - The name of the worker.
- * @returns {Promise<void>} This function does not return a value.
- */
-async function auditWorker(workerName) {
-  let sleepTime = INITIAL_SLEEP_TIME;
-
-  try {
-    await connectToDb();
-    await setWorkerRunningState(workerName, true);
-    await createIndexes();
-
-    log('info', `Audit worker started with interval ${AUDIT_INTERVAL_IN_HOURS} hours`);
-
-    while (isRunning) {
-      log('info', 'Starting audit cycle...');
-
-      const site = await getNextSiteToAudit();
-
-      if (!site) {
-        log('info', `No sites to audit, sleeping for ${sleepTime / 1000} seconds`);
-      } else if (await isAuditRequired(site)) {
-        try {
-          await auditSite(site);
-          sleepTime = INITIAL_SLEEP_TIME; // Reset sleep time if audit is successful
-        } catch (err) {
-          log('error', `Error in main audit for domain ${site.domain}:`, err);
-          if (err.message === 'Rate limit exceeded') {
-            sleepTime *= 2; // Exponential back-off
-          }
-        }
-      }
-
-      log('info', `Audit cycle completed, sleeping for ${sleepTime / 1000} seconds`);
-      await sleep(sleepTime);
-    }
-  } catch (error) {
-    log('error', error);
-    isRunning = false;
-  } finally {
-    await updateWorkerStateAndDisconnect(workerName, false);
-  }
-}
-
-process.on('SIGINT', () => stop(WORKER_NAME, 'SIGINT'));
-
-process.on('SIGTERM', () => stop(WORKER_NAME, 'SIGTERM'));
-
-auditWorker(WORKER_NAME);
+module.exports = AuditWorker;

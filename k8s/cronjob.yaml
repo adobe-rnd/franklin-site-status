@@ -1,0 +1,26 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: queue-all-domains-cronjob
+spec:
+  schedule: "0 */4 * * *" # Every 4 hours
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          containers:
+            - name: post-container
+              image: curlimages/curl:latest # Replace with an image that supports sending POST requests
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  ENDPOINT="http://${FRANKLIN_SITE_STATUS_SERVICE_SERVICE_HOST}:${FRANKLIN_SITE_STATUS_SERVICE_SERVICE_PORT}/admin/queue/all"
+                  curl -X POST $ENDPOINT -H "X-API-KEY: $ADMIN_API_KEY"
+          env:
+            - name: ADMIN_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: franklin-site-status-secrets
+                  key: admin-api-key
+          restartPolicy: Never

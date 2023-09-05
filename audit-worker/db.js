@@ -1,61 +1,8 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const { log } = require('./util.js');
 
-const MONGODB_URI = process.env.MONGODB_URI;
-if (!MONGODB_URI) throw new Error('Please set the MONGODB_URI environment variable');
-
-const DATABASE_NAME = 'franklin-status';
 const COLLECTION_SITES = 'sites';
-const COLLECTION_WORKERSTATES = 'workerStates';
-
-let client;
-let db;
-
-/**
- * Connect to the MongoDB database.
- */
-async function connectToDb() {
-  try {
-    client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-    await client.connect();
-    db = client.db(DATABASE_NAME);
-    log('info', 'Database connection established.');
-  } catch (error) {
-    log('error', 'Error connecting to database: ', error);
-    throw error;
-  }
-}
-
-/**
- * Disconnect from the MongoDB database.
- */
-async function disconnectFromDb() {
-  try {
-    if (!client) {
-      log('warn', 'Warning: Not connected to database');
-      return;
-    }
-    client.close();
-    db = null;
-    client = null;
-
-    log('info', 'Database connection closed.');
-  } catch (error) {
-    log('error', 'Error disconnecting from database: ', error);
-  }
-}
-
-/**
- * Get the MongoDB database instance.
- * @throws {Error} If not connected to database.
- * @returns {MongoDB.Db} The MongoDB database instance.
- */
-function getDb() {
-  if (!db) {
-    throw new Error('Not connected to database');
-  }
-  return db;
-}
+const COLLECTION_AUDITS = 'audits';
 
 /**
  * Process the Lighthouse audit result. Currently, makes sure only certain properties are saved.
@@ -96,146 +43,167 @@ function processLighthouseResult({
   };
 }
 
-/**
- * Create indexes in the MongoDB database for efficient querying.
- */
-async function createIndexes() {
-  try {
-    await db.collection(COLLECTION_SITES).createIndex({ domain: 1 }, { unique: true });
-    await db.collection(COLLECTION_SITES).createIndex({ prodURL: 1 }, { unique: true, sparse: true });
-    await db.collection(COLLECTION_SITES).createIndex({
-      domain: 1,
-      prodURL: 1
-    });
-    await db.collection(COLLECTION_SITES).createIndex({ githubId: 1 }, { unique: true });
-    await db.collection(COLLECTION_SITES).createIndex({ lastAudited: 1 });
-    await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': -1 });
-    await db.collection(COLLECTION_SITES).createIndex({ 'audits.auditedAt': 1 });
-    log('info', 'Indexes created successfully');
-  } catch (error) {
-    log('error', 'Error creating indexes: ', error);
-  }
-}
+function DB(config) {
+  const { mongodbUri, dbName } = config;
 
-/**
- * Get the next site to be audited. The site selected will be the one
- * that has not been audited yet or the one that was last audited.
- * If all sites have been audited within the last 24 hours, it will return
- * the site that was audited the longest time ago.
- * @returns {Object} The site to be audited.
- */
-async function getNextSiteToAudit() {
-  const db = getDb();
-  const sites = await db.collection(COLLECTION_SITES)
-    .find()
-    .sort({ lastAudited: 1 })
-    .limit(1)
-    .toArray();
+  let client = new MongoClient(mongodbUri, { useNewUrlParser: true, useUnifiedTopology: true });
+  let db = null;
 
-  const site = sites.length > 0 ? sites[0] : null;
-
-  if (site) {
-    log('info', `Next site to audit: ${site.domain}`);
-  } else {
-    log('info', 'No sites to audit');
+  /**
+   * Set the MongoDB client. Used for testing.
+   * @param newClient - The new MongoDB client.
+   */
+  function setMongoClient(newClient) {
+    client = newClient;
   }
 
-  return site;
-}
+  /**
+   * Connect to the MongoDB database.
+   */
+  async function connect() {
+    try {
+      await client.connect();
+      db = client.db(dbName);
+      log('info', 'Database connection established.');
 
-/**
- * Save a regular Lighthouse audit result to the MongoDB database.
- * @param {object} site - The site to be audited.
- * @param {object} audit - The Lighthouse audit result.
- * @param {object} markdownContext - The markdown content and diff of content changes since last audit.
- * @param {string} githubDiff - Diff of code changes since last audit in patch format.
- */
-async function saveAudit(site, audit, markdownContext, githubDiff) {
-  const { diff: markdownDiff, content: markdownContent } = markdownContext;
-  const now = new Date();
-  const newAudit = {
-    auditedAt: now,
-    isError: false,
-    isLive: site.isLive,
-    markdownContent,
-    markdownDiff,
-    githubDiff,
-    auditResult: processLighthouseResult(audit.lighthouseResult),
-  };
-  await saveAuditRecord(site.domain, newAudit);
-}
+      await createIndexes(db);
 
-/**
- * Save an error that occurred during a Lighthouse audit to the MongoDB database.
- * @param {string} domain - The domain of the site.
- * @param {Error} error - The error that occurred during the audit.
- */
-async function saveAuditError(domain, error) {
-  const now = new Date();
-  const newAudit = {
-    auditedAt: now,
-    isError: true,
-    errorMessage: error.message,
-    auditResult: null,
-  };
-  await saveAuditRecord(domain, newAudit);
-}
-
-/**
- * Save an audit record to the MongoDB database.
- * @param {string} domain - The domain of the site.
- * @param {object} newAudit - The new audit record to save.
- */
-async function saveAuditRecord(domain, newAudit) {
-  const db = getDb();
-  const now = new Date();
-
-  try {
-    const result = await db.collection(COLLECTION_SITES).updateOne(
-      { domain: domain },
-      {
-        $push: { audits: newAudit },
-        $set: { lastAudited: now },
-      }
-    );
-
-    if (result.matchedCount === 0) {
-      log('warn', `No site found with domain ${domain}. Audit was not saved.`);
-    } else if (result.modifiedCount === 0) {
-      log('warn', `Site found with domain ${domain}, but it was not updated.`);
-    } else {
-      log('info', `Audit for domain ${domain} saved successfully at ${now}`);
+      return { client, db };
+    } catch (error) {
+      log('error', 'Error connecting to database: ', error);
+      throw error;
     }
-  } catch (error) {
-    log('error', 'Error saving audit: ', error);
   }
+
+  async function close() {
+    try {
+      await client.close();
+      console.log('Connection to MongoDB closed');
+    } catch (error) {
+      console.error('Error closing MongoDB connection:', error);
+    }
+  }
+
+  /**
+   * Create indexes in the MongoDB database for efficient querying.
+   */
+  async function createIndexes() {
+    try {
+      let sitesCollection = db.collection(COLLECTION_SITES);
+      let auditsCollection = db.collection(COLLECTION_AUDITS);
+
+      // for 'sites' collection
+      await sitesCollection.createIndex({ domain: 1 }, { unique: true });
+      await sitesCollection.createIndex({ prodURL: 1 }, { unique: true, sparse: true });
+      await sitesCollection.createIndex({ domain: 1, prodURL: 1 });
+      await sitesCollection.createIndex({ githubId: 1 }, { unique: true });
+      await sitesCollection.createIndex({ lastAudited: 1 });
+
+      // for 'audits' collection
+      await auditsCollection.createIndex({ auditedAt: -1 });
+      await auditsCollection.createIndex({ auditedAt: 1 });
+      log('info', 'Indexes created successfully');
+    } catch (error) {
+      log('error', 'Error creating indexes: ', error);
+    }
+  }
+
+  /**
+   * Save a regular Lighthouse audit result to the MongoDB database.
+   * @param {object} site - site audited.
+   * @param {object} audit - The Lighthouse audit result.
+   * @param {object} markdownContext - The markdown content and diff of content changes since last audit.
+   * @param {string} githubDiff - Diff of code changes since last audit in patch format.
+   */
+  async function saveAudit(site, audit, markdownContext, githubDiff) {
+    const { diff: markdownDiff, content: markdownContent } = markdownContext;
+    const now = new Date();
+    const newAudit = {
+      siteId: new ObjectId(site._id),
+      domain: site.domain,
+      auditedAt: now,
+      isError: false,
+      isLive: site.isLive,
+      markdownContent,
+      markdownDiff,
+      githubDiff,
+      auditResult: processLighthouseResult(audit.lighthouseResult),
+    };
+    await saveAuditRecord(newAudit);
+  }
+
+  /**
+   * Save an error that occurred during a Lighthouse audit to the MongoDB database.
+   * @param {object} site - site audited.
+   * @param {Error} error - The error that occurred during the audit.
+   */
+  async function saveAuditError(site, error) {
+    const now = new Date();
+    const newAudit = {
+      siteId: new ObjectId(site._id),
+      domain: site.domain,
+      auditedAt: now,
+      isError: true,
+      errorMessage: error.message,
+      auditResult: null,
+    };
+    await saveAuditRecord(newAudit);
+  }
+
+  /**
+   * Save an audit record to the MongoDB database.
+   * @param {object} newAudit - The new audit record to save.
+   */
+  async function saveAuditRecord(newAudit) {
+    const now = new Date();
+    try {
+      await db.collection(COLLECTION_AUDITS).insertOne(newAudit);
+      log('info', `Audit for domain ${newAudit.domain} saved successfully at ${now}`);
+    } catch (error) {
+      log('error', 'Error saving audit: ', error);
+    }
+  }
+
+  async function findSiteById(siteId) {
+    try {
+      const query = [
+        { $match: { _id: ObjectId(siteId) } },
+        {
+          $lookup: {
+            from: 'audits',
+            localField: '_id',
+            foreignField: 'siteId',
+            as: 'audits',
+          },
+        },
+        { $unwind: '$audits' },
+        { $sort: { 'audits.auditedAt': -1 } },
+        {
+          $group: {
+            _id: '$_id',
+            domain: { $first: '$domain' },
+            gitHubURL: { $first: '$gitHubURL' },
+            latestAudit: { $first: '$audits' },
+          },
+        },
+      ];
+
+      const result = await db.collection('sites').aggregate(query).toArray();
+
+      return result[0]; // error intended in case result is empty
+    } catch (error) {
+      console.error('Error getting site by site id:', error.message);
+    }
+  }
+
+  return {
+    connect,
+    close,
+    findSiteById,
+    saveAudit,
+    saveAuditError,
+    setMongoClient,
+  };
 }
 
-/**
- * Set the state of the audit worker in the MongoDB database.
- * @param {string} workerName - The name of the audit worker.
- * @param {boolean} isRunning - The running state of the audit worker.
- */
-async function setWorkerRunningState(workerName, isRunning) {
-  const db = getDb();
-  try {
-    await db.collection(COLLECTION_WORKERSTATES).updateOne(
-      { name: workerName },
-      { $set: { isRunning: isRunning, lastUpdated: new Date() } },
-      { upsert: true }
-    );
-    log('info', 'Worker running state updated successfully');
-  } catch (error) {
-    log('error', 'Error updating worker running state: ', error);
-  }
-}
-
-module.exports = {
-  connectToDb,
-  disconnectFromDb,
-  createIndexes,
-  saveAudit,
-  saveAuditError,
-  getNextSiteToAudit,
-  setWorkerRunningState,
-};
+module.exports = DB;
