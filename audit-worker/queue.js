@@ -11,6 +11,7 @@ function Queue(config) {
       const connectionURL = `amqp://${username}:${password}@${host}:${port}`;
       connection = await amqp.connect(connectionURL);
       channel = await connection.createChannel();
+      channel.prefetch(1);
       console.log('Connected to broker');
     } catch (error) {
       console.error('Error connecting to broker:', error);

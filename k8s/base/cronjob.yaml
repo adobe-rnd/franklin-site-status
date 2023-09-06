@@ -15,7 +15,7 @@ spec:
               command: ["/bin/sh", "-c"]
               args:
                 - |
-                  ENDPOINT="http://${FRANKLIN_SITE_STATUS_SERVICE_SERVICE_HOST}:${FRANKLIN_SITE_STATUS_SERVICE_SERVICE_PORT}/admin/queue/all"
+                  ENDPOINT="http://${FRANKLIN_SITE_STATUS_SERVICE_SERVICE_HOST}:${FRANKLIN_SITE_STATUS_SERVICE_SERVICE_PORT}/api/admin/queue/all"
                   curl -X POST $ENDPOINT -H "X-API-KEY: $ADMIN_API_KEY"
               env:
                 - name: ADMIN_API_KEY

@@ -36,7 +36,7 @@ const config = {
     baseUrl: PAGESPEED_API_BASE_URL,
   },
   githubApi: {
-    apiKey: GITHUB_API_BASE_URL,
+    baseUrl: GITHUB_API_BASE_URL,
     githubId: GITHUB_CLIENT_ID,
     githubSecret: GITHUB_CLIENT_SECRET,
   },
