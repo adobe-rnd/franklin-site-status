@@ -55,7 +55,7 @@ spec:
                 secretKeyRef:
                   name: franklin-site-status-secrets
                   key: pagespeed-api-key
-            - name: pagespeed-api-base-url
+            - name: PAGESPEED_API_BASE_URL
               valueFrom:
                 configMapKeyRef:
                   name: franklin-site-status-configs
