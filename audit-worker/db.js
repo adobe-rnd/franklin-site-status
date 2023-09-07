@@ -118,7 +118,6 @@ function DB(config) {
     const now = new Date();
     const newAudit = {
       siteId: new ObjectId(site._id),
-      domain: site.domain,
       auditedAt: now,
       isError: false,
       isLive: site.isLive,
@@ -139,7 +138,6 @@ function DB(config) {
     const now = new Date();
     const newAudit = {
       siteId: new ObjectId(site._id),
-      domain: site.domain,
       auditedAt: now,
       isError: true,
       errorMessage: error.message,
@@ -174,7 +172,7 @@ function DB(config) {
             as: 'audits',
           },
         },
-        { $unwind: '$audits' },
+        { $unwind: { path: '$audits', preserveNullAndEmptyArrays: true } },
         { $sort: { 'audits.auditedAt': -1 } },
         {
           $group: {

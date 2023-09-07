@@ -29,13 +29,11 @@ function AuditWorker(config, dependencies) {
    * In case of an error during the audit, it logs the error and stores the error information.
    * If the audit was rate-limited, it throws an error indicating that the rate limit was exceeded.
    *
-   * @param {Object} siteId - The site object to audit, which should contain information about the site.
+   * @param {Object} site - The site object to audit, which should contain information about the site.
    * @throws {Error} Throws an error with the message 'Rate limit exceeded' if the audit was rate-limited.
    * @returns {Promise<void>} This function does not return a value.
    */
-  async function performAudit({ _id }) {
-    const site = await db.findSiteById(_id);
-
+  async function performAudit(site) {
     const {
       domain,
       gitHubURL,
@@ -66,14 +64,23 @@ function AuditWorker(config, dependencies) {
       log('warn', `Error deconstructing the message payload. '_id' does not exist!`);
     }
 
+    let siteDocument;
+
+    try {
+      siteDocument = await db.findSiteById(site._id);
+    } catch (e) {
+      log('warn', `Cannot find a site with id: ${site._id} in DB`);
+      return;
+    }
+
     try {
       const startTime = process.hrtime();
-      await performAudit(site);
+      await performAudit(siteDocument);
       const endTime = process.hrtime(startTime);
       const elapsedTime = (endTime[0] + endTime[1] / 1e9).toFixed(2);
-      log('info', `Audited ${site.domain} in ${elapsedTime} seconds`);
+      log('info', `Audited ${siteDocument.domain} in ${elapsedTime} seconds`);
     } catch (e) {
-      await handleAuditError(site, e);
+      await handleAuditError(siteDocument, e);
     }
   }
 

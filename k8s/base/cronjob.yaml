@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: queue-all-domains-cronjob
 spec:
-  schedule: "0 */4 * * *" # Every 4 hours
+  schedule: "0 4 * * *" # Every 4 hours
   jobTemplate:
     spec:
       backoffLimit: 0

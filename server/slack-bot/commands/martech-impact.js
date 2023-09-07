@@ -1,6 +1,6 @@
 const BaseCommand = require('./base-command.js');
 const { getSiteByDomain } = require('../../db.js');
-const { extractThirdPartySummary, extractTotalBlockingTime } = require('../../utils/auditUtils.js');
+const { extractThirdPartySummary, extractTotalBlockingTime, extractLastAudit } = require('../../utils/auditUtils.js');
 const { addEllipsis, formatSize, printSiteDetails } = require('../../utils/formatUtils.js');
 const { extractDomainFromInput, sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
 
@@ -115,7 +115,7 @@ function MartechImpactCommand(bot) {
         return;
       }
 
-      const lastAudit = site.audits[0]?.auditResult?.audits;
+      const lastAudit = extractLastAudit(site)?.auditResult?.audits;
       const totalBlockingTime = extractTotalBlockingTime(lastAudit);
       const thirdPartySummary = extractThirdPartySummary(lastAudit);
 

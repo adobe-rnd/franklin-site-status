@@ -151,7 +151,7 @@ async function getSiteByDomain(domain) {
         as: 'audits',
       },
     },
-    { $unwind: { path: '$audits', preserveNullAndEmptyArrays: true } },
+    { $unwind: { path: '$audits' } },
     { $sort: { 'audits.auditedAt': -1 } },
     {
       $group: {
@@ -215,7 +215,9 @@ async function getSitesWithAudits() {
     { $unset: ["audits", "_id", "lastAudit._id", "lastAudit.siteId"] },
   ];
 
-  return db.collection(COLLECTION_SITES).aggregate(query, { allowDiskUse : true }).toArray()
+  const sites = await db.collection(COLLECTION_SITES).aggregate(query, { allowDiskUse : true }).toArray();
+
+  return sortSites(sites, SITES_SORT_CONFIG);
 }
 
 async function removeSiteByRepoId(repoId) {

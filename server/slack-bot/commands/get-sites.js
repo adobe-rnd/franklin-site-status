@@ -28,9 +28,9 @@ function formatSites(sites = [], start, end) {
     const rank = start + index + 1;
 
     let siteMessage = `${rank}. No audits found for ${domainText}`;
+    const lastAudit = site.lastAudit;
 
-    if (site.audits.length !== 0) {
-      const lastAudit = site.audits.reduce((a1, a2) => a1.auditedAt > a2.auditedAt ? a1 : a2);
+    if (lastAudit) {
       const icon = site.isLive ? ':rocket:' : ':submarine:';
 
       if (!lastAudit.isError) {

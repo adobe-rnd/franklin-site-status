@@ -46,8 +46,19 @@ function extractThirdPartySummary(lastAudit) {
     })
 }
 
+/**
+ * Extracts last audit object from site object assuming that audits are sorted desc
+ *
+ * @param {Object} site - The site object contains multiple audits
+ * @return {Object} lastAudit - The extracted lastAudit
+ */
+function extractLastAudit(site = {}) {
+  return Array.isArray(site.audits) && site.audits.length > 0 ? site.audits[0] : null;
+}
+
 module.exports = {
   extractAuditScores,
+  extractLastAudit,
   extractThirdPartySummary,
   extractTotalBlockingTime,
 };

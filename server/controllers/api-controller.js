@@ -2,7 +2,12 @@ const getCachedSitesWithAudits = require('../cache');
 const exporters = require('../utils/exportUtils.js');
 const { getSiteByDomain, getSitesToAudit } = require('../db');
 const { queueSitesToAudit } = require('../queue');
-const { extractAuditScores, extractTotalBlockingTime, extractThirdPartySummary } = require('../utils/auditUtils.js');
+const {
+  extractAuditScores,
+  extractTotalBlockingTime,
+  extractThirdPartySummary,
+  extractLastAudit,
+} = require('../utils/auditUtils.js');
 
 /**
  * Provides a specific site's status.
@@ -138,7 +143,7 @@ async function getMartechImpact(req, res, next) {
       throw error;
     }
 
-    const lastAudit = site.audits[0]?.auditResult?.audits;
+    const lastAudit = extractLastAudit(site)?.auditResult?.audits;
 
     const response = {
       domain,
@@ -146,7 +151,7 @@ async function getMartechImpact(req, res, next) {
       lastAudited: site.lastAudited,
       isLive: site.isLive,
       prodURL: site.prodURL,
-      auditError: site.audits[0]?.isError ? site.audits[0].errorMessage : null,
+      auditError: lastAudit?.isError ? lastAudit.errorMessage : null,
       totalBlockingTime: extractTotalBlockingTime(lastAudit),
       thirdPartySummary: extractThirdPartySummary(lastAudit),
     }

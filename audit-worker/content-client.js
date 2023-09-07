@@ -58,7 +58,7 @@ function ContentClient() {
 
       log('info', `Downloaded Markdown content from ${markdownUrl}`);
 
-      const oldContent = latestAudit.markdownContent || '';
+      const oldContent = latestAudit?.markdownContent || '';
 
       if (oldContent !== markdownContent) {
         markdownDiff = createDiffPatch(markdownUrl, oldContent, markdownContent);
