@@ -23,7 +23,9 @@ describe('Queue', function() {
   describe('connect', function() {
     it('should connect to the broker', async function() {
       const connectStub = sinon.stub(amqp, 'connect').resolves({
-        createChannel: sinon.stub().resolves({})
+        createChannel: sinon.stub().resolves({
+          prefetch: sinon.stub().resolves(),
+        })
       });
 
       await queue.connect();
@@ -50,7 +52,10 @@ describe('Queue', function() {
       const closeChannelStub = sinon.stub().resolves();
 
       sinon.stub(amqp, 'connect').resolves({
-        createChannel: sinon.stub().resolves({ close: closeChannelStub }),
+        createChannel: sinon.stub().resolves({
+          close: closeChannelStub,
+          prefetch: sinon.stub().resolves(),
+        }),
         close: closeConnectionStub
       });
 
@@ -65,7 +70,10 @@ describe('Queue', function() {
       queue = Queue({
         ...config,
         connection: { close: sinon.stub().throws(new Error('Close error')) },
-        channel: { close: sinon.stub().resolves() }
+        channel: {
+          close: sinon.stub().resolves(),
+          prefetch: sinon.stub().resolves(),
+        }
       });
 
       await queue.close(); // should not throw any error
@@ -77,7 +85,10 @@ describe('Queue', function() {
       const logStub = sinon.stub(console, 'error');
 
       sinon.stub(amqp, 'connect').resolves({
-        createChannel: sinon.stub().resolves({ close: channelCloseStub }),
+        createChannel: sinon.stub().resolves({
+          close: channelCloseStub,
+          prefetch: sinon.stub().resolves(),
+        }),
         close: sinon.stub().resolves() // Simulating successful connection close.
       });
 
@@ -93,7 +104,10 @@ describe('Queue', function() {
       const logStub = sinon.stub(console, 'error');
 
       sinon.stub(amqp, 'connect').resolves({
-        createChannel: sinon.stub().resolves({ close: sinon.stub().resolves() }), // Simulating successful channel close.
+        createChannel: sinon.stub().resolves({
+          close: sinon.stub().resolves(),
+          prefetch: sinon.stub().resolves(),
+        }), // Simulating successful channel close.
         close: connectionCloseStub
       });
 
@@ -117,7 +131,8 @@ describe('Queue', function() {
         assertQueue: sinon.stub().resolves(),
         consume: sinon.stub().callsFake((_, callback) => {
           callback(null);
-        })
+        }),
+        prefetch: sinon.stub().resolves(),
       };
 
       sinon.stub(amqp, 'connect').resolves({
@@ -138,7 +153,8 @@ describe('Queue', function() {
 
       const fakeChannel = {
         assertQueue: assertQueueStub,
-        consume: consumeStub
+        consume: consumeStub,
+        prefetch: sinon.stub().resolves(),
       };
 
       sinon.stub(amqp, 'connect').resolves({
@@ -156,7 +172,8 @@ describe('Queue', function() {
         assertQueue: sinon.stub().resolves(),
         consume: sinon.stub().callsFake((_, callback) => {
           callback({ content: Buffer.from('{"message": "Hello"}') });
-        })
+        }),
+        prefetch: sinon.stub().resolves(),
       };
 
       sinon.stub(amqp, 'connect').resolves({
@@ -176,6 +193,7 @@ describe('Queue', function() {
       const error = new Error('Test error');
       const fakeChannel = {
         assertQueue: sinon.stub().rejects(error),
+        prefetch: sinon.stub().resolves(),
       };
 
       sinon.stub(amqp, 'connect').resolves({
@@ -195,7 +213,8 @@ describe('Queue', function() {
         assertQueue: sinon.stub().resolves(),
         consume: sinon.stub().callsFake((_, callback) => {
           callback({ content: Buffer.from('Invalid JSON') });
-        })
+        }),
+        prefetch: sinon.stub().resolves(),
       };
 
       sinon.stub(amqp, 'connect').resolves({

@@ -38,7 +38,7 @@ function ContentClient() {
    *   }
    * @throws Will throw an error if there's a network issue or some other error while downloading the Markdown content.
    */
-  async function fetchMarkdownDiff(latestAudit, audit) {
+  async function fetchMarkdownDiff(latestAudit= {}, audit) {
     let markdownDiff = null;
     let markdownContent = null;
 
@@ -58,9 +58,10 @@ function ContentClient() {
 
       log('info', `Downloaded Markdown content from ${markdownUrl}`);
 
-      // Only calculate the diff if content has changed and markdownContent exists
-      if (latestAudit && latestAudit.markdownContent && latestAudit.markdownContent !== markdownContent) {
-        markdownDiff = createDiffPatch(markdownUrl, latestAudit.markdownContent, markdownContent);
+      const oldContent = latestAudit.markdownContent || '';
+
+      if (oldContent !== markdownContent) {
+        markdownDiff = createDiffPatch(markdownUrl, oldContent, markdownContent);
         log('info', `Found Markdown diff ${markdownDiff.length} characters long`);
       } else {
         log('info', 'No Markdown diff found');

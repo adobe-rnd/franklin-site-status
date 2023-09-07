@@ -114,7 +114,7 @@ function DB(config) {
    * @param {string} githubDiff - Diff of code changes since last audit in patch format.
    */
   async function saveAudit(site, audit, markdownContext, githubDiff) {
-    const { diff: markdownDiff, content: markdownContent } = markdownContext;
+    const { markdownDiff, markdownContent } = markdownContext;
     const now = new Date();
     const newAudit = {
       siteId: new ObjectId(site._id),
@@ -181,6 +181,7 @@ function DB(config) {
             _id: '$_id',
             domain: { $first: '$domain' },
             gitHubURL: { $first: '$gitHubURL' },
+            isLive: { $first: '$isLive' },
             latestAudit: { $first: '$audits' },
           },
         },

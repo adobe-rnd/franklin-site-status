@@ -22,6 +22,9 @@ describe('db.js', function () {
         toArray: sinon.stub().resolves([]),
         projection: sinon.stub().returnsThis()
       }),
+      aggregate: sinon.stub().returns({
+        toArray: sinon.stub().resolves([]),
+      })
     };
 
     sinon.stub(dbModule, 'getDb').returns({
@@ -196,12 +199,12 @@ describe('db.js', function () {
 
     it('should retrieve sites with audits', async () => {
       await dbModule.getSitesWithAudits();
-      assert(mockedCollection.find.calledOnce);
+      assert(mockedCollection.aggregate.calledOnce);
     });
 
     it('should retrieve a site by its domain', async () => {
       await dbModule.getSiteByDomain("example.com");
-      assert(findOneStub.calledOnce);
+      assert(mockedCollection.aggregate.calledOnce);
     });
   });
 });
