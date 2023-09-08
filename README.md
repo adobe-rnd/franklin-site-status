@@ -148,7 +148,6 @@ for production cluster:
 kubectl apply -k k8s/prod
 ```
 
-
 # Kubernetes Resource Requirements
 ## Audit Worker
 
@@ -263,3 +262,11 @@ To use the Google PageSpeed Insights API, you'll need an API key. Here's how you
 3. Once you've created a project, click on 'Create Credentials'.
 4. Select 'API Key' in the dropdown menu.
 5. You'll be presented with your new API key. Make sure to copy it and keep it somewhere safe.
+
+# RabbitMQ
+
+## Endpoints:
+
+Dev: https://spacecat-rabbitmq.corp.ethos05-prod-va7.ethos.adobe.net/#/queues
+
+Prod: https://spacecat-rabbitmq.corp.ethos09-prod-va7.ethos.adobe.net/#/queues
