@@ -6,7 +6,7 @@ const { extractDomainFromInput, sendMessageBlocks, postErrorMessage } = require(
 
 const BACKTICKS = '```';
 const CHARACTER_LIMIT = 2500;
-const PHRASES = ['get domain', 'get site with domain'];
+const PHRASES = ['get site', 'get domain'];
 
 /**
  * Formats a single row of the table, padding each cell according to the column widths.

@@ -1,6 +1,6 @@
 const BaseCommand = require('./base-command.js');
 const exporters = require('../../utils/exportUtils.js');
-const getCachedSitesWithAudits = require('../../cache.js');
+const { getCachedSitesWithAudits } = require('../../cache.js');
 
 const { extractAuditScores } = require('../../utils/auditUtils.js');
 const { formatScore, formatURL } = require('../../utils/formatUtils.js');
@@ -38,8 +38,7 @@ function formatSites(sites = [], start, end) {
         const { performance = 0, accessibility = 0, bestPractices = 0, seo = 0 } = scores;
 
         siteMessage = `${rank}. ${icon} ${formatScore(performance)} - ${formatScore(seo)} - ${formatScore(accessibility)} - ${formatScore(bestPractices)}: <${formatURL(domain)}|${domainText}>`;
-        siteMessage += ` (<${site.gitHubURL}|GH>)`;
-        siteMessage += site.isLive ? ` (<${site.prodURL}|Prod>)` : '';
+        siteMessage += site.gitHubURL ? ` (<${site.gitHubURL}|GH>)` : '';
       } else {
         siteMessage = `${rank}. ${icon} :warning: audit error (site has 404 or other): <${formatURL(domain)}|${domain}>`;
       }
@@ -185,6 +184,9 @@ async function overflowActionHandler({ body, ack, client, say }) {
  * @param {Object} param0 - The object containing the acknowledgement function (ack), say function, and action.
  */
 async function paginationHandler({ ack, say, action }) {
+  console.log(`Pagination request received for get sites. Page: ${action.value}`);
+  const startTime = process.hrtime();
+
   await ack();
 
   const start = parseInt(action.value);
@@ -208,6 +210,9 @@ async function paginationHandler({ ack, say, action }) {
 
   await sendMessageBlocks(say, textSections, additionalBlocks);
 
+  const endTime = process.hrtime(startTime);
+  const elapsedTime = (endTime[0] + endTime[1] / 1e9).toFixed(2);
+  console.log(`Pagination request processed in ${elapsedTime} seconds`);
 }
 
 /**
@@ -232,6 +237,7 @@ function GetSitesCommand(bot) {
   const init = (bot) => {
     bot.action('sites_overflow_action', overflowActionHandler);
     bot.action(/^paginate_sites_(prev|next|page_\d+)$/, paginationHandler);
+    bot.action('reply_in_thread')
   };
 
   /**

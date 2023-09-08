@@ -14,7 +14,7 @@ describe('cache.js', () => {
     getSitesWithAuditsStub = sinon.stub(db, 'getSitesWithAudits').resolves(['site1', 'site2']);
 
     // Now require the cache module
-    getCachedSitesWithAudits = require('../cache.js');
+    getCachedSitesWithAudits = require('../cache.js').getCachedSitesWithAudits;
   });
 
   afterEach(() => {

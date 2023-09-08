@@ -1,29 +1,30 @@
 const BaseCommand = require('./base-command.js');
-const { getSiteMetadataByDomain, updateSite } = require('../../db.js');
+const { getSiteMetadataByDomain, createSite } = require('../../db.js');
+const { queueSiteToAudit } = require('../../queue.js');
 const { invalidateCache } = require('../../cache.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 
-const PHRASES = ['toggle live status'];
+const PHRASES = ['run audit'];
 
 /**
- * Factory function to create the SetLiveStatusCommand object.
+ * Factory function to create the RunAuditCommand object.
  * @param {Object} bot - The bot instance.
- * @returns {Object} The SetLiveStatusCommand object.
+ * @returns {Object} The RunAuditCommand object.
  */
-function SetLiveStatusCommand(bot) {
+function RunAuditCommand(bot) {
   const baseCommand = BaseCommand({
-    id: 'set-live-status',
-    name: 'Toggle Live Status',
-    description: 'Toggles a site\'s "isLive" flag.',
+    id: 'run-audit',
+    name: 'Run Audit',
+    description: 'Run audit for a previously added site',
     phrases: PHRASES,
     usageText: `${PHRASES[0]} {site}`,
   });
 
   /**
-   * Validates input, fetches the site by domain,
-   * and updates the "isLive" status.
+   * Validates input, fetches the site
+   * and triggers a new audit for the given site
    *
-   * @param {string[]} args - The arguments provided to the command ([siteDomain, isLive]).
+   * @param {string[]} args - The arguments provided to the command ([site]).
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
@@ -41,23 +42,16 @@ function SetLiveStatusCommand(bot) {
       const site = await getSiteMetadataByDomain(siteDomain);
 
       if (!site) {
-        await say(`:x: No site found with the domain '${siteDomain}'.`);
+        await say(`:x: '${siteDomain}' was not added previously. You can run '@spacecat add site ${siteDomain}`);
         return;
       }
 
-      const isLive = !site.isLive;
+      await queueSiteToAudit({
+        _id: site._id,
+      })
 
-      const updatedSite = {
-        isLive,
-      };
-
-      await updateSite(site._id, updatedSite);
-      invalidateCache(); // meh
-
-      let message = `:white_check_mark: Successfully updated the live status of the site '${siteDomain}'.\n\n`;
-      message += isLive
-        ? `:rocket: _Site is now set to live!'._\n\n`
-        : ':submarine: _Site is now set to development!_\n\n';
+      let message = `:white_check_mark: Audit check is triggered for ${siteDomain}'\n`
+      message += `:adobe-run: In a minute, you can run@spacecat get site ${siteDomain}`;
 
       await say(message);
 
@@ -74,4 +68,4 @@ function SetLiveStatusCommand(bot) {
   };
 }
 
-module.exports = SetLiveStatusCommand;
+module.exports = RunAuditCommand;

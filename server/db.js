@@ -134,15 +134,17 @@ function getSiteByGitHubRepoId(repoId) {
   return db.collection(COLLECTION_SITES).findOne({ githubId: repoId });
 }
 
+async function getSiteMetadataByDomain(domain) {
+  const db = getDb();
+
+  return db.collection(COLLECTION_SITES).findOne({domain});
+}
+
 async function getSiteByDomain(domain) {
   const db = getDb();
 
   const query = [
-    {
-      $match: {
-        $or: [ { domain: domain }, { prodURL: domain } ],
-      },
-    },
+    { $match: { domain: domain } },
     {
       $lookup: {
         from: 'audits',
@@ -170,7 +172,7 @@ async function getSiteByDomain(domain) {
     { $unset: ["_id", "audits._id", "audits.siteId"] },
   ];
 
-  const result = await db.collection('sites').aggregate(query).toArray();
+  const result = await db.collection(COLLECTION_SITES).aggregate(query).toArray();
   return result.length > 0 ? result[0] : null;
 }
 
@@ -234,6 +236,7 @@ module.exports = {
   disconnectFromDb,
   getSiteByGitHubRepoId,
   getSiteByDomain,
+  getSiteMetadataByDomain,
   getSitesToAudit,
   getSitesWithAudits,
   createSite,

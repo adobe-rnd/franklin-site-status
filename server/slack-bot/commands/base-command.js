@@ -39,7 +39,10 @@ function BaseCommand({
    * @returns {boolean} true if the message starts with one of the phrases, false otherwise.
    */
   const accepts = (message) => {
-    return phrases.some(phrase => message.startsWith(phrase));
+    return phrases.filter(phrase => message.startsWith(phrase))
+      .some((phrase) => {
+        return message.length > phrase.length ? message.slice(phrase.length, phrase.length + 1) === ' ' : true;
+      });
   };
 
   /**

@@ -3,16 +3,6 @@ const { log } = require('./util');
 const RATE_LIMIT_STATUS = 429;
 const RATE_LIMIT_ERROR_MSG = 'Rate limit exceeded';
 
-/**
- * Gets the domain to audit.
- *
- * @param {object} site - The site to audit.
- * @returns {string} - The domain to audit.
- */
-function getDomainToAudit(site) {
-  return site.isLive ? (site.prodURL || site.domain) : site.domain;
-}
-
 function AuditWorker(config, dependencies) {
   const { auditTasksQueue } = config;
 
@@ -99,7 +89,6 @@ function AuditWorker(config, dependencies) {
   }
 
   return {
-    getDomainToAudit,
     handleAuditError,
     auditSite,
     start,

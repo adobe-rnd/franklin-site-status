@@ -57,6 +57,10 @@ async function sendMessages(queue, messages = []) {
   }
 }
 
+async function queueSiteToAudit(site) {
+  return sendMessages(process.env.AUDIT_TASKS_QUEUE_NAME, [site]);
+}
+
 async function queueSitesToAudit(sites) {
   return sendMessages(process.env.AUDIT_TASKS_QUEUE_NAME, sites);
 }
@@ -65,5 +69,6 @@ async function queueSitesToAudit(sites) {
 module.exports = {
   connectToMessageBroker,
   disconnectFromMessageBroker,
+  queueSiteToAudit,
   queueSitesToAudit,
 };

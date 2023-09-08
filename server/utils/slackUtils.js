@@ -1,7 +1,7 @@
 const { getLastWord } = require('./formatUtils.js');
 const { URL } = require('url');
 
-const SLACK_URL_FORMAT_REGEX = /<([^|>]+)(?:\|[^>]+)?>/;
+const SLACK_URL_FORMAT_REGEX = /(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})([/\w.-]*\/?)/;
 
 /**
  * Extracts the domain from the input string. If the input follows a specific Slack URL format, it extracts the
@@ -12,18 +12,21 @@ const SLACK_URL_FORMAT_REGEX = /<([^|>]+)(?:\|[^>]+)?>/;
  * @returns {string|null} The domain extracted from the input message or null.
  */
 function extractDomainFromInput(input, domainOnly = true) {
-  if (!input) {
-    return null;
-  }
+  const tokens = input.split(" ");
+  let result = null;
 
-  const linkedFormMatch = input.match(SLACK_URL_FORMAT_REGEX);
+  for (const token of tokens) {
+    if ((match = SLACK_URL_FORMAT_REGEX.exec(token)) !== null) {
+      const subdomain = `${match[1]}.` || ''; // Handle cases where subdomain is absent
+      const domain = match[2];
+      let path = match[3] || ''; // Handle cases where path is absent
 
-  if (linkedFormMatch) {
-    const url = new URL(linkedFormMatch[1]);
-    return domainOnly ? url.hostname : url.href;
-  } else {
-    return input.trim();
+      result = subdomain + domain;
+      result += domainOnly ? '' : path;
+      break;
+    }
   }
+  return result;
 }
 
 /**

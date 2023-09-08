@@ -15,4 +15,12 @@ async function getCachedSitesWithAudits() {
   return cachedSites;
 }
 
-module.exports = getCachedSitesWithAudits;
+function invalidateCache() {
+  cachedSites = null;
+  cacheTimestamp = null;
+}
+
+module.exports = {
+  getCachedSitesWithAudits,
+  invalidateCache,
+};

@@ -57,6 +57,10 @@ function GithubClient(config) {
 
   async function fetchGithubDiff(audit, lastAuditedAt, gitHubURL) {
 
+    if (!gitHubURL) {
+      log('info', `No github repo defined for ${audit.requestedUrl}. Skipping github diff calculation`)
+    }
+
     try {
       const until = new Date(audit.lighthouseResult.fetchTime);
       const since = lastAuditedAt ? new Date(lastAuditedAt) : new Date(until - SECONDS_IN_A_DAY * 1000); // 24 hours before until

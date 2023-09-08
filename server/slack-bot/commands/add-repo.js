@@ -1,17 +1,18 @@
 const BaseCommand = require('./base-command.js');
-const { getSiteByGitHubRepoId, createSite, removeSiteByRepoId } = require('../../db.js');
+const { createSite, getSiteMetadataByDomain } = require('../../db.js');
+const { queueSiteToAudit } = require('../../queue.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 const { printSiteDetails } = require('../../utils/formatUtils.js');
 
-const PHRASES = ['add repo', 'save repo', 'add domain by repo'];
+const PHRASES = ['add repo', 'save repo', 'add repo by site'];
 
 function AddRepoCommand(bot, axios) {
   const baseCommand = BaseCommand({
     id: 'add-github-repo',
     name: "Add GitHub Repo",
-    description: 'Adds a new site from a GitHub repository. Do not add repos from the _hlxsites_ Org, as those are automatically imported. You can optionally provide a production URL in which case the site will be set to live and audits be run on the production URL.',
+    description: 'Adds a Github repository to previously added site.',
     phrases: PHRASES,
-    usageText: `${PHRASES.join(' or ')} {githubRepoURL} [prodURL]`,
+    usageText: `${PHRASES.join(' or ')} {site} {githubRepoURL}`,
   });
 
   /**
@@ -89,11 +90,12 @@ function AddRepoCommand(bot, axios) {
    */
   const handleExecution = async (args, say) => {
     try {
-      const [repoUrlInput, prodURLInput] = args;
-      const repoUrl = extractDomainFromInput(repoUrlInput, false);
-      const prodURL = extractDomainFromInput(prodURLInput, false);
+      const [siteDomainInput, repoUrlInput] = args;
+      const siteURL = extractDomainFromInput(siteDomainInput, false);
+      let repoUrl = extractDomainFromInput(repoUrlInput, false);
+      repoUrl = repoUrl.startsWith('https') ? '' : `https://${repoUrl}`;
 
-      if (!repoUrl) {
+      if (!siteURL || !repoUrl) {
         await say(baseCommand.usage());
         return;
       }
@@ -103,31 +105,36 @@ function AddRepoCommand(bot, axios) {
         return;
       }
 
+      const site = await getSiteMetadataByDomain(siteURL);
+      if (!site) {
+        await say(`:warning: No site found with domain: ${siteURL}`);
+        return;
+      }
+
       const repoInfo = await fetchRepoInfo(repoUrl);
-      const existingSite = await getSiteByGitHubRepoId(repoInfo.id);
 
-      if (repoInfo.archived && existingSite) {
-        await say(`:warning: The GitHub repository '${repoUrl}' is archived. The site will be removed.`);
-        await removeSiteByRepoId(repoInfo.id);
-        return;
-      } else if (repoInfo.archived) {
-        await say(`:warning: The GitHub repository '${repoUrl}' is archived. Please unarchive it before adding it as a site.`);
+      if (repoInfo.archived) {
+        await say(`:warning: The GitHub repository '${repoUrl}' is archived. Please unarchive it before adding it to a site.`);
         return;
       }
 
-      if (existingSite) {
-        await say(`:notification_bell: A site with the GitHub repository '${repoUrl}' already exists.`);
-        return;
-      }
+      const updatedSite = {
+        gitHubURL: repoUrl,
+      };
 
-      const site = await saveRepoAsSite(repoInfo, prodURL);
+      await updateSite(site._id, updatedSite);
+      invalidateCache();
+
+      await queueSiteToAudit({
+        _id: siteId,
+      })
 
       await say(`
-      :white_check_mark: Successfully added the site!
+      :white_check_mark: Github repo is successfully added to the site!
       
 ${printSiteDetails(site)}
       
-      _Note: It may take a few hours for the site to be audited the first time._
+      First PSI check with new repo is triggered! :adobe-run:
       `);
 
     } catch (error) {

@@ -94,8 +94,6 @@ function DB(config) {
 
       // for 'sites' collection
       await sitesCollection.createIndex({ domain: 1 }, { unique: true });
-      await sitesCollection.createIndex({ prodURL: 1 }, { unique: true, sparse: true });
-      await sitesCollection.createIndex({ domain: 1, prodURL: 1 });
 
       // for 'audits' collection
       await auditsCollection.createIndex({ auditedAt: 1 });
@@ -127,6 +125,7 @@ function DB(config) {
       auditResult: processLighthouseResult(audit.lighthouseResult),
     };
     await saveAuditRecord(newAudit);
+    log('info', `Audit for domain ${site.domain} saved successfully at ${now}`);
   }
 
   /**
@@ -151,10 +150,8 @@ function DB(config) {
    * @param {object} newAudit - The new audit record to save.
    */
   async function saveAuditRecord(newAudit) {
-    const now = new Date();
     try {
       await db.collection(COLLECTION_AUDITS).insertOne(newAudit);
-      log('info', `Audit for domain ${newAudit.domain} saved successfully at ${now}`);
     } catch (error) {
       log('error', 'Error saving audit: ', error);
     }

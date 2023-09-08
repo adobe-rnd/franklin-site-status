@@ -1,4 +1,4 @@
-const getCachedSitesWithAudits = require('../cache');
+const { getCachedSitesWithAudits } = require('../cache');
 const exporters = require('../utils/exportUtils.js');
 const { getSiteByDomain, getSitesToAudit } = require('../db');
 const { queueSitesToAudit } = require('../queue');
@@ -46,7 +46,6 @@ async function getSite(req, res, next) {
       gitHubURL: site.gitHubURL,
       lastAudited: site.lastAudited,
       isLive: site.isLive,
-      prodURL: site.prodURL,
       audits,
       auditError: audits[0]?.isError ? audits[0].errorMessage : null,
     };
@@ -150,7 +149,6 @@ async function getMartechImpact(req, res, next) {
       gitHubURL: site.gitHubURL,
       lastAudited: site.lastAudited,
       isLive: site.isLive,
-      prodURL: site.prodURL,
       auditError: lastAudit?.isError ? lastAudit.errorMessage : null,
       totalBlockingTime: extractTotalBlockingTime(lastAudit),
       thirdPartySummary: extractThirdPartySummary(lastAudit),

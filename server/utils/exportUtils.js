@@ -8,7 +8,6 @@ const SITES_EXPORT_PROPERTIES = [
   { name: 'domain', path: 'domain' },
   { name: 'gitHubURL', path: 'gitHubURL' },
   { name: 'isLive', path: 'isLive' },
-  { name: 'prodURL', path: 'prodURL' },
   { name: 'performance', path: 'lastAudit.scores.performance' },
   { name: 'seo', path: 'lastAudit.scores.seo' },
   { name: 'accessibility', path: 'lastAudit.scores.accessibility' },
@@ -23,7 +22,7 @@ const SITES_EXPORT_PROPERTIES = [
  * @return {Object[]} - The transformed sites data.
  */
 function transformSitesData(sites) {
-  return sites.map(({ domain, gitHubURL, lastAudit, isLive, prodURL }) => {
+  return sites.map(({ domain, gitHubURL, lastAudit, isLive }) => {
     const auditInfo = lastAudit ? {
       auditedAt: lastAudit.auditedAt,
       isError: lastAudit.isError,
@@ -37,7 +36,6 @@ function transformSitesData(sites) {
       gitHubURL,
       lastAudit: auditInfo,
       isLive,
-      prodURL,
     };
   });
 }

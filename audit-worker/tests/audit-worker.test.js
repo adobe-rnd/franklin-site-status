@@ -49,29 +49,6 @@ describe('AuditWorker', () => {
     sandbox.restore();
   });
 
-  describe('getDomainToAudit()', () => {
-    it('should return site.prodURL if site is live and prodURL exists', () => {
-      const worker = AuditWorker(mockConfig, mockDependencies);
-      const site = { isLive: true, prodURL: 'https://prod-url.com', domain: 'https://domain.com' };
-      const result = worker.getDomainToAudit(site);
-      assert.strictEqual(result, 'https://prod-url.com');
-    });
-
-    it('should return site.domain if site is live but prodURL does not exist', () => {
-      const worker = AuditWorker(mockConfig, mockDependencies);
-      const site = { isLive: true, domain: 'https://domain.com' };
-      const result = worker.getDomainToAudit(site);
-      assert.strictEqual(result, 'https://domain.com');
-    });
-
-    it('should return site.domain if site is not live', () => {
-      const worker = AuditWorker(mockConfig, mockDependencies);
-      const site = { isLive: false, prodURL: 'https://prod-url.com', domain: 'https://domain.com' };
-      const result = worker.getDomainToAudit(site);
-      assert.strictEqual(result, 'https://domain.com');
-    });
-  });
-
   describe('start()', () => {
     it('should connect to the database and queue and start consuming messages', async () => {
       const worker = AuditWorker(mockConfig, mockDependencies);
