@@ -15,7 +15,7 @@ spec:
       imagePullSecrets:
         - name: regcred
       containers:
-        - name: node-express-server
+        - name: site-status-server
           image: docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-server:latest
           ports:
             - name: server-port
