@@ -8,9 +8,9 @@ namespace: ns-team-sites-xp-space-cat
 
 images:
   - name: docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-server
-    newTag: 1.2.5
+    newTag: 1.2.6
   - name: docker-experience-success-release.dr-uw2.adobeitc.com/franklin/site-status-audit-worker
-    newTag: 1.2.5
+    newTag: 1.2.6
 
 configMapGenerator:
   - name: franklin-site-status-configs
