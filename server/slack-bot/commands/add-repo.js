@@ -1,5 +1,5 @@
 const BaseCommand = require('./base-command.js');
-const { getSiteByDomain, updateSiteByDomain } = require('../../db.js');
+const { getSiteByDomain, getSiteIdByDomain, updateSiteByDomain } = require('../../db.js');
 const { invalidateCache } = require('../../cache.js');
 const { queueSiteToAudit } = require('../../queue.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
@@ -94,8 +94,10 @@ function AddRepoCommand(bot, axios) {
       site.gitHubURL = repoUrl;
       invalidateCache();
 
+      const siteId = await getSiteIdByDomain(site.domain);
+
       await queueSiteToAudit({
-        _id: site._id,
+        _id: siteId,
       })
 
       await say(`

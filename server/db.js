@@ -190,6 +190,17 @@ async function getSiteByDomain(domain) {
   return result.length > 0 ? result[0] : null;
 }
 
+async function getSiteIdByDomain(domain) {
+  const db = getDb();
+
+  const projection = {
+    _id: 1,
+  };
+
+  const site = await db.collection(COLLECTION_SITES).findOne({ domain }, { projection });
+  return site?._id;
+}
+
 async function getSitesToAudit() {
   const db = getDb();
 
@@ -250,6 +261,7 @@ module.exports = {
   disconnectFromDb,
   getSiteByGitHubRepoId,
   getSiteByDomain,
+  getSiteIdByDomain,
   getSiteMetadataByDomain,
   getSitesToAudit,
   getSitesWithAudits,
