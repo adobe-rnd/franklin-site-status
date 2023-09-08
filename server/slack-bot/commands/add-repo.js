@@ -1,5 +1,6 @@
 const BaseCommand = require('./base-command.js');
 const { getSiteMetadataByDomain, updateSite } = require('../../db.js');
+const { invalidateCache } = require('../../cache.js');
 const { queueSiteToAudit } = require('../../queue.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 const { printSiteDetails } = require('../../utils/formatUtils.js');
