@@ -31,6 +31,13 @@ describe('slackUtils.js', () => {
     assert.strictEqual(extractDomainFromInput('add site https://business.adobe.com/some/path/w1th_numb3rs/', false), expected  + '/');
   });
 
+  it('extractDomainFromInput with subdomain, path and extension', async () => {
+    const expected = 'personal.nedbank.co.za/borrow/personal-loans.html';
+
+    assert.strictEqual(extractDomainFromInput('get site personal.nedbank.co.za/borrow/personal-loans.html', false), expected);
+    assert.strictEqual(extractDomainFromInput('get site https://personal.nedbank.co.za/borrow/personal-loans.html', false), expected);
+  });
+
   it('extractDomainFromInput domain only', async () => {
     const expected = 'business.adobe.com';
 

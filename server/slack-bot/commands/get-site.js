@@ -101,7 +101,7 @@ function GetSiteCommand(bot) {
   const handleExecution = async (args, say) => {
     try {
       const [domainInput] = args;
-      const domain = extractDomainFromInput(domainInput);
+      const domain = extractDomainFromInput(domainInput, false);
 
       if (!domain) {
         await say(baseCommand.usage());
