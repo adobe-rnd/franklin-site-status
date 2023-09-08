@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { log } = require('./util.js');
 
 function PSIClient(config) {
   const  { apiKey, baseUrl } = config;
@@ -74,11 +75,16 @@ function PSIClient(config) {
    * @returns {Promise<object>} The processed PageSpeed Insights audit data.
    */
   const performPSICheck = async (domain) => {
-    const apiURL = getPSIApiUrl(domain);
+    try {
+      const apiURL = getPSIApiUrl(domain);
 
-    const { data: lhs } = await axios.get(apiURL);
+      const {data: lhs} = await axios.get(apiURL);
 
-    return processAuditData(lhs);
+      return processAuditData(lhs);
+    } catch (e) {
+      log('error', `Error happened during PSI check: ${e}`);
+      throw e;
+    }
   };
 
   return {

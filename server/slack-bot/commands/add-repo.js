@@ -1,5 +1,5 @@
 const BaseCommand = require('./base-command.js');
-const { createSite, getSiteMetadataByDomain } = require('../../db.js');
+const { getSiteMetadataByDomain, updateSite } = require('../../db.js');
 const { queueSiteToAudit } = require('../../queue.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 const { printSiteDetails } = require('../../utils/formatUtils.js');
@@ -45,39 +45,6 @@ function AddRepoCommand(bot, axios) {
         throw new Error(`Failed to set up request to fetch GitHub repository at '${repoUrl}': ${error.message}`);
       }
     }
-  }
-
-  /**
-   * Saves the repository information as a site in the database.
-   *
-   * @param {Object} repoInfo - The repository information.
-   * @param prodURL - The production URL, if provided.
-   * @returns {Object} The site information.
-   */
-  async function saveRepoAsSite(repoInfo, prodURL) {
-    const { owner, name, id, html_url } = repoInfo;
-    const domain = `main--${name}--${owner.login}.hlx.live`;
-
-    const site = {
-      domain,
-      name,
-      githubId: id,
-      gitHubURL: html_url,
-      gitHubOrg: owner.login,
-      createdAt: Date.now(),
-      lastAudited: null,
-      audits: [],
-    };
-
-    if (prodURL) {
-      console.debug(`Setting site ${domain} to live with prodURL ${prodURL}.`);
-      site.isLive = true;
-      site.prodURL = prodURL;
-    }
-
-    await createSite(site);
-
-    return site;
   }
 
   /**

@@ -56,9 +56,9 @@ function GithubClient(config) {
    */
 
   async function fetchGithubDiff(audit, lastAuditedAt, gitHubURL) {
-
     if (!gitHubURL) {
-      log('info', `No github repo defined for ${audit.requestedUrl}. Skipping github diff calculation`)
+      log('info', `No github repo defined for ${audit.requestedUrl}. Skipping github diff calculation`);
+      return '';
     }
 
     try {
