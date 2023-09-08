@@ -27,10 +27,10 @@ cd ..
 
 3. Configure environment variables.
 
-Copy `.env.example` to `.env` in the root directory and fill in your details.
+Copy `development.env` to `.env` in the root directory and fill in your details.
 
 ```bash
-cp .env.example .env
+cp development.env .env
 ```
 
 Here is the list of environment variables in the `.env` file:
@@ -88,7 +88,22 @@ There is one worker process:
 
 There are two main collections in the MongoDB database:
 
-- `sites`: This collection contains a document for each website. Each document contains the domain, the associated Github URL, and a timestamp for the last audit. It also contains the audits property. This property contains the audit results. Each audit is an entry containing the domain, the audit result (a JSON object returned by the PageSpeed Insights API), a flag indicating if an error occurred during the audit, the error message (if any), and a timestamp.
+- `sites`: This collection contains a document for each website. Each document contains the domain, the associated Github URL. 
+- `audits`: This collection contains a document for each audit. Each document contains the `auditResult`, the associated `siteId`, and a timestamp for the audit. 
+
+# Release
+
+To release a specific version (previously built and exists on local machine), run the following command:
+
+./scripts/release.sh "release.env" "VERSION"
+
+`release.env` should contain following values:
+
+```
+DOCKER_REGISTRY_URL=$DOCKER_REGISTRY_URL
+DOCKER_USERNAME=$DOCKER_USERNAME
+DOCKER_PASSWORD=$DOCKER_PASSWORD
+```
 
 # Deployment
 
@@ -97,24 +112,19 @@ For deployment, we recommend using Kubernetes. We've provided a set of Kubernete
 ## Pre-requisites
 Pre-requisites for deployment:
 - docker, kubectl > 1.21 and jq
-- .env.production or .env.development file composed of
-  ```shell 
-  cat <<EOT >> .env.production
-  MONGODB_URI=
-  AUDIT_TTL_DAYS=
-  PAGESPEED_API_KEY=
-  GITHUB_CLIENT_ID=
-  GITHUB_CLIENT_SECRET=
-  USER_API_KEY=
-  ADMIN_API_KEY=
-  SLACK_SIGNING_SECRET=
-  SLACK_BOT_TOKEN=
-  DOCKER_REGISTRY_URL=
-  DOCKER_USERNAME=
-  DOCKER_PASSWORD=
-  EOT
+- Create a secrets file `secrets.env` file under `/k8s/dev/` or `k8s/prod` depending on which environment to be deployed. For example, to deploy dev env:
+  ```
+  mongodb-uri=${MONGODB_URI}
+  rabbitmq-username=${RABBITMQ_USERNAME}
+  rabbitmq-password=${RABBITMQ_PASSWORD}
+  pagespeed-api-key=${PAGESPEED_API_KEY}
+  github-client-id=${GITHUB_CLIENT_ID}
+  github-client-secret=${GITHUB_CLIENT_SECRET}
+  user-api-key=${USER_API_KEY}
+  admin-api-key=${ADMIN_API_KEY}
+  slack-signing-secret=${SLACK_SIGNING_SECRET}
+  slack-bot-token=${SLACK_BOT_TOKEN}
 
-DOCKER_PASSWORD is the artifactory token.
 
 ## Ethos Contexts and Namespaces
 - Development: ethos09-prod-va7, ns-team-ns-team-sites-xp-space-cat-dev
@@ -122,22 +132,22 @@ DOCKER_PASSWORD is the artifactory token.
 
 ## Deployment
 
-The command to release and deploy the server and audit worker and is:
+Once you have `secrets.env` under `/k8s/{env}`, you can run `kustomize` to deploy to desired env. Make sure to change the kube context (in prev section) to correct cluster & namespace before running the following command:
 
-`npm run release-deploy:dev` for dev deployment
-`npm run release-deploy:prod` for production deployment
+Each `kustomization.yaml` file contains tags of the images to be deployed. Make sure you set the tags to correct versions before deploying. 
 
-After deploying you may need to manually trigger a new cron job from https://dashboard.corp.ethos05-prod-va7.ethos.adobe.net/#/cronjob?namespace=ns-team-sites-xp-space-cat and delete the old jobs from https://dashboard.corp.ethos05-prod-va7.ethos.adobe.net/#/job?namespace=ns-team-sites-xp-space-cat
+for development cluster:
 
-Deploying the secret can be manually done using `kubectl` with the following commands:
-
-```bash
-while IFS= read -r line; do export "${line%%=*}=$(echo -n "${line#*=}" | base64)"; done < .env.development && envsubst < ./k8s/secrets.yaml | kubectl apply -f - -n my-namespace
+```shell
+kubectl apply -k k8s/dev
 ```
 
-Once the secret is created, you can deploy the application using `kubectl`:
+for production cluster:
 
-Please note that you'll need to have a valid Kubernetes context and appropriate permissions to create resources in your Kubernetes cluster.
+```shell
+kubectl apply -k k8s/prod
+```
+
 
 # Kubernetes Resource Requirements
 ## Audit Worker
