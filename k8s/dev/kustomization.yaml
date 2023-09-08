@@ -32,3 +32,10 @@ patches:
     target:
       kind: IngressRoute
       name: franklin-site-status-server-ingress-public
+  - patch: |-
+      - op: replace
+        path: /spec/virtualhost/fqdn
+        value: spacecat-rabbitmq.corp.ethos09-prod-va7.ethos.adobe.net
+    target:
+      kind: IngressRoute
+      name: spacecat-rabbitmq-ingress-corp
