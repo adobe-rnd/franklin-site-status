@@ -94,7 +94,7 @@ function AddRepoCommand(bot, axios) {
       invalidateCache();
 
       await queueSiteToAudit({
-        _id: siteId,
+        _id: site._id,
       })
 
       await say(`
