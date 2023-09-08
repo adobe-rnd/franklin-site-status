@@ -123,6 +123,20 @@ function updateSite(siteId, updatedSite) {
   );
 }
 
+function updateSiteByDomain(domain, updatedSite) {
+  const db = getDb();
+  return db.collection(COLLECTION_SITES).updateOne(
+    { domain },
+    {
+      $set: updatedSite,
+      $currentDate: {
+        updatedAt: true
+      },
+    },
+    { upsert: false }
+  );
+}
+
 /**
  * Retrieves a site from the "sites" collection by its GitHub repo ID.
  *
@@ -242,5 +256,6 @@ module.exports = {
   createSite,
   sortSites,
   updateSite,
+  updateSiteByDomain,
   removeSiteByRepoId,
 };
