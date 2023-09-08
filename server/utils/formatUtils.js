@@ -52,14 +52,14 @@ const formatScore = (score) => {
 const printSiteDetails = (site) => {
   const psiURL = `https://developers.google.com/speed/pagespeed/insights/?url=${site.domain}&strategy=mobile`;
 
-  const lastAuditedAt = extractLastAudit(site) ? formatDate(lastAudit.auditedAt) : null;
+  const lastAuditedAt = formatDate(extractLastAudit(site)?.auditedAt);
 
   return `
       :mars-team: Domain: https://${site.domain}
       :github-4173: GitHub: ${site.gitHubURL ? site.gitHubURL : '_not set_'}
       ${site.isLive ? ':rocket:' : ':submarine:'} Is Live: ${site.isLive ? 'Yes' : 'No'}
       :lighthouse: <${psiURL}|Run PSI check>
-      ${lastAuditedAt ? ':clock1: Last audit on ' + lastAuditedAt : ''}
+      :clock1: Last audit on ${formatDate(lastAudit.auditedAt)}
     `
 };
 
