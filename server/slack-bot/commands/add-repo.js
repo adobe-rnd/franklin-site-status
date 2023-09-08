@@ -1,5 +1,5 @@
 const BaseCommand = require('./base-command.js');
-const { getSiteMetadataByDomain, updateSite } = require('../../db.js');
+const { getSiteByDomain, updateSite } = require('../../db.js');
 const { invalidateCache } = require('../../cache.js');
 const { queueSiteToAudit } = require('../../queue.js');
 const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
@@ -73,7 +73,7 @@ function AddRepoCommand(bot, axios) {
         return;
       }
 
-      const site = await getSiteMetadataByDomain(siteURL);
+      const site = await getSiteByDomain(siteURL);
       if (!site) {
         await say(`:warning: No site found with domain: ${siteURL}`);
         return;
