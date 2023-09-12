@@ -6,7 +6,7 @@ function PSIClient(config) {
   const FORM_FACTOR_MOBILE = 'mobile';
   const FORM_FACTOR_DESKTOP = 'desktop';
 
-  const  { apiKey, baseUrl } = config;
+  const { apiKey, baseUrl } = config;
 
   /**
    * Formats an input URL to be HTTPS.
@@ -86,6 +86,7 @@ function PSIClient(config) {
   function processLighthouseResult({
                                      categories,
                                      requestedUrl,
+                                     fetchTime,
                                      finalUrl,
                                      mainDocumentUrl,
                                      finalDisplayedUrl,
@@ -100,6 +101,7 @@ function PSIClient(config) {
     return {
       categories,
       requestedUrl,
+      fetchTime,
       finalUrl,
       mainDocumentUrl,
       finalDisplayedUrl,
@@ -130,7 +132,7 @@ function PSIClient(config) {
       const processedData = processAuditData(lhs);
       return {
         type: AUDIT_TYPE,
-        result: processLighthouseResult(processedData)
+        result: processLighthouseResult(processedData.lighthouseResult)
       };
     } catch (e) {
       log('error', `Error happened during PSI check: ${e}`);

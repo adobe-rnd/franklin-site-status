@@ -71,6 +71,7 @@ describe('PSIClient', function () {
         categories: undefined,
         configSettings: undefined,
         environment: undefined,
+        fetchTime: undefined,
         finalDisplayedUrl: undefined,
         finalUrl: undefined,
         lighthouseVersion: undefined,
