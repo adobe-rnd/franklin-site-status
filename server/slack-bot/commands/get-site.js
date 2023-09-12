@@ -17,9 +17,10 @@ const PHRASES = ['get site', 'get domain'];
  */
 function formatRows(row, columnWidths) {
   return row.map((cell, i) => {
-    // Ensure the cell is a string before calling padEnd
     const cellStr = cell || '';
-    return cellStr.padEnd(columnWidths[i] + (i === 0 ? 0 : 2));
+    // If the row has fewer columns than headers, pad the last cell to fill the remaining space
+    const padding = (row.length < headers.length && i === row.length - 1) ? columnWidths.slice(i).reduce((a, b) => a + b, 0) : columnWidths[i];
+    return cellStr.padEnd(padding + (i === 0 ? 0 : 2));
   }).join("  ");
 }
 
@@ -41,7 +42,7 @@ function formatAudits(audits) {
     const { auditedAt, errorMessage, isError } = audit;
 
     if (isError) {
-      return [formatDate(auditedAt), errorMessage];
+      return [formatDate(auditedAt), `Error: ${errorMessage}`];
     } else {
       const { performance, seo, accessibility, bestPractices } = extractAuditScores(audit);
       return [
