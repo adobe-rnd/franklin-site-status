@@ -15,7 +15,7 @@ const PHRASES = ['get site', 'get domain'];
  * @param {Array<number>} columnWidths - An array of numbers, each representing the maximum width of a column.
  * @returns {string} The formatted row.
  */
-function formatRows(row, columnWidths) {
+function formatRows(row, columnWidths, headers) {
   return row.map((cell, i) => {
     const cellStr = cell || '';
     // If the row has fewer columns than headers, pad the last cell to fill the remaining space
@@ -72,7 +72,7 @@ function formatAudits(audits) {
     });
   }, []);
 
-  const formattedTable = `${BACKTICKS}\n${table.map(row => formatRows(row, columnWidths)).join("\n")}\n${BACKTICKS}`;
+  const formattedTable = `${BACKTICKS}\n${table.map(row => formatRows(row, columnWidths, headers)).join("\n")}\n${BACKTICKS}`;
 
   // Ensure the formattedTable string does not exceed the Slack message character limit.
   return formattedTable.length > CHARACTER_LIMIT ? `${formattedTable.slice(0, CHARACTER_LIMIT)}...` : formattedTable;
