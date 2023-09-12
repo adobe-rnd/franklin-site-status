@@ -40,9 +40,7 @@ function AuditWorker(config, dependencies) {
 
     const audit = await psiClient.performPSICheck(domain);
 
-    console.info(JSON.stringify(audit, null, 2));
-
-    const markdownDiff = await contentClient.fetchMarkdownDiff(latestAudit, audit?.result?.lighthouseResult?.finalUrl);
+    const markdownDiff = await contentClient.fetchMarkdownDiff(latestAudit, audit?.result?.finalUrl);
     const githubDiff = await githubClient.fetchGithubDiff(audit, latestAudit?.auditedAt, gitHubURL);
 
     await db.saveAudit(site, audit, markdownDiff, githubDiff);
