@@ -39,6 +39,9 @@ function AuditWorker(config, dependencies) {
     log('info', `Auditing ${domain}...`);
 
     const audit = await psiClient.performPSICheck(domain);
+
+    console.info(JSON.stringify(audit, null, 2));
+
     const markdownDiff = await contentClient.fetchMarkdownDiff(latestAudit, audit?.result?.lighthouseResult?.finalUrl);
     const githubDiff = await githubClient.fetchGithubDiff(audit, latestAudit?.auditedAt, gitHubURL);
 
