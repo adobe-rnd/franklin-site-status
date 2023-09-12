@@ -3,6 +3,12 @@ const { log } = require('./util');
 const RATE_LIMIT_STATUS = 429;
 const RATE_LIMIT_ERROR_MSG = 'Rate limit exceeded';
 
+/**
+ * AuditWorker function to handle audit tasks.
+ * @param {object} config - Configuration object containing audit tasks queue.
+ * @param {object} dependencies - Dependencies required for audit worker including db, queue, psiClient, etc.
+ * @returns {object} Object containing audit utility methods.
+ */
 function AuditWorker(config, dependencies) {
   const { auditTasksQueue } = config;
 
@@ -41,7 +47,7 @@ function AuditWorker(config, dependencies) {
 
   async function handleAuditError(site, error) {
     const errMsg = error.response?.data?.error || error.message || error;
-    log('error', `Error during site audit for domain ${site.domain}:`, errMsg);
+    log('error', `Error during site audit for site ${site?.domain}:`, errMsg);
     await db.saveAuditError(site, errMsg);
 
     if (error.response?.status === RATE_LIMIT_STATUS) {
@@ -59,7 +65,7 @@ function AuditWorker(config, dependencies) {
     try {
       siteDocument = await db.findSiteById(site._id);
     } catch (e) {
-      log('warn', `Cannot find a site with id: ${site._id} in DB`);
+      log('error', `Database error during site audit for site ${site.domain}:`, e.message);
       return;
     }
 

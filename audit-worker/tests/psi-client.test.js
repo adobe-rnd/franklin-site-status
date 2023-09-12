@@ -25,6 +25,30 @@ describe('PSIClient', function () {
       assert.strictEqual(apiUrl, expectedUrl);
     });
 
+    it('should use mobile strategy by default', function () {
+      const apiUrl = client.getPSIApiUrl('example.com');
+      const expectedUrl = `${config.baseUrl}?url=https%3A%2F%2Fexample.com&key=${config.apiKey}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`;
+      assert.strictEqual(apiUrl, expectedUrl);
+    });
+
+    it('should use mobile strategy when specified', function () {
+      const apiUrl = client.getPSIApiUrl('example.com', 'mobile');
+      const expectedUrl = `${config.baseUrl}?url=https%3A%2F%2Fexample.com&key=${config.apiKey}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`;
+      assert.strictEqual(apiUrl, expectedUrl);
+    });
+
+    it('should use desktop strategy when specified', function () {
+      const apiUrl = client.getPSIApiUrl('example.com', 'desktop');
+      const expectedUrl = `${config.baseUrl}?url=https%3A%2F%2Fexample.com&key=${config.apiKey}&strategy=desktop&category=performance&category=accessibility&category=best-practices&category=seo`;
+      assert.strictEqual(apiUrl, expectedUrl);
+    });
+
+    it('should default to mobile strategy for invalid strategy', function () {
+      const apiUrl = client.getPSIApiUrl('example.com', 'invalid-strategy');
+      const expectedUrl = `${config.baseUrl}?url=https%3A%2F%2Fexample.com&key=${config.apiKey}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`;
+      assert.strictEqual(apiUrl, expectedUrl);
+    });
+
     // Input edge cases for getPSIApiUrl
     it('should handle empty domain input gracefully', function () {
       const apiUrl = client.getPSIApiUrl('');
@@ -38,6 +62,27 @@ describe('PSIClient', function () {
   });
 
   describe('performPSICheck', function () {
+    const expectedResult = {
+      result: {
+        audits: {
+          'third-party-summary': undefined,
+          'total-blocking-time': undefined
+        },
+        categories: undefined,
+        configSettings: undefined,
+        environment: undefined,
+        finalDisplayedUrl: undefined,
+        finalUrl: undefined,
+        lighthouseVersion: undefined,
+        mainDocumentUrl: undefined,
+        requestedUrl: undefined,
+        runWarnings: undefined,
+        timing: undefined,
+        userAgent: undefined
+      },
+      type: 'PSI'
+    };
+
     beforeEach(function () {
       // Mock axios.get to prevent actual API calls
       sinon.stub(axios, 'get').resolves({ data: {} });
@@ -45,18 +90,18 @@ describe('PSIClient', function () {
 
     it('should perform a PSI check and process data', async function () {
       const data = await client.performPSICheck('example.com');
-      assert.deepEqual(data, {}); // Assuming axios mock returns empty object as data
+      assert.deepEqual(data, expectedResult); // Assuming axios mock returns empty object as data
     });
 
     // Input edge cases for performPSICheck
     it('should handle empty domain input gracefully', async function () {
       const data = await client.performPSICheck('');
-      assert.deepEqual(data, {}); // Assuming axios mock returns empty object for any input
+      assert.deepEqual(data, expectedResult); // Assuming axios mock returns empty object for any input
     });
 
     it('should handle domain with special characters', async function () {
       const data = await client.performPSICheck('example.com/some path');
-      assert.deepEqual(data, {}); // Assuming axios mock returns empty object for any input
+      assert.deepEqual(data, expectedResult); // Assuming axios mock returns empty object for any input
     });
   });
 

@@ -4,45 +4,6 @@ const { log } = require('./util.js');
 const COLLECTION_SITES = 'sites';
 const COLLECTION_AUDITS = 'audits';
 
-/**
- * Process the Lighthouse audit result. Currently, makes sure only certain properties are saved.
- * This should allow around 600 audits per domain to be saved (24kb in 16MB max mongo document size).
- * @param {object} result - The Lighthouse audit result.
- * @returns {object} The processed Lighthouse audit result.
- */
-function processLighthouseResult({
-                                   categories,
-                                   requestedUrl,
-                                   finalUrl,
-                                   mainDocumentUrl,
-                                   finalDisplayedUrl,
-                                   lighthouseVersion,
-                                   userAgent,
-                                   environment,
-                                   runWarnings,
-                                   configSettings,
-                                   timing,
-                                   audits = {},
-                                 } = {}) {
-  return {
-    categories,
-    requestedUrl,
-    finalUrl,
-    mainDocumentUrl,
-    finalDisplayedUrl,
-    lighthouseVersion,
-    userAgent,
-    environment,
-    runWarnings,
-    configSettings,
-    timing,
-    audits: {
-      'third-party-summary': audits['third-party-summary'],
-      'total-blocking-time': audits['total-blocking-time'],
-    }
-  };
-}
-
 function DB(config) {
   const { mongodbUri, dbName } = config;
 
@@ -75,6 +36,10 @@ function DB(config) {
     }
   }
 
+  /**
+   * Closes the connection to the MongoDB database.
+   * @returns {Promise<void>} Resolves once connection is closed.
+   */
   async function close() {
     try {
       await client.close();
@@ -105,11 +70,12 @@ function DB(config) {
   }
 
   /**
-   * Save a regular Lighthouse audit result to the MongoDB database.
-   * @param {object} site - site audited.
-   * @param {object} audit - The Lighthouse audit result.
-   * @param {object} markdownContext - The markdown content and diff of content changes since last audit.
-   * @param {string} githubDiff - Diff of code changes since last audit in patch format.
+   * Saves an audit to the MongoDB database.
+   * @param {object} site - Site object containing details of the audited site.
+   * @param {object} audit - Audit object containing the type and result of the audit.
+   * @param {object} markdownContext - Markdown difference data.
+   * @param {object} githubDiff - GitHub difference data.
+   * @returns {Promise<void>} Resolves once audit is saved.
    */
   async function saveAudit(site, audit, markdownContext, githubDiff) {
     const { markdownDiff, markdownContent } = markdownContext;
@@ -117,14 +83,17 @@ function DB(config) {
     const newAudit = {
       siteId: new ObjectId(site._id),
       auditedAt: now,
+      type: audit.type,
       isError: false,
       isLive: site.isLive,
       markdownContent,
       markdownDiff,
       githubDiff,
-      auditResult: processLighthouseResult(audit.lighthouseResult),
+      auditResult: audit.result,
     };
+
     await saveAuditRecord(newAudit);
+
     log('info', `Audit for domain ${site.domain} saved successfully at ${now}`);
   }
 
@@ -157,6 +126,11 @@ function DB(config) {
     }
   }
 
+  /**
+   * Fetches a site by its ID and gets its latest audit.
+   * @param {string} siteId - The ID of the site to fetch.
+   * @returns {Promise<object>} Site document with its latest audit.
+   */
   async function findSiteById(siteId) {
     try {
       const query = [

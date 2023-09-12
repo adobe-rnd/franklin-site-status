@@ -46,12 +46,13 @@ describe('ContentClient', function () {
       };
 
       const markdownContentStub = "Sample Markdown content";
+      const expectedMarkdownDiff = "Index: http://example.com.md\n===================================================================\n--- http://example.com.md\n+++ http://example.com.md\n@@ -0,0 +1,1 @@\n+Sample Markdown content\n\\ No newline at end of file\n"
       sinon.stub(axios, 'get').resolves({ data: markdownContentStub });
 
       const result = await contentClient.fetchMarkdownDiff(null, audit);
 
       assert.strictEqual(result.markdownContent, markdownContentStub);
-      assert.strictEqual(result.markdownDiff, null);
+      assert.strictEqual(result.markdownDiff, expectedMarkdownDiff);
     });
 
     it('should find a difference between the latest audit and the fetched Markdown content', async function () {
