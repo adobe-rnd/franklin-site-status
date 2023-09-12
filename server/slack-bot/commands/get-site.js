@@ -16,9 +16,11 @@ const PHRASES = ['get site', 'get domain'];
  * @returns {string} The formatted row.
  */
 function formatRows(row, columnWidths) {
-  return row.map((cell, i) =>
-    cell.padEnd(columnWidths[i] + (i === 0 ? 0 : 2))
-  ).join("  ");
+  return row.map((cell, i) => {
+    // Ensure the cell is a string before calling padEnd
+    const cellStr = cell || '';
+    return cellStr.padEnd(columnWidths[i] + (i === 0 ? 0 : 2));
+  }).join("  ");
 }
 
 /**
