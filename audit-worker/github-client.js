@@ -49,20 +49,21 @@ function GithubClient(config) {
    * @example
    * fetchGithubDiff(
    *   { gitHubURL: 'https://github.com/myOrg/myRepo', lastAudited: '2023-06-15T00:00:00.000Z' },
-   *   { lighthouseResult: { fetchTime: '2023-06-16T00:00:00.000Z' } },
+   *   { result: { lighthouseResult: { fetchTime: '2023-06-16T00:00:00.000Z' } } },
    *   'yourGithubId',
    *   'yourGithubSecret'
    * ).then(diffs => console.log(diffs));
    */
 
   async function fetchGithubDiff(audit, lastAuditedAt, gitHubURL) {
+    const auditResult = audit.result;
     if (!gitHubURL) {
-      log('info', `No github repo defined for ${audit.requestedUrl}. Skipping github diff calculation`);
+      log('info', `No github repo defined for ${auditResult.requestedUrl}. Skipping github diff calculation`);
       return '';
     }
 
     try {
-      const until = new Date(audit.lighthouseResult.fetchTime);
+      const until = new Date(auditResult.lighthouseResult.fetchTime);
       const since = lastAuditedAt ? new Date(lastAuditedAt) : new Date(until - SECONDS_IN_A_DAY * 1000); // 24 hours before until
       const repoPath = new URL(gitHubURL).pathname.slice(1); // Removes leading '/'
 
