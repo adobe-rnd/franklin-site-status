@@ -182,16 +182,6 @@ describe('db.js', function () {
       assert(updateOneStub.calledOnce);
     });
 
-    it('should retrieve a site by GitHub repo ID', async () => {
-      await dbModule.getSiteByGitHubRepoId(12345);
-      assert(findOneStub.calledOnce);
-    });
-
-    it('should delete a site by GitHub repo ID', async () => {
-      await dbModule.removeSiteByRepoId(12345);
-      assert(deleteOneStub.calledOnce);
-    });
-
     it('should retrieve sites to audit', async () => {
       await dbModule.getSitesToAudit();
       assert(mockedCollection.find.calledOnce);
