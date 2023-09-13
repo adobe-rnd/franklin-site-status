@@ -130,9 +130,12 @@ function PSIClient(config) {
       const apiURL = getPSIApiUrl(domain, strategy);
       const { data: lhs } = await axios.get(apiURL);
       const processedData = processAuditData(lhs);
+      const result = processLighthouseResult(processedData);
+
       return {
         type: AUDIT_TYPE,
-        result: processLighthouseResult(processedData.lighthouseResult)
+        subType: result.configSettings?.formFactor,
+        result,
       };
     } catch (e) {
       log('error', `Error happened during PSI check: ${e}`);

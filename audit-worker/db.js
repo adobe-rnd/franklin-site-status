@@ -65,7 +65,7 @@ function DB(config) {
       // for 'audits' collection
       await auditsCollection.createIndex({ auditedAt: 1 }, { expireAfterSeconds: THIRTY_DAYS_IN_SECONDS });
       await auditsCollection.createIndex({ siteId: 1 });
-      await auditsCollection.createIndex({ type: 1 });
+      await auditsCollection.createIndex({ type: 1, subType: 1 });
       log('info', 'Indexes created successfully');
     } catch (error) {
       log('error', 'Error creating indexes: ', error);

@@ -81,6 +81,7 @@ describe('PSIClient', function () {
         timing: undefined,
         userAgent: undefined
       },
+      subType: undefined,
       type: 'PSI'
     };
 
