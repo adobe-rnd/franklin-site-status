@@ -4,6 +4,8 @@ const { log } = require('./util.js');
 const COLLECTION_SITES = 'sites';
 const COLLECTION_AUDITS = 'audits';
 
+const THIRTY_DAYS_IN_SECONDS = 30 * 24 * 60 * 60;
+
 function DB(config) {
   const { mongodbUri, dbName } = config;
 
@@ -61,7 +63,7 @@ function DB(config) {
       await sitesCollection.createIndex({ domain: 1 }, { unique: true });
 
       // for 'audits' collection
-      await auditsCollection.createIndex({ auditedAt: 1 });
+      await auditsCollection.createIndex({ auditedAt: 1 }, { expireAfterSeconds: THIRTY_DAYS_IN_SECONDS });
       await auditsCollection.createIndex({ siteId: 1 });
       await auditsCollection.createIndex({ type: 1 });
       log('info', 'Indexes created successfully');
