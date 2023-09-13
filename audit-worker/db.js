@@ -87,6 +87,7 @@ function DB(config) {
       siteId: new ObjectId(site._id),
       auditedAt: now,
       type: audit.type,
+      subType: audit.subType,
       isError: false,
       isLive: site.isLive,
       markdownContent,
