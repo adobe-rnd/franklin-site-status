@@ -129,8 +129,9 @@ function PSIClient(config) {
     try {
       const apiURL = getPSIApiUrl(domain, strategy);
       const { data: lhs } = await axios.get(apiURL);
-      const processedData = processAuditData(lhs);
-      const result = processLighthouseResult(processedData);
+
+      const { lighthouseResult } = processAuditData(lhs);
+      const result = processLighthouseResult(lighthouseResult);
 
       return {
         type: AUDIT_TYPE,
