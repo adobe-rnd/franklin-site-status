@@ -89,7 +89,7 @@ There is one worker process:
 There are two main collections in the MongoDB database:
 
 - `sites`: This collection contains a document for each website. Each document contains the domain, the associated Github URL. 
-- `audits`: This collection contains a document for each audit. Each document contains the `auditResult`, the associated `siteId`, and a timestamp for the audit. 
+- `audits`: This collection contains a document for each audit. Each document contains the `auditResults`, the associated `siteId`, and a timestamp for the audit. 
 
 # Release
 

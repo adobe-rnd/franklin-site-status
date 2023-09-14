@@ -10,10 +10,10 @@ const DATABASE_NAME = 'franklin-status';
 const COLLECTION_SITES = 'sites';
 
 const SITES_SORT_CONFIG = [
-  { key: 'lastAudit.auditResult.categories.performance.score', desc: false },
-  { key: 'lastAudit.auditResult.categories.seo.score', desc: false },
-  { key: 'lastAudit.auditResult.categories.accessibility.score', desc: false },
-  { key: 'lastAudit.auditResult.categories.bestPractices.score', desc: false },
+  { key: 'lastAudit.auditResults.mobile.categories.performance.score', desc: false },
+  { key: 'lastAudit.auditResults.mobile.categories.seo.score', desc: false },
+  { key: 'lastAudit.auditResults.mobile.categories.accessibility.score', desc: false },
+  { key: 'lastAudit.auditResults.mobile.categories.bestPractices.score', desc: false },
 ];
 
 let client;

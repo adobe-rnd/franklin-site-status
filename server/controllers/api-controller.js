@@ -142,7 +142,7 @@ async function getMartechImpact(req, res, next) {
       throw error;
     }
 
-    const lastAudit = extractLastAudit(site)?.auditResult?.audits;
+    const lastAudit = extractLastAudit(site)?.auditResults?.mobile?.audits;
 
     const response = {
       domain,

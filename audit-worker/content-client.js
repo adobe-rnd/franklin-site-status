@@ -27,6 +27,7 @@ function ContentClient() {
    *
    * @async
    * @function
+   * @param {string} domain - The domain of the audited site.
    * @param {Object} latestAudit - The latest audit, if present, contains the latest audit's Markdown content.
    * @param {string} contentUrl - The URL of the content page used in the audit.
    * @returns {Promise<Object|null>} A promise that resolves to an object containing the Markdown content and its diff with the latest audit, or `null` if there was an error or the final URL was not found. The object has the following shape:
@@ -36,7 +37,7 @@ function ContentClient() {
    *   }
    * @throws Will throw an error if there's a network issue or some other error while downloading the Markdown content.
    */
-  async function fetchMarkdownDiff(latestAudit= {}, contentUrl) {
+  async function fetchMarkdownDiff(domain, latestAudit = {}, contentUrl) {
     let markdownDiff = null;
     let markdownContent = null;
 
@@ -52,21 +53,21 @@ function ContentClient() {
       const response = await axios.get(markdownUrl);
       markdownContent = response.data;
 
-      log('info', `Downloaded Markdown content from ${markdownUrl}`);
+      log('info', `Downloaded Markdown content from ${markdownUrl} for site ${domain}`);
 
       const oldContent = latestAudit?.markdownContent || '';
 
       if (oldContent !== markdownContent) {
         markdownDiff = createDiffPatch(markdownUrl, oldContent, markdownContent);
-        log('info', `Found Markdown diff ${markdownDiff.length} characters long`);
+        log('info', `Found Markdown diff ${markdownDiff.length} characters long for site ${domain}`);
       } else {
-        log('info', 'No Markdown diff found');
+        log('info', `No Markdown diff found for site ${domain}`);
       }
     } catch (err) {
       if (err.response && err.response.status === NOT_FOUND_STATUS) {
-        log('info', 'Markdown content not found');
+        log('info', `Markdown content not found for site ${domain}`);
       } else {
-        log('error', 'Error while downloading Markdown content:', err);
+        log('error', `Error while downloading Markdown content for domain ${domain}:`, err);
       }
     }
 
@@ -77,7 +78,6 @@ function ContentClient() {
   }
 
   return {
-    createDiffPatch,
     fetchMarkdownDiff,
   };
 }

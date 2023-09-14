@@ -5,9 +5,9 @@
  * @return {Object} - The extracted audit scores.
  */
 function extractAuditScores(audit) {
-  if (!audit || !audit.auditResult) return {};
+  if (!audit?.auditResults?.mobile) return {};
 
-  const { performance, accessibility, 'best-practices': bestPractices, seo } = audit.auditResult.categories;
+  const { performance, accessibility, 'best-practices': bestPractices, seo } = audit.auditResults.mobile.categories;
   return {
     performance: performance.score,
     accessibility: accessibility.score,
