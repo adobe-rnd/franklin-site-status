@@ -137,21 +137,10 @@ function updateSiteByDomain(domain, updatedSite) {
   );
 }
 
-/**
- * Retrieves a site from the "sites" collection by its GitHub repo ID.
- *
- * @param {number|string} repoId - The GitHub repo ID associated with the site.
- * @returns {Promise} A promise that resolves with the site data.
- */
-function getSiteByGitHubRepoId(repoId) {
-  const db = getDb();
-  return db.collection(COLLECTION_SITES).findOne({ githubId: repoId });
-}
-
 async function getSiteMetadataByDomain(domain) {
   const db = getDb();
 
-  return db.collection(COLLECTION_SITES).findOne({domain});
+  return db.collection(COLLECTION_SITES).findOne({ domain });
 }
 
 async function getSiteByDomain(domain) {
@@ -235,21 +224,16 @@ async function getSitesWithAudits() {
     {
       $replaceRoot: {
         newRoot: {
-          $mergeObjects: [ "$siteData", { lastAudit: "$lastAudit" } ],
+          $mergeObjects: ["$siteData", { lastAudit: "$lastAudit" }],
         },
       },
     },
     { $unset: ["audits", "_id", "lastAudit._id", "lastAudit.siteId"] },
   ];
 
-  const sites = await db.collection(COLLECTION_SITES).aggregate(query, { allowDiskUse : true }).toArray();
+  const sites = await db.collection(COLLECTION_SITES).aggregate(query, { allowDiskUse: true }).toArray();
 
   return sortSites(sites, SITES_SORT_CONFIG);
-}
-
-async function removeSiteByRepoId(repoId) {
-  const db = getDb();
-  return db.collection(COLLECTION_SITES).deleteOne({ githubId: repoId });
 }
 
 module.exports = {
@@ -259,7 +243,6 @@ module.exports = {
   getNestedValue,
   connectToDb,
   disconnectFromDb,
-  getSiteByGitHubRepoId,
   getSiteByDomain,
   getSiteIdByDomain,
   getSiteMetadataByDomain,
@@ -269,5 +252,4 @@ module.exports = {
   sortSites,
   updateSite,
   updateSiteByDomain,
-  removeSiteByRepoId,
 };

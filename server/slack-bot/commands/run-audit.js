@@ -50,7 +50,7 @@ function RunAuditCommand(bot) {
         _id: site._id,
       })
 
-      let message = `:white_check_mark: Audit check is triggered for ${siteDomain}'\n`
+      let message = `:white_check_mark: Audit check is triggered for ${siteDomain}\n`
       message += `:adobe-run: In a minute, you can run@spacecat get site ${siteDomain}`;
 
       await say(message);

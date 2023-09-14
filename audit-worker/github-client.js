@@ -41,7 +41,7 @@ function GithubClient(config) {
    * @async
    * @function
    * @param {Object} audit - An object containing information about the audit.
-   * @param {string} audit.lighthouseResult.fetchTime - The end date-time in ISO format at which the audit was fetched (e.g. 'YYYY-MM-DDTHH:mm:ss.sssZ').
+   * @param {string} audit.result.fetchTime - The end date-time in ISO format at which the audit was fetched (e.g. 'YYYY-MM-DDTHH:mm:ss.sssZ').
    * @param {string} lastAuditedAt - The start date-time in ISO format (e.g. 'YYYY-MM-DDTHH:mm:ss.sssZ'). If not provided, it defaults to 24 hours before the end date-time.
    * @param {string} gitHubURL - The URL of the GitHub repository from which the diffs will be fetched (e.g. 'https://github.com/user/repo').
    * @returns {Promise<string>} A promise that resolves to a string containing the compiled diffs in patch format between the given date-times. If there's an error fetching the data, the promise resolves to an empty string.
@@ -49,20 +49,21 @@ function GithubClient(config) {
    * @example
    * fetchGithubDiff(
    *   { gitHubURL: 'https://github.com/myOrg/myRepo', lastAudited: '2023-06-15T00:00:00.000Z' },
-   *   { lighthouseResult: { fetchTime: '2023-06-16T00:00:00.000Z' } },
+   *   { result: { fetchTime: '2023-06-16T00:00:00.000Z' } },
    *   'yourGithubId',
    *   'yourGithubSecret'
    * ).then(diffs => console.log(diffs));
    */
 
   async function fetchGithubDiff(audit, lastAuditedAt, gitHubURL) {
+    const auditResult = audit.result;
     if (!gitHubURL) {
-      log('info', `No github repo defined for ${audit.requestedUrl}. Skipping github diff calculation`);
+      log('info', `No github repo defined for ${auditResult.requestedUrl}. Skipping github diff calculation`);
       return '';
     }
 
     try {
-      const until = new Date(audit.lighthouseResult.fetchTime);
+      const until = new Date(auditResult.fetchTime);
       const since = lastAuditedAt ? new Date(lastAuditedAt) : new Date(until - SECONDS_IN_A_DAY * 1000); // 24 hours before until
       const repoPath = new URL(gitHubURL).pathname.slice(1); // Removes leading '/'
 

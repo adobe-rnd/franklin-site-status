@@ -3,40 +3,40 @@ const sinon = require('sinon');
 const axios = require('axios');
 const GithubClient = require('../github-client.js');
 
-describe('GithubClient', function() {
+describe('GithubClient', function () {
   let sandbox;
 
   // Create a Sinon sandbox before each test
-  beforeEach(function() {
+  beforeEach(function () {
     sandbox = sinon.createSandbox();
   });
 
   // Restore all mocks and stubs after each test
-  afterEach(function() {
+  afterEach(function () {
     sandbox.restore();
   });
 
-  describe('createGithubApiUrl', function() {
+  describe('createGithubApiUrl', function () {
 
-    it('should create a basic URL', function() {
+    it('should create a basic URL', function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com' });
       const url = client.createGithubApiUrl('openai');
       assert.strictEqual(url, 'https://api.github.com/repos/openai?page=1&per_page=100');
     });
 
-    it('should include repoName in the URL', function() {
+    it('should include repoName in the URL', function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com' });
       const url = client.createGithubApiUrl('openai', 'gpt-3');
       assert.strictEqual(url, 'https://api.github.com/repos/openai/gpt-3?page=1&per_page=100');
     });
 
-    it('should append additional path to the URL', function() {
+    it('should append additional path to the URL', function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com' });
       const url = client.createGithubApiUrl('openai', 'gpt-3', 'commits');
       assert.strictEqual(url, 'https://api.github.com/repos/openai/gpt-3/commits?page=1&per_page=100');
     });
 
-    it('should include page number in the URL', function() {
+    it('should include page number in the URL', function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com' });
       const url = client.createGithubApiUrl('openai', 'gpt-3', 'commits', 5);
       assert.strictEqual(url, 'https://api.github.com/repos/openai/gpt-3/commits?page=5&per_page=100');
@@ -44,16 +44,16 @@ describe('GithubClient', function() {
 
   });
 
-  describe('createGithubAuthHeaderValue', function() {
+  describe('createGithubAuthHeaderValue', function () {
 
-    it('should throw error if credentials are missing', function() {
+    it('should throw error if credentials are missing', function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com' });
       assert.throws(() => {
         client.createGithubAuthHeaderValue();
       }, /GitHub credentials not provided/);
     });
 
-    it('should create a valid Basic Auth header', function() {
+    it('should create a valid Basic Auth header', function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com', githubId: 'id', githubSecret: 'secret' });
       const header = client.createGithubAuthHeaderValue();
       assert.strictEqual(header, 'Basic ' + Buffer.from('id:secret').toString('base64'));
@@ -61,13 +61,13 @@ describe('GithubClient', function() {
 
   });
 
-  describe('fetchGithubDiff', function() {
+  describe('fetchGithubDiff', function () {
 
-    it('should fetch diffs from GitHub', async function() {
+    it('should fetch diffs from GitHub', async function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com', githubId: 'id', githubSecret: 'secret' });
 
       const audit = {
-        lighthouseResult: {
+        result: {
           fetchTime: '2023-06-16T00:00:00.000Z'
         }
       };
@@ -115,12 +115,12 @@ describe('GithubClient', function() {
       assert.strictEqual(diffs, "mocked-diff-data\nmocked-diff-data\n");
     });
 
-    it('should handle errors from GitHub API', async function() {
+    it('should handle errors from GitHub API', async function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com', githubId: 'id', githubSecret: 'secret' });
       sandbox.stub(axios, 'get').rejects(new Error('Network Error'));
 
       const audit = {
-        lighthouseResult: {
+        result: {
           fetchTime: '2023-06-16T00:00:00.000Z'
         }
       };
@@ -131,12 +131,12 @@ describe('GithubClient', function() {
       assert.strictEqual(diffs, '');
     });
 
-    it('should handle unexpected data format from GitHub API', async function() {
+    it('should handle unexpected data format from GitHub API', async function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com', githubId: 'id', githubSecret: 'secret' });
       sandbox.stub(axios, 'get').resolves({ data: null });
 
       const audit = {
-        lighthouseResult: {
+        result: {
           fetchTime: '2023-06-16T00:00:00.000Z'
         }
       };
@@ -150,12 +150,17 @@ describe('GithubClient', function() {
     it('should set "since" to 24 hours before "until" if "lastAuditedAt" is not provided', async () => {
       const client = new GithubClient({ baseUrl: 'https://api.github.com', githubId: 'id', githubSecret: 'secret' });
       const fixedFetchTime = '2023-06-16T00:00:00.000Z';
+      const audit = {
+        result: {
+          fetchTime: '2023-06-16T00:00:00.000Z'
+        }
+      };
       const expectedSince = new Date(new Date(fixedFetchTime) - 86400 * 1000).toISOString();
 
       // Stub axios to return a mock response (prevent real API call)
       sandbox.stub(axios, 'get').resolves({ data: [] });
 
-      await client.fetchGithubDiff({ lighthouseResult: { fetchTime: fixedFetchTime } }, null, 'https://github.com/openai/gpt-3');
+      await client.fetchGithubDiff(audit, null, 'https://github.com/openai/gpt-3');
 
       sinon.assert.calledWith(axios.get, sinon.match.any, sinon.match.hasNested('params.since', expectedSince));
 
@@ -170,6 +175,11 @@ describe('GithubClient', function() {
         { sha: 'commit2', data: 'Binary files differ' },
         { sha: 'commit3', data: 'Another diff content that makes the total size exceed MAX_DIFF_SIZE' }
       ];
+      const audit = {
+        result: {
+          fetchTime: '2023-06-16T00:00:00.000Z'
+        }
+      };
 
       // Stub axios to return mock responses sequentially
       const axiosStub = sandbox.stub(axios, 'get');
@@ -180,7 +190,7 @@ describe('GithubClient', function() {
 
       const logStub = sinon.stub(console, 'warn'); // Stub the log function to capture the warnings
 
-      await client.fetchGithubDiff({ lighthouseResult: { fetchTime: '2023-06-16T00:00:00.000Z' } }, '2023-06-15T00:00:00.000Z', 'https://github.com/openai/gpt-3');
+      await client.fetchGithubDiff(audit, '2023-06-15T00:00:00.000Z', 'https://github.com/openai/gpt-3');
 
       sinon.assert.calledWithMatch(logStub, `Skipping commit ${mockDiffs[1].sha} because it is binary or too large (19 of ${102400}).`);
 
@@ -195,6 +205,11 @@ describe('GithubClient', function() {
         { sha: 'commit1', data: 'Sample diff content' },
         { sha: 'commit2', data: 'Another valid diff content' }
       ];
+      const audit = {
+        result: {
+          fetchTime: '2023-06-16T00:00:00.000Z'
+        }
+      };
 
       // Ensure total size of both diffs is less than MAX_DIFF_SIZE
       if (mockDiffs.reduce((acc, diff) => acc + diff.data.length, 0) >= 102400) {
@@ -208,7 +223,7 @@ describe('GithubClient', function() {
         axiosStub.onCall(index + 1).resolves({ data: diff.data });
       });
 
-      const result = await client.fetchGithubDiff({ lighthouseResult: { fetchTime: '2023-06-16T00:00:00.000Z' } }, '2023-06-15T00:00:00.000Z', 'https://github.com/openai/gpt-3');
+      const result = await client.fetchGithubDiff(audit, '2023-06-15T00:00:00.000Z', 'https://github.com/openai/gpt-3');
 
       // Check if the resulting diffs string contains the content of both mock diffs
       mockDiffs.forEach(diff => {
@@ -219,7 +234,7 @@ describe('GithubClient', function() {
       axios.get.restore();
     });
 
-    it('should log error.response.data when error has a response property', async function() {
+    it('should log error.response.data when error has a response property', async function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com', githubId: 'id', githubSecret: 'secret' });
 
       // Error with a response property
@@ -230,7 +245,7 @@ describe('GithubClient', function() {
       };
 
       const audit = {
-        lighthouseResult: {
+        result: {
           fetchTime: '2023-06-16T00:00:00.000Z'
         }
       };
@@ -248,11 +263,10 @@ describe('GithubClient', function() {
       logStub.restore();
     });
 
-    it('should log the error directly when error does not have a response property', async function() {
+    it('should log the error directly when error does not have a response property', async function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com', githubId: 'id', githubSecret: 'secret' });
-
       const audit = {
-        lighthouseResult: {
+        result: {
           fetchTime: '2023-06-16T00:00:00.000Z'
         }
       };

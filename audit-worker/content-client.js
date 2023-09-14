@@ -28,9 +28,7 @@ function ContentClient() {
    * @async
    * @function
    * @param {Object} latestAudit - The latest audit, if present, contains the latest audit's Markdown content.
-   * @param {Object} audit - The current audit object containing lighthouse result.
-   * @param {Object} audit.lighthouseResult - The lighthouse result object.
-   * @param {string} audit.lighthouseResult.finalUrl - The final URL where the Markdown content is located.
+   * @param {string} contentUrl - The URL of the content page used in the audit.
    * @returns {Promise<Object|null>} A promise that resolves to an object containing the Markdown content and its diff with the latest audit, or `null` if there was an error or the final URL was not found. The object has the following shape:
    *   {
    *     diff: string|null,      // The diff between the latest audit's Markdown content and the current Markdown content in patch format, or null if contents are identical or latest audit doesn't exist.
@@ -38,19 +36,17 @@ function ContentClient() {
    *   }
    * @throws Will throw an error if there's a network issue or some other error while downloading the Markdown content.
    */
-  async function fetchMarkdownDiff(latestAudit= {}, audit) {
+  async function fetchMarkdownDiff(latestAudit= {}, contentUrl) {
     let markdownDiff = null;
     let markdownContent = null;
 
-    const url = audit.lighthouseResult?.finalUrl;
-
-    if (!url) {
+    if (!contentUrl) {
       log('error', 'Final URL not found in the audit object.');
       return null;
     }
 
     // Download the markdown content
-    const markdownUrl = url.endsWith('/') ? `${url}index.md` : `${url}.md`;
+    const markdownUrl = contentUrl.endsWith('/') ? `${contentUrl}index.md` : `${contentUrl}.md`;
 
     try {
       const response = await axios.get(markdownUrl);

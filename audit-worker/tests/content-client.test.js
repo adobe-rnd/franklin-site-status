@@ -16,58 +16,40 @@ describe('ContentClient', function () {
   });
 
   describe('fetchMarkdownDiff', function () {
-    it('should return null if finalUrl is not present in the audit object', async function () {
-      const audit = { lighthouseResult: {} };
-
-      const result = await contentClient.fetchMarkdownDiff(null, audit);
+    it('should return null if content URL is not given', async function () {
+      const result = await contentClient.fetchMarkdownDiff(null, null);
 
       assert.strictEqual(result, null);
     });
 
     it('should append "index.md" to the markdown URL if it ends with "/"', async () => {
-      const audit = {
-        lighthouseResult: {
-          finalUrl: 'http://example.com/'
-        }
-      };
-
       const axiosStub = sinon.stub(axios, 'get').resolves({ data: 'Sample Markdown content' });
 
-      await contentClient.fetchMarkdownDiff(null, audit);
+      await contentClient.fetchMarkdownDiff(null, 'http://example.com/');
 
       assert(axiosStub.calledWith('http://example.com/index.md'), 'Expected axios.get to be called with the correct URL');
     });
 
     it('should fetch Markdown content successfully', async function () {
-      const audit = {
-        lighthouseResult: {
-          finalUrl: 'http://example.com'
-        }
-      };
-
       const markdownContentStub = "Sample Markdown content";
+      const expectedMarkdownDiff = "Index: http://example.com.md\n===================================================================\n--- http://example.com.md\n+++ http://example.com.md\n@@ -0,0 +1,1 @@\n+Sample Markdown content\n\\ No newline at end of file\n"
       sinon.stub(axios, 'get').resolves({ data: markdownContentStub });
 
-      const result = await contentClient.fetchMarkdownDiff(null, audit);
+      const result = await contentClient.fetchMarkdownDiff(null, 'http://example.com');
 
       assert.strictEqual(result.markdownContent, markdownContentStub);
-      assert.strictEqual(result.markdownDiff, null);
+      assert.strictEqual(result.markdownDiff, expectedMarkdownDiff);
     });
 
     it('should find a difference between the latest audit and the fetched Markdown content', async function () {
       const latestAudit = {
         markdownContent: "Original Markdown content"
       };
-      const audit = {
-        lighthouseResult: {
-          finalUrl: 'http://example.com'
-        }
-      };
 
       const markdownContentStub = "Changed Markdown content";
       sinon.stub(axios, 'get').resolves({ data: markdownContentStub });
 
-      const result = await contentClient.fetchMarkdownDiff(latestAudit, audit);
+      const result = await contentClient.fetchMarkdownDiff(latestAudit, 'http://example.com');
 
       assert.strictEqual(result.markdownContent, markdownContentStub);
       assert.strictEqual(
@@ -88,51 +70,34 @@ describe('ContentClient', function () {
       const latestAudit = {
         markdownContent: "Sample Markdown content"
       };
-      const audit = {
-        lighthouseResult: {
-          finalUrl: 'http://example.com'
-        }
-      };
 
       const markdownContentStub = "Sample Markdown content";
       sinon.stub(axios, 'get').resolves({ data: markdownContentStub });
 
-      const result = await contentClient.fetchMarkdownDiff(latestAudit, audit);
+      const result = await contentClient.fetchMarkdownDiff(latestAudit, 'http://example.com');
 
       assert.strictEqual(result.markdownContent, markdownContentStub);
       assert.strictEqual(result.markdownDiff, null);
     });
 
     it('should handle 404 Not Found response gracefully', async function () {
-      const audit = {
-        lighthouseResult: {
-          finalUrl: 'http://example.com'
-        }
-      };
-
       const error = new Error('Not Found');
       error.response = { status: 404 };
       sinon.stub(axios, 'get').rejects(error);
 
-      const result = await contentClient.fetchMarkdownDiff(null, audit);
+      const result = await contentClient.fetchMarkdownDiff(null, 'http://example.com');
 
       assert.strictEqual(result.markdownContent, null);
       assert.strictEqual(result.markdownDiff, null);
     });
 
     it('should handle network errors gracefully', async function () {
-      const audit = {
-        lighthouseResult: {
-          finalUrl: 'http://example.com'
-        }
-      };
-
       const error = new Error('Network Error');
       sinon.stub(axios, 'get').rejects(error);
 
       const logStub = sinon.stub(console, 'error');
 
-      await contentClient.fetchMarkdownDiff(null, audit);
+      await contentClient.fetchMarkdownDiff(null, 'http://example.com');
 
       sinon.assert.calledWithMatch(logStub, 'Error while downloading Markdown content:', error);
     });
