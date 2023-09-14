@@ -39,6 +39,9 @@ function AddRepoCommand(bot, axios) {
       return response.data;
     } catch (error) {
       if (error.response) {
+        if (error.response.status === 404) {
+          return null;
+        }
         throw new Error(`Failed to fetch GitHub repository at '${repoUrl}', status: ${error.response.status}, ${error.response.statusText}`);
       } else if (error.request) {
         throw new Error(`No response received from GitHub when fetching repository at '${repoUrl}'.`);
@@ -80,6 +83,11 @@ function AddRepoCommand(bot, axios) {
       }
 
       const repoInfo = await fetchRepoInfo(repoUrl);
+
+      if (repoInfo === null) {
+        await say(`:warning: The GitHub repository '${repoUrl}' could not be found (private repo?).`);
+        return;
+      }
 
       if (repoInfo.archived) {
         await say(`:warning: The GitHub repository '${repoUrl}' is archived. Please unarchive it before adding it to a site.`);
