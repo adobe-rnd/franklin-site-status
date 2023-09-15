@@ -115,7 +115,7 @@ function MartechImpactCommand(bot) {
         return;
       }
 
-      const lastAudit = extractLastAudit(site)?.auditResult?.audits;
+      const lastAudit = extractLastAudit(site)?.auditResults?.mobile?.audits;
       const totalBlockingTime = extractTotalBlockingTime(lastAudit);
       const thirdPartySummary = extractThirdPartySummary(lastAudit);
 

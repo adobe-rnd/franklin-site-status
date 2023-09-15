@@ -61,9 +61,28 @@ describe('PSIClient', function () {
     });
   });
 
-  describe('performPSICheck', function () {
-    const expectedResult = {
-      result: {
+  describe('runAudit', () => {
+    let axiosGetStub;
+
+    beforeEach(() => {
+      axiosGetStub = sinon.stub(axios, 'get');
+    });
+
+    afterEach(() => {
+      sinon.restore();
+    });
+
+    it('should run mobile strategy audit', async () => {
+      const mockResponse = { data: 'some mobile data' };
+      axiosGetStub.resolves(mockResponse);
+
+      const audit = await client.runAudit('someUrl');
+
+      // Ensure the axios get method was called with the correct parameters
+      axiosGetStub.calledWithMatch('https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=https%3A%2F%2FsomeUrl&key=test-api-key&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo');
+
+      // Ensure the response structure is correct
+      assert.deepStrictEqual(audit.result.mobile, {
         audits: {
           'third-party-summary': undefined,
           'total-blocking-time': undefined
@@ -80,9 +99,69 @@ describe('PSIClient', function () {
         runWarnings: undefined,
         timing: undefined,
         userAgent: undefined
+      });
+    });
+
+    it('should run desktop strategy audit', async () => {
+      const mockResponse = { data: 'some desktop data' };
+      axiosGetStub.resolves(mockResponse);
+
+      const audit = await client.runAudit('someUrl');
+
+      // Ensure the axios get method was called with the correct parameters
+      axiosGetStub.calledWithMatch('https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=https%3A%2F%2FsomeUrl&key=test-api-key&strategy=desktop&category=performance&category=accessibility&category=best-practices&category=seo');
+
+      // Ensure the response structure is correct
+      assert.deepStrictEqual(audit.result.desktop, {
+        audits: {
+          'third-party-summary': undefined,
+          'total-blocking-time': undefined
+        },
+        categories: undefined,
+        configSettings: undefined,
+        environment: undefined,
+        fetchTime: undefined,
+        finalDisplayedUrl: undefined,
+        finalUrl: undefined,
+        lighthouseVersion: undefined,
+        mainDocumentUrl: undefined,
+        requestedUrl: undefined,
+        runWarnings: undefined,
+        timing: undefined,
+        userAgent: undefined
+      });
+    });
+
+    it('should throw an error if the audit fails', async () => {
+      axiosGetStub.rejects(new Error('Failed to fetch PSI'));
+
+      try {
+        await client.runAudit('someUrl');
+        assert.fail('Expected runAudit to throw an error');
+      } catch (error) {
+        assert.strictEqual(error.message, 'Failed to fetch PSI');
+      }
+    });
+  });
+
+  describe('performPSICheck', function () {
+    const expectedResult = {
+      audits: {
+        'third-party-summary': undefined,
+        'total-blocking-time': undefined
       },
-      subType: undefined,
-      type: 'PSI'
+      categories: undefined,
+      configSettings: undefined,
+      environment: undefined,
+      fetchTime: undefined,
+      finalDisplayedUrl: undefined,
+      finalUrl: undefined,
+      lighthouseVersion: undefined,
+      mainDocumentUrl: undefined,
+      requestedUrl: undefined,
+      runWarnings: undefined,
+      timing: undefined,
+      userAgent: undefined
     };
 
     beforeEach(function () {
@@ -148,7 +227,7 @@ describe('PSIClient', function () {
   });
 
   describe('formatURL', function () {
-    it('should replace http:// prefix with https://', function() {
+    it('should replace http:// prefix with https://', function () {
       const formattedUrl = client.formatURL('http://example.com');
       assert.strictEqual(formattedUrl, 'https://example.com');
     });

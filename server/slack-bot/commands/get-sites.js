@@ -19,9 +19,10 @@ const EXPORT_FORMATS = {
  * @param {Array} [sites=[]] - The sites to format.
  * @param {number} start - The index to start slicing the array.
  * @param {number} end - The index to end slicing the array.
+ * @param {string} psiStrategy - The strategy to show scores of.
  * @returns {string} The formatted sites message.
  */
-function formatSites(sites = [], start, end) {
+function formatSites(sites = [], start, end, psiStrategy = 'mobile') {
   return sites.slice(start, end).reduce((message, site, index) => {
     const { domain } = site;
     const domainText = domain.replace(/^main--/, '').replace(/--.*/, '');
@@ -34,7 +35,7 @@ function formatSites(sites = [], start, end) {
       const icon = site.isLive ? ':rocket:' : ':submarine:';
 
       if (!lastAudit.isError) {
-        const scores = extractAuditScores(lastAudit);
+        const scores = extractAuditScores(lastAudit, psiStrategy);
         const { performance = 0, accessibility = 0, bestPractices = 0, seo = 0 } = scores;
 
         siteMessage = `${rank}. ${icon} ${formatScore(performance)} - ${formatScore(seo)} - ${formatScore(accessibility)} - ${formatScore(bestPractices)}: <${formatURL(domain)}|${domainText}>`;
@@ -46,6 +47,32 @@ function formatSites(sites = [], start, end) {
 
     return message + '\n' + siteMessage.trim();
   }, '');
+}
+
+async function fetchAndFormatSites(start, filterStatus, psiStrategy) {
+  let sites = await getCachedSitesWithAudits(psiStrategy);
+  if (filterStatus !== "all") {
+    sites = sites.filter(site => (filterStatus === "live" ? site.isLive : !site.isLive));
+  }
+
+  const end = start + PAGE_SIZE;
+  const totalSites = sites.length;
+
+  let textSections = [{
+    text: `
+    *Franklin Sites Status:* ${totalSites} total ${filterStatus} sites / PSI: ${psiStrategy}
+
+    Columns: Rank: (Live-Status) Performance - SEO - Accessibility - Best Practices >> Domain
+
+    _Sites are ordered by performance score, then all other scores, ascending._
+    ${formatSites(sites, start, end, psiStrategy)}
+    `,
+    accessory: generateOverflowAccessory(),
+  }];
+
+  let additionalBlocks = [generatePaginationBlocks(start, end, totalSites, filterStatus, psiStrategy)];
+
+  return { textSections, additionalBlocks };
 }
 
 /**
@@ -84,9 +111,11 @@ function generateOverflowAccessory() {
  * @param {number} start - The index to start the page.
  * @param {number} end - The index to end the page.
  * @param {number} totalSites - The total number of sites.
+ * @param {string} filterStatus - The status to filter sites by.
+ * @param {string} psiStrategy - The strategy to show scores of.
  * @returns {Object} The pagination blocks object.
  */
-function generatePaginationBlocks(start, end, totalSites) {
+function generatePaginationBlocks(start, end, totalSites, filterStatus, psiStrategy = 'mobile') {
   const blocks = [];
   const numberOfPages = Math.ceil(totalSites / PAGE_SIZE);
 
@@ -98,7 +127,7 @@ function generatePaginationBlocks(start, end, totalSites) {
         "type": "plain_text",
         "text": "Previous"
       },
-      "value": String(start - PAGE_SIZE),
+      "value": `${String(start - PAGE_SIZE)}:${filterStatus}:${psiStrategy}`,
       "action_id": "paginate_sites_prev"
     });
   }
@@ -112,7 +141,7 @@ function generatePaginationBlocks(start, end, totalSites) {
         "type": "plain_text",
         "text": `${i + 1}`
       },
-      "value": String(pageStart),
+      "value": `${String(pageStart)}:${filterStatus}:${psiStrategy}`,
       "action_id": `paginate_sites_page_${i + 1}`
     });
   }
@@ -125,7 +154,7 @@ function generatePaginationBlocks(start, end, totalSites) {
         "type": "plain_text",
         "text": "Next"
       },
-      "value": String(start + PAGE_SIZE),
+      "value": `${String(start + PAGE_SIZE)}:${filterStatus}:${psiStrategy}`,
       "action_id": "paginate_sites_next"
     });
   }
@@ -183,32 +212,21 @@ async function overflowActionHandler({ body, ack, client, say }) {
  *
  * @param {Object} param0 - The object containing the acknowledgement function (ack), say function, and action.
  */
-async function paginationHandler({ ack, say, action }) {
+const paginationHandler = async ({ ack, say, action }) => {
   console.log(`Pagination request received for get sites. Page: ${action.value}`);
   const startTime = process.hrtime();
 
   await ack();
 
-  const start = parseInt(action.value);
-  const end = start + PAGE_SIZE;
+  const [newStart, filterStatus, psiStrategy] = action.value.split(':');
+  const start = parseInt(newStart);
 
-  const sites = await getCachedSitesWithAudits();
-  const totalSites = sites.length;
-
-  let textSections = [{
-    text: `
-    *Franklin Sites Status:* ${totalSites} total sites
-
-    Columns: Rank: Performance - SEO - Accessibility - Best Practices >> Domain
-    _Sites are ordered by performance score, then all other scores, ascending._
-    ${formatSites(sites, start, end)}
-    `,
-    accessory: generateOverflowAccessory(),
-  }];
-
-  let additionalBlocks = [generatePaginationBlocks(start, end, totalSites)];
-
-  await sendMessageBlocks(say, textSections, additionalBlocks);
+  try {
+    const { textSections, additionalBlocks } = await fetchAndFormatSites(start, filterStatus, psiStrategy);
+    await sendMessageBlocks(say, textSections, additionalBlocks);
+  } catch (error) {
+    await postErrorMessage(say, error);
+  }
 
   const endTime = process.hrtime(startTime);
   const elapsedTime = (endTime[0] + endTime[1] / 1e9).toFixed(2);
@@ -227,6 +245,7 @@ function GetSitesCommand(bot) {
     name: 'Get All Franklin Sites',
     description: 'Retrieves all known franklin sites and includes the latest audit scores',
     phrases: PHRASES,
+    usageText: `${PHRASES.join(' or ')} [desktop|mobile|all|live|non-live];`,
   });
 
   /**
@@ -251,33 +270,31 @@ function GetSitesCommand(bot) {
   const handleExecution = async (args, say) => {
     await say(':hourglass: Retrieving all sites, please wait...');
 
-    try {
-      const sites = await getCachedSitesWithAudits();
+    let filterStatus = 'live';
+    let psiStrategy = 'mobile';
 
-      if (sites.length === 0) {
-        await say(':warning: No sites found.');
-        return;
+    args.forEach(arg => {
+      switch (arg) {
+        case "all":
+          filterStatus = "all";
+          break;
+        case "live":
+          filterStatus = "live";
+          break;
+        case "non-live":
+          filterStatus = "non-live";
+          break;
+        case "desktop":
+          psiStrategy = "desktop";
+          break;
+        case "mobile":
+          psiStrategy = "mobile";
+          break;
       }
+    });
 
-      const totalSites = sites.length;
-      const start = 0;
-      const end = start + PAGE_SIZE;
-
-      let textSections = [{
-        text: `
-    *Franklin Sites Status:* ${totalSites} total sites
-
-    Columns: Rank: (Live-Status) Performance - SEO - Accessibility - Best Practices >> Domain
-
-    _Sites are ordered by performance score, then all other scores, ascending._
-    ${formatSites(sites, start, end)}
-    `,
-        accessory: generateOverflowAccessory(),
-      },
-      ];
-
-      let additionalBlocks = [generatePaginationBlocks(start, end, totalSites)];
-
+    try {
+      const { textSections, additionalBlocks } = await fetchAndFormatSites(0, filterStatus, psiStrategy);
       await sendMessageBlocks(say, textSections, additionalBlocks);
     } catch (error) {
       await postErrorMessage(say, error);

@@ -24,7 +24,7 @@ describe('AuditWorker', () => {
         consumeMessages: sandbox.stub().resolves()
       },
       psiClient: {
-        performPSICheck: sandbox.stub().resolves()
+        runAudit: sandbox.stub().resolves({ finalUrl: 'https://domain.com', time: '2021-01-01T00:00:00.000Z', result: {}})
       },
       githubClient: {
         fetchGithubDiff: sandbox.stub().resolves()
@@ -82,7 +82,7 @@ describe('AuditWorker', () => {
 
       await worker.auditSite(site);
 
-      assert(mockDependencies.psiClient.performPSICheck.calledWith(site.domain));
+      assert(mockDependencies.psiClient.runAudit.calledWith(site.domain));
       assert(mockDependencies.db.saveAudit.calledOnce);
       assert(console.info.calledWithMatch(`Audited ${site.domain} in`));
     });
@@ -97,7 +97,7 @@ describe('AuditWorker', () => {
     });
 
     it('should handle rate-limit errors from psiClient', async () => {
-      mockDependencies.psiClient.performPSICheck.rejects({ response: { status: 429 } });
+      mockDependencies.psiClient.runAudit.rejects({ response: { status: 429 } });
 
       const worker = AuditWorker(mockConfig, mockDependencies);
 
@@ -136,7 +136,7 @@ describe('AuditWorker', () => {
     });
 
     it('should handle errors from psiClient that aren’t rate-limit errors', async () => {
-      mockDependencies.psiClient.performPSICheck.rejects(new Error('PSI error'));
+      mockDependencies.psiClient.runAudit.rejects(new Error('PSI error'));
 
       const worker = AuditWorker(mockConfig, mockDependencies);
       const site = { _id: '1234', domain: 'domain.com' };

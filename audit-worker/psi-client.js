@@ -5,6 +5,7 @@ function PSIClient(config) {
   const AUDIT_TYPE = 'PSI';
   const FORM_FACTOR_MOBILE = 'mobile';
   const FORM_FACTOR_DESKTOP = 'desktop';
+  const PSI_STRATEGIES = [FORM_FACTOR_MOBILE, FORM_FACTOR_DESKTOP];
 
   const { apiKey, baseUrl } = config;
 
@@ -131,16 +132,32 @@ function PSIClient(config) {
       const { data: lhs } = await axios.get(apiURL);
 
       const { lighthouseResult } = processAuditData(lhs);
-      const result = processLighthouseResult(lighthouseResult);
 
-      return {
-        type: AUDIT_TYPE,
-        subType: result.configSettings?.formFactor,
-        result,
-      };
+      return processLighthouseResult(lighthouseResult);
     } catch (e) {
       log('error', `Error happened during PSI check: ${e}`);
       throw e;
+    }
+  };
+
+  const runAudit = async (domain) => {
+    const auditResults = {};
+
+    for (const strategy of PSI_STRATEGIES) {
+      const strategyStartTime = process.hrtime();
+      const psiResult = await performPSICheck(domain, strategy);
+      const strategyEndTime = process.hrtime(strategyStartTime);
+      const strategyElapsedTime = (strategyEndTime[0] + strategyEndTime[1] / 1e9).toFixed(2);
+      log('info', `Audited ${domain} for ${strategy} strategy in ${strategyElapsedTime} seconds`);
+
+      auditResults[strategy] = psiResult;
+    }
+
+    return {
+      type: AUDIT_TYPE,
+      finalUrl: auditResults[FORM_FACTOR_MOBILE]?.finalUrl,
+      time: auditResults[FORM_FACTOR_MOBILE]?.fetchTime,
+      result: auditResults,
     }
   };
 
@@ -151,6 +168,7 @@ function PSIClient(config) {
     getPSIApiUrl,
     performPSICheck,
     processAuditData,
+    runAudit,
   }
 }
 

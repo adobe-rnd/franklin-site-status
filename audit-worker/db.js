@@ -87,13 +87,12 @@ function DB(config) {
       siteId: new ObjectId(site._id),
       auditedAt: now,
       type: audit.type,
-      subType: audit.subType,
       isError: false,
       isLive: site.isLive,
       markdownContent,
       markdownDiff,
       githubDiff,
-      auditResult: audit.result,
+      auditResults: audit.result,
     };
 
     await saveAuditRecord(newAudit);
@@ -113,7 +112,7 @@ function DB(config) {
       auditedAt: now,
       isError: true,
       errorMessage: error.message,
-      auditResult: null,
+      auditResults: null,
     };
     await saveAuditRecord(newAudit);
   }

@@ -56,7 +56,7 @@ Each document in the `sites` collection represents a site to be audited and has 
     {
       "auditedAt": "<timestamp>",
       "isError": false,
-      "auditResult": {}
+      "auditResults": {}
     },
     // More audits
   ]
@@ -65,7 +65,7 @@ Each document in the `sites` collection represents a site to be audited and has 
 
 In this structure, the `lastAudited` property records the timestamp of the latest audit attempt (whether it was successful or not). It is updated every time an audit is initiated for a site.
 
-In the `audits` array, each audit includes an `auditedAt` timestamp which is set when the audit is performed. If an error occurs during the audit, the `isError` property is set to `true` and the `auditResult` is replaced with an `errorMessage`.
+In the `audits` array, each audit includes an `auditedAt` timestamp which is set when the audit is performed. If an error occurs during the audit, the `isError` property is set to `true` and the `auditResults` is replaced with an `errorMessage`.
 
 Here's how an audit error is represented:
 

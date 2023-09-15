@@ -38,12 +38,12 @@ function AuditWorker(config, dependencies) {
 
     log('info', `Auditing ${domain}...`);
 
-    const audit = await psiClient.performPSICheck(domain);
+    const auditResult = await psiClient.runAudit(domain);
 
-    const markdownDiff = await contentClient.fetchMarkdownDiff(latestAudit, audit?.result?.finalUrl);
-    const githubDiff = await githubClient.fetchGithubDiff(audit, latestAudit?.auditedAt, gitHubURL);
+    const markdownDiff = await contentClient.fetchMarkdownDiff(domain, latestAudit, auditResult.finalUrl);
+    const githubDiff = await githubClient.fetchGithubDiff(domain, auditResult.time, latestAudit?.auditedAt, gitHubURL);
 
-    await db.saveAudit(site, audit, markdownDiff, githubDiff);
+    await db.saveAudit(site, auditResult, markdownDiff, githubDiff);
   }
 
   async function handleAuditError(site, error) {

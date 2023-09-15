@@ -67,9 +67,7 @@ describe('GithubClient', function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com', githubId: 'id', githubSecret: 'secret' });
 
       const audit = {
-        result: {
-          fetchTime: '2023-06-16T00:00:00.000Z'
-        }
+        time: '2023-06-16T00:00:00.000Z'
       };
       const lastAuditedAt = '2023-06-15T00:00:00.000Z';
       const gitHubURL = 'https://github.com/openai/gpt-3';
@@ -90,7 +88,7 @@ describe('GithubClient', function () {
         .onSecondCall().resolves(mockDiffResponse)
         .onThirdCall().resolves(mockDiffResponse);
 
-      const diffs = await client.fetchGithubDiff(audit, lastAuditedAt, gitHubURL);
+      const diffs = await client.fetchGithubDiff('example.com', audit.time, lastAuditedAt, gitHubURL);
 
       // Check axios.get call count
       assert.strictEqual(axios.get.callCount, 3);
@@ -120,14 +118,12 @@ describe('GithubClient', function () {
       sandbox.stub(axios, 'get').rejects(new Error('Network Error'));
 
       const audit = {
-        result: {
-          fetchTime: '2023-06-16T00:00:00.000Z'
-        }
+        time: '2023-06-16T00:00:00.000Z'
       };
       const lastAuditedAt = '2023-06-15T00:00:00.000Z';
       const gitHubURL = 'https://github.com/openai/gpt-3';
 
-      const diffs = await client.fetchGithubDiff(audit, lastAuditedAt, gitHubURL);
+      const diffs = await client.fetchGithubDiff('example.com', audit.time, lastAuditedAt, gitHubURL);
       assert.strictEqual(diffs, '');
     });
 
@@ -136,14 +132,12 @@ describe('GithubClient', function () {
       sandbox.stub(axios, 'get').resolves({ data: null });
 
       const audit = {
-        result: {
-          fetchTime: '2023-06-16T00:00:00.000Z'
-        }
+        time: '2023-06-16T00:00:00.000Z'
       };
       const lastAuditedAt = '2023-06-15T00:00:00.000Z';
       const gitHubURL = 'https://github.com/openai/gpt-3';
 
-      const diffs = await client.fetchGithubDiff(audit, lastAuditedAt, gitHubURL);
+      const diffs = await client.fetchGithubDiff('example.com', audit.time, lastAuditedAt, gitHubURL);
       assert.strictEqual(diffs, '');
     });
 
@@ -151,16 +145,14 @@ describe('GithubClient', function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com', githubId: 'id', githubSecret: 'secret' });
       const fixedFetchTime = '2023-06-16T00:00:00.000Z';
       const audit = {
-        result: {
-          fetchTime: '2023-06-16T00:00:00.000Z'
-        }
+        time: '2023-06-16T00:00:00.000Z'
       };
       const expectedSince = new Date(new Date(fixedFetchTime) - 86400 * 1000).toISOString();
 
       // Stub axios to return a mock response (prevent real API call)
       sandbox.stub(axios, 'get').resolves({ data: [] });
 
-      await client.fetchGithubDiff(audit, null, 'https://github.com/openai/gpt-3');
+      await client.fetchGithubDiff('example.com', audit.time, null, 'https://github.com/openai/gpt-3');
 
       sinon.assert.calledWith(axios.get, sinon.match.any, sinon.match.hasNested('params.since', expectedSince));
 
@@ -176,9 +168,7 @@ describe('GithubClient', function () {
         { sha: 'commit3', data: 'Another diff content that makes the total size exceed MAX_DIFF_SIZE' }
       ];
       const audit = {
-        result: {
-          fetchTime: '2023-06-16T00:00:00.000Z'
-        }
+        time: '2023-06-16T00:00:00.000Z'
       };
 
       // Stub axios to return mock responses sequentially
@@ -190,9 +180,9 @@ describe('GithubClient', function () {
 
       const logStub = sinon.stub(console, 'warn'); // Stub the log function to capture the warnings
 
-      await client.fetchGithubDiff(audit, '2023-06-15T00:00:00.000Z', 'https://github.com/openai/gpt-3');
+      await client.fetchGithubDiff('example.com', audit.time, '2023-06-15T00:00:00.000Z', 'https://github.com/openai/gpt-3');
 
-      sinon.assert.calledWithMatch(logStub, `Skipping commit ${mockDiffs[1].sha} because it is binary or too large (19 of ${102400}).`);
+      sinon.assert.calledWithMatch(logStub, `Skipping commit ${mockDiffs[1].sha} because it is binary or too large (19 of ${102400}) for site example.com.`);
 
       // Restore stubbed methods
       axios.get.restore();
@@ -206,9 +196,7 @@ describe('GithubClient', function () {
         { sha: 'commit2', data: 'Another valid diff content' }
       ];
       const audit = {
-        result: {
-          fetchTime: '2023-06-16T00:00:00.000Z'
-        }
+        time: '2023-06-16T00:00:00.000Z'
       };
 
       // Ensure total size of both diffs is less than MAX_DIFF_SIZE
@@ -223,7 +211,7 @@ describe('GithubClient', function () {
         axiosStub.onCall(index + 1).resolves({ data: diff.data });
       });
 
-      const result = await client.fetchGithubDiff(audit, '2023-06-15T00:00:00.000Z', 'https://github.com/openai/gpt-3');
+      const result = await client.fetchGithubDiff('example.com', audit.time, '2023-06-15T00:00:00.000Z', 'https://github.com/openai/gpt-3');
 
       // Check if the resulting diffs string contains the content of both mock diffs
       mockDiffs.forEach(diff => {
@@ -245,9 +233,7 @@ describe('GithubClient', function () {
       };
 
       const audit = {
-        result: {
-          fetchTime: '2023-06-16T00:00:00.000Z'
-        }
+        time: '2023-06-16T00:00:00.000Z'
       };
 
       sandbox.stub(axios, 'get').rejects(errorWithResponse);
@@ -255,9 +241,9 @@ describe('GithubClient', function () {
       // Stub console.log to capture logs
       const logStub = sandbox.stub(console, 'error');
 
-      await client.fetchGithubDiff(audit, '', 'https://github.com/openai/gpt-3');
+      await client.fetchGithubDiff('example.com', audit.time, '', 'https://github.com/openai/gpt-3');
 
-      sinon.assert.calledWithMatch(logStub, 'Error fetching data:', 'Some structured error');
+      sinon.assert.calledWithMatch(logStub, 'Error fetching GitHub diff data for site example.com:', 'Some structured error');
 
       // Restore stubbed methods
       logStub.restore();
@@ -266,9 +252,7 @@ describe('GithubClient', function () {
     it('should log the error directly when error does not have a response property', async function () {
       const client = new GithubClient({ baseUrl: 'https://api.github.com', githubId: 'id', githubSecret: 'secret' });
       const audit = {
-        result: {
-          fetchTime: '2023-06-16T00:00:00.000Z'
-        }
+        time: '2023-06-16T00:00:00.000Z'
       };
 
       // Generic error
@@ -279,9 +263,9 @@ describe('GithubClient', function () {
       // Stub console.log to capture logs
       const logStub = sandbox.stub(console, 'error');
 
-      await client.fetchGithubDiff(audit, '', 'https://github.com/someapi/test');
+      await client.fetchGithubDiff('example.com', audit.time, '', 'https://github.com/someapi/test');
 
-      sinon.assert.calledWithMatch(logStub, 'Error fetching data:', genericError);
+      sinon.assert.calledWithMatch(logStub, 'Error fetching GitHub diff data for site example.com:', genericError);
 
       // Restore stubbed methods
       logStub.restore();
