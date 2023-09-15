@@ -25,7 +25,7 @@ describe('ContentClient', function () {
     it('should append "index.md" to the markdown URL if it ends with "/"', async () => {
       const axiosStub = sinon.stub(axios, 'get').resolves({ data: 'Sample Markdown content' });
 
-      await contentClient.fetchMarkdownDiff(null, 'http://example.com/');
+      await contentClient.fetchMarkdownDiff('example.com', null, 'http://example.com/');
 
       assert(axiosStub.calledWith('http://example.com/index.md'), 'Expected axios.get to be called with the correct URL');
     });
@@ -35,7 +35,7 @@ describe('ContentClient', function () {
       const expectedMarkdownDiff = "Index: http://example.com.md\n===================================================================\n--- http://example.com.md\n+++ http://example.com.md\n@@ -0,0 +1,1 @@\n+Sample Markdown content\n\\ No newline at end of file\n"
       sinon.stub(axios, 'get').resolves({ data: markdownContentStub });
 
-      const result = await contentClient.fetchMarkdownDiff(null, 'http://example.com');
+      const result = await contentClient.fetchMarkdownDiff('example.com', null, 'http://example.com');
 
       assert.strictEqual(result.markdownContent, markdownContentStub);
       assert.strictEqual(result.markdownDiff, expectedMarkdownDiff);
@@ -49,7 +49,7 @@ describe('ContentClient', function () {
       const markdownContentStub = "Changed Markdown content";
       sinon.stub(axios, 'get').resolves({ data: markdownContentStub });
 
-      const result = await contentClient.fetchMarkdownDiff(latestAudit, 'http://example.com');
+      const result = await contentClient.fetchMarkdownDiff('example.com', latestAudit, 'http://example.com');
 
       assert.strictEqual(result.markdownContent, markdownContentStub);
       assert.strictEqual(
@@ -74,7 +74,7 @@ describe('ContentClient', function () {
       const markdownContentStub = "Sample Markdown content";
       sinon.stub(axios, 'get').resolves({ data: markdownContentStub });
 
-      const result = await contentClient.fetchMarkdownDiff(latestAudit, 'http://example.com');
+      const result = await contentClient.fetchMarkdownDiff('example.com', latestAudit, 'http://example.com');
 
       assert.strictEqual(result.markdownContent, markdownContentStub);
       assert.strictEqual(result.markdownDiff, null);
@@ -85,7 +85,7 @@ describe('ContentClient', function () {
       error.response = { status: 404 };
       sinon.stub(axios, 'get').rejects(error);
 
-      const result = await contentClient.fetchMarkdownDiff(null, 'http://example.com');
+      const result = await contentClient.fetchMarkdownDiff('example.com', null, 'http://example.com');
 
       assert.strictEqual(result.markdownContent, null);
       assert.strictEqual(result.markdownDiff, null);
@@ -97,9 +97,9 @@ describe('ContentClient', function () {
 
       const logStub = sinon.stub(console, 'error');
 
-      await contentClient.fetchMarkdownDiff(null, 'http://example.com');
+      await contentClient.fetchMarkdownDiff('example.com', null, 'http://example.com');
 
-      sinon.assert.calledWithMatch(logStub, 'Error while downloading Markdown content:', error);
+      sinon.assert.calledWithMatch(logStub, 'Error while downloading Markdown content for site example.com:', error);
     });
   });
 });

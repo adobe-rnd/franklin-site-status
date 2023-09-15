@@ -67,7 +67,7 @@ function ContentClient() {
       if (err.response && err.response.status === NOT_FOUND_STATUS) {
         log('info', `Markdown content not found for site ${domain}`);
       } else {
-        log('error', `Error while downloading Markdown content for domain ${domain}:`, err);
+        log('error', `Error while downloading Markdown content for site ${domain}:`, err);
       }
     }
 
