@@ -81,8 +81,8 @@ function sortSites(sites, sortConfig) {
     for (let config of sortConfig) {
       const { key, desc } = config;
 
-      const valueA = getNestedValue(a, key) || -Infinity;
-      const valueB = getNestedValue(b, key) || -Infinity;
+      const valueA = parseFloat(getNestedValue(a, key)) || -Infinity;
+      const valueB = parseFloat(getNestedValue(b, key)) || -Infinity;
 
       if (valueA !== valueB) {
         return desc ? valueB - valueA : valueA - valueB;
@@ -95,6 +95,17 @@ function sortSites(sites, sortConfig) {
 }
 
 /**
+ * Filters sites that don't have audit results for a given strategy.
+ *
+ * @param {Array.<Object>} sites - The sites to filter.
+ * @param {string} strategy - The audit strategy ('mobile' or 'desktop').
+ * @returns {Array.<Object>} The filtered sites.
+ */
+function filterSitesByStrategy(sites, strategy) {
+  return sites.filter(site => site.lastAudit && site.lastAudit.auditResults && site.lastAudit.auditResults[strategy]);
+}
+
+/**
  * Retrieves sites with audits, either from the cache or freshly from the database.
  * Cached data is automatically refreshed every 5 minutes.
  *
@@ -103,7 +114,6 @@ function sortSites(sites, sortConfig) {
  * @async
  * @returns {Promise<Array.<Object>>} A promise resolving with the list of sites.
  */
-
 async function getCachedSitesWithAudits(psiStrategy = 'mobile') {
   const now = Date.now();
   const fiveMinutes = 5 * 60 * 1000;
@@ -111,14 +121,16 @@ async function getCachedSitesWithAudits(psiStrategy = 'mobile') {
   if (!cachedSites || now - cacheTimestamp > fiveMinutes) {
     cachedSites = await getSitesWithAudits();
     cacheTimestamp = now;
-    // Sort and cache for both strategies upon fresh data retrieval
-    sortedSites.mobile = sortSites(cachedSites, SITES_SORT_CONFIG.mobile);
-    sortedSites.desktop = sortSites(cachedSites, SITES_SORT_CONFIG.desktop);
+
+    // Filter sites based on the psiStrategy and then sort them
+    sortedSites.mobile = sortSites(filterSitesByStrategy(cachedSites, 'mobile'), SITES_SORT_CONFIG.mobile);
+    sortedSites.desktop = sortSites(filterSitesByStrategy(cachedSites, 'desktop'), SITES_SORT_CONFIG.desktop);
   }
 
   // Return the cached sorted sites based on the psiStrategy
   return sortedSites[psiStrategy] || sortedSites.mobile;
 }
+
 
 /**
  * Invalidates the current cache, clearing all cached data.

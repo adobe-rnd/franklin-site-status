@@ -3,6 +3,54 @@ const assert = require('assert');
 const db = require('../db.js');
 
 describe('cache.js', () => {
+  const mockSites = [
+    {
+      domain: "site1.com",
+      lastAudit: {
+        auditResults: {
+          mobile: {
+            categories: {
+              performance: { score: 36 },
+              seo: { score: 93 },
+              accessibility: { score: 87 },
+              bestPractices: { score: 100 }
+            }
+          }
+        }
+      }
+    },
+    {
+      domain: "site2.com",
+      lastAudit: {
+        auditResults: {
+          mobile: {
+            categories: {
+              performance: { score: 66 },
+              seo: { score: 92 },
+              accessibility: { score: 85 },
+              bestPractices: { score: 95 }
+            }
+          }
+        }
+      }
+    },
+    {
+      domain: "site3.com",
+      lastAudit: {
+        auditResults: {
+          mobile: {
+            categories: {
+              performance: { score: 22 },
+              seo: { score: 90 },
+              accessibility: { score: 100 },
+              bestPractices: { score: 100 }
+            }
+          }
+        }
+      }
+    }
+  ];
+
   let getSitesWithAuditsStub;
   let getCachedSitesWithAudits;
 
@@ -49,4 +97,15 @@ describe('cache.js', () => {
 
     clock.restore();
   });
+
+  it('should sort sites based on scores', async () => {
+    getSitesWithAuditsStub.resolves(mockSites);
+
+    const sites = await getCachedSitesWithAudits('mobile');
+
+    assert(sites[0].domain === "site3.com");
+    assert(sites[1].domain === "site1.com");
+    assert(sites[2].domain === "site2.com");
+  });
+
 });
