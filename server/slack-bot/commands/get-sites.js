@@ -19,9 +19,10 @@ const EXPORT_FORMATS = {
  * @param {Array} [sites=[]] - The sites to format.
  * @param {number} start - The index to start slicing the array.
  * @param {number} end - The index to end slicing the array.
+ * @param {string} psiStrategy - The strategy to show scores of.
  * @returns {string} The formatted sites message.
  */
-function formatSites(sites = [], start, end) {
+function formatSites(sites = [], start, end, psiStrategy = 'mobile') {
   return sites.slice(start, end).reduce((message, site, index) => {
     const { domain } = site;
     const domainText = domain.replace(/^main--/, '').replace(/--.*/, '');
@@ -34,7 +35,7 @@ function formatSites(sites = [], start, end) {
       const icon = site.isLive ? ':rocket:' : ':submarine:';
 
       if (!lastAudit.isError) {
-        const scores = extractAuditScores(lastAudit);
+        const scores = extractAuditScores(lastAudit, psiStrategy);
         const { performance = 0, accessibility = 0, bestPractices = 0, seo = 0 } = scores;
 
         siteMessage = `${rank}. ${icon} ${formatScore(performance)} - ${formatScore(seo)} - ${formatScore(accessibility)} - ${formatScore(bestPractices)}: <${formatURL(domain)}|${domainText}>`;
@@ -227,6 +228,7 @@ function GetSitesCommand(bot) {
     name: 'Get All Franklin Sites',
     description: 'Retrieves all known franklin sites and includes the latest audit scores',
     phrases: PHRASES,
+    usageText: `${PHRASES.join(' or ')} [desktop|mobile|all|live|non-live];`,
   });
 
   /**
@@ -249,10 +251,37 @@ function GetSitesCommand(bot) {
    * @returns {Promise<void>} A Promise that resolves when the command is executed.
    */
   const handleExecution = async (args, say) => {
+    let filterStatus = 'live';
+    let psiStrategy = 'mobile';
+
+    args.forEach(arg => {
+      switch (arg) {
+        case "all":
+          filterStatus = "all";
+          break;
+        case "live":
+          filterStatus = "live";
+          break;
+        case "non-live":
+          filterStatus = "non-live";
+          break;
+        case "desktop":
+          psiStrategy = "desktop";
+          break;
+        case "mobile":
+          psiStrategy = "mobile";
+          break;
+      }
+    });
+
     await say(':hourglass: Retrieving all sites, please wait...');
 
     try {
-      const sites = await getCachedSitesWithAudits();
+      let sites = await getCachedSitesWithAudits();
+
+      if (filterStatus !== "all") {
+        sites = sites.filter(site => (filterStatus === "live" ? site.isLive : !site.isLive));
+      }
 
       if (sites.length === 0) {
         await say(':warning: No sites found.');
@@ -265,12 +294,12 @@ function GetSitesCommand(bot) {
 
       let textSections = [{
         text: `
-    *Franklin Sites Status:* ${totalSites} total sites
+    *Franklin Sites Status:* ${totalSites} total sites / PSI: ${psiStrategy}
 
     Columns: Rank: (Live-Status) Performance - SEO - Accessibility - Best Practices >> Domain
 
     _Sites are ordered by performance score, then all other scores, ascending._
-    ${formatSites(sites, start, end)}
+    ${formatSites(sites, start, end, psiStrategy)}
     `,
         accessory: generateOverflowAccessory(),
       },

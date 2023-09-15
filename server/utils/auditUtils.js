@@ -2,12 +2,13 @@
  * Extracts audit scores from an audit.
  *
  * @param {Object} audit - The audit to extract scores from.
+ * @param {String} psiStrategy - The filter strategy to use.
  * @return {Object} - The extracted audit scores.
  */
-function extractAuditScores(audit) {
-  if (!audit?.auditResults?.mobile) return {};
+function extractAuditScores(audit, psiStrategy = 'mobile') {
+  if (!audit?.auditResults?.[psiStrategy]) return {};
 
-  const { performance, accessibility, 'best-practices': bestPractices, seo } = audit.auditResults.mobile.categories;
+  const { performance, accessibility, 'best-practices': bestPractices, seo } = audit.auditResults[psiStrategy].categories;
   return {
     performance: performance.score,
     accessibility: accessibility.score,

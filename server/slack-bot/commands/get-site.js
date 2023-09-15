@@ -90,7 +90,7 @@ function GetSiteCommand(bot) {
     name: "Get Franklin Site Status",
     description: 'Retrieves audit status for a Franklin site by a given domain',
     phrases: PHRASES,
-    usageText: `${PHRASES.join(' or ')} {domain};`,
+    usageText: `${PHRASES.join(' or ')} {domain} [desktop|mobile];`,
   });
 
   /**
