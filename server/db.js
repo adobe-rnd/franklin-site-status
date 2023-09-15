@@ -5,15 +5,44 @@
 
 const { MongoClient } = require('mongodb');
 
+/**
+ * URI for MongoDB connection.
+ * @constant
+ * @type {string}
+ */
 const MONGODB_URI = process.env.MONGODB_URI;
+
+/**
+ * Name of the database.
+ * @constant
+ * @type {string}
+ */
 const DATABASE_NAME = 'franklin-status';
+
+/**
+ * Name of the sites collection.
+ * @constant
+ * @type {string}
+ */
 const COLLECTION_SITES = 'sites';
 
+/**
+ * MongoDB client instance.
+ * @type {MongoClient|null}
+ */
 let client;
+
+/**
+ * Database instance.
+ * @type {Db|null}
+ */
 let db;
 
 /**
- * Connect to the MongoDB database.
+ * Connects to the MongoDB database.
+ * @async
+ * @function
+ * @throws {Error} Throws an error if unable to connect.
  */
 async function connectToDb() {
   try {
@@ -30,7 +59,9 @@ async function connectToDb() {
 }
 
 /**
- * Disconnect from the MongoDB database.
+ * Disconnects from the MongoDB database.
+ * @async
+ * @function
  */
 async function disconnectFromDb() {
   try {
@@ -48,6 +79,12 @@ async function disconnectFromDb() {
   }
 }
 
+/**
+ * Retrieves the database instance.
+ * @function
+ * @throws {Error} Throws an error if not connected to the database.
+ * @returns {Db} The database instance.
+ */
 function getDb() {
   if (!db) {
     throw new Error('Not connected to database');
@@ -55,32 +92,28 @@ function getDb() {
   return db;
 }
 
-function getNestedValue(obj, keyString) {
-  const keys = keyString.split('.');
-  let value = obj;
-
-  for (let key of keys) {
-    if (!Object.prototype.hasOwnProperty.call(value, key)) {
-      return -Infinity;
-    }
-
-    value = value[key];
-  }
-
-  return value;
-}
-
 /**
  * Creates a site in the "sites" collection.
  *
+ * @async
+ * @function
  * @param {Object} site - The site data.
- * @returns {Promise} A promise that resolves when the operation is complete.
+ * @returns {Promise<InsertOneWriteOpResult<any>>} A promise that resolves when the operation is complete.
  */
 function createSite(site) {
   const db = getDb();
   return db.collection(COLLECTION_SITES).insertOne(site);
 }
 
+/**
+ * Updates a site in the "sites" collection by its ID.
+ *
+ * @async
+ * @function
+ * @param {ObjectID} siteId - The site ID.
+ * @param {Object} updatedSite - The updated site data.
+ * @returns {Promise<UpdateWriteOpResult>} A promise that resolves when the operation is complete.
+ */
 function updateSite(siteId, updatedSite) {
   const db = getDb();
   return db.collection(COLLECTION_SITES).updateOne(
@@ -95,6 +128,15 @@ function updateSite(siteId, updatedSite) {
   );
 }
 
+/**
+ * Updates a site in the "sites" collection by its domain.
+ *
+ * @async
+ * @function
+ * @param {string} domain - The site domain.
+ * @param {Object} updatedSite - The updated site data.
+ * @returns {Promise<UpdateWriteOpResult>} A promise that resolves when the operation is complete.
+ */
 function updateSiteByDomain(domain, updatedSite) {
   const db = getDb();
   return db.collection(COLLECTION_SITES).updateOne(
@@ -109,12 +151,28 @@ function updateSiteByDomain(domain, updatedSite) {
   );
 }
 
+/**
+ * Retrieves site metadata by its domain.
+ *
+ * @async
+ * @function
+ * @param {string} domain - The site domain.
+ * @returns {Promise<Object|null>} A promise that resolves with the site metadata or null if not found.
+ */
 async function getSiteMetadataByDomain(domain) {
   const db = getDb();
 
   return db.collection(COLLECTION_SITES).findOne({ domain });
 }
 
+/**
+ * Retrieves a site and its audits by its domain.
+ *
+ * @async
+ * @function
+ * @param {string} domain - The site domain.
+ * @returns {Promise<Object|null>} A promise that resolves with the site data or null if not found.
+ */
 async function getSiteByDomain(domain) {
   const db = getDb();
 
@@ -151,6 +209,14 @@ async function getSiteByDomain(domain) {
   return result.length > 0 ? result[0] : null;
 }
 
+/**
+ * Retrieves a site's ID by its domain.
+ *
+ * @async
+ * @function
+ * @param {string} domain - The site domain.
+ * @returns {Promise<ObjectID|null>} A promise that resolves with the site ID or null if not found.
+ */
 async function getSiteIdByDomain(domain) {
   const db = getDb();
 
@@ -162,6 +228,13 @@ async function getSiteIdByDomain(domain) {
   return site?._id;
 }
 
+/**
+ * Retrieves a list of sites to audit.
+ *
+ * @async
+ * @function
+ * @returns {Promise<Array<Object>>} A promise that resolves with the list of sites.
+ */
 async function getSitesToAudit() {
   const db = getDb();
 
@@ -172,6 +245,13 @@ async function getSitesToAudit() {
   return db.collection(COLLECTION_SITES).find({}, { projection }).toArray();
 }
 
+/**
+ * Retrieves all sites along with their latest audits.
+ *
+ * @async
+ * @function
+ * @returns {Promise<Array<Object>>} A promise that resolves with the list of sites.
+ */
 async function getSitesWithAudits() {
   const db = getDb();
 
@@ -209,7 +289,6 @@ async function getSitesWithAudits() {
 module.exports = {
   COLLECTION_SITES,
   getDb,
-  getNestedValue,
   connectToDb,
   disconnectFromDb,
   getSiteByDomain,
