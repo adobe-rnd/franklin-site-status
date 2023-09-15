@@ -44,10 +44,12 @@ const formatDate = (isoDate) => {
  * @param {number} score - The score to be formatted.
  * @returns {string} The formatted percentage string.
  */
-const formatScore = (score) => {
-  const percentage = Math.round(score * PERCENT_MULTIPLIER);
-  return `${percentage}%`.padStart(3, " ");
-};
+function formatScore(score) {
+  if (isNaN(score)) {
+    return '---';
+  }
+  return `${Math.round(score * PERCENT_MULTIPLIER)}%`;
+}
 
 const printSiteDetails = (site) => {
   const psiURL = `https://developers.google.com/speed/pagespeed/insights/?url=${site.domain}&strategy=mobile`;
