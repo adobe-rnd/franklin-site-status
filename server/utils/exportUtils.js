@@ -1,7 +1,7 @@
 const xlsx = require('xlsx');
 const { Parser } = require('json2csv');
 
-const getCachedSitesWithAudits = require('../cache.js');
+const { getCachedSitesWithAudits } = require('../cache.js');
 const { extractAuditScores } = require('./auditUtils.js');
 
 const SITES_EXPORT_PROPERTIES = [

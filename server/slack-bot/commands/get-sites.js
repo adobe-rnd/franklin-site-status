@@ -49,6 +49,32 @@ function formatSites(sites = [], start, end, psiStrategy = 'mobile') {
   }, '');
 }
 
+async function fetchAndFormatSites(start, filterStatus, psiStrategy) {
+  let sites = await getCachedSitesWithAudits(psiStrategy);
+  if (filterStatus !== "all") {
+    sites = sites.filter(site => (filterStatus === "live" ? site.isLive : !site.isLive));
+  }
+
+  const end = start + PAGE_SIZE;
+  const totalSites = sites.length;
+
+  let textSections = [{
+    text: `
+    *Franklin Sites Status:* ${totalSites} total ${filterStatus} sites / PSI: ${psiStrategy}
+
+    Columns: Rank: (Live-Status) Performance - SEO - Accessibility - Best Practices >> Domain
+
+    _Sites are ordered by performance score, then all other scores, ascending._
+    ${formatSites(sites, start, end, psiStrategy)}
+    `,
+    accessory: generateOverflowAccessory(),
+  }];
+
+  let additionalBlocks = [generatePaginationBlocks(start, end, totalSites, filterStatus, psiStrategy)];
+
+  return { textSections, additionalBlocks };
+}
+
 /**
  * Generate an overflow accessory object for a Slack message.
  *
@@ -186,7 +212,7 @@ async function overflowActionHandler({ body, ack, client, say }) {
  *
  * @param {Object} param0 - The object containing the acknowledgement function (ack), say function, and action.
  */
-async function paginationHandler({ ack, say, action }) {
+const paginationHandler = async ({ ack, say, action }) => {
   console.log(`Pagination request received for get sites. Page: ${action.value}`);
   const startTime = process.hrtime();
 
@@ -194,29 +220,13 @@ async function paginationHandler({ ack, say, action }) {
 
   const [newStart, filterStatus, psiStrategy] = action.value.split(':');
   const start = parseInt(newStart);
-  const end = start + PAGE_SIZE;
 
-  let sites = await getCachedSitesWithAudits(psiStrategy);
-  if (filterStatus !== "all") {
-    sites = sites.filter(site => (filterStatus === "live" ? site.isLive : !site.isLive));
+  try {
+    const { textSections, additionalBlocks } = await fetchAndFormatSites(start, filterStatus, psiStrategy);
+    await sendMessageBlocks(say, textSections, additionalBlocks);
+  } catch (error) {
+    await postErrorMessage(say, error);
   }
-
-  const totalSites = sites.length;
-
-  let textSections = [{
-    text: `
-    *Franklin Sites Status:* ${totalSites} total sites
-
-    Columns: Rank: Performance - SEO - Accessibility - Best Practices >> Domain
-    _Sites are ordered by performance score, then all other scores, ascending._
-    ${formatSites(sites, start, end)}
-    `,
-    accessory: generateOverflowAccessory(),
-  }];
-
-  let additionalBlocks = [generatePaginationBlocks(start, end, totalSites)];
-
-  await sendMessageBlocks(say, textSections, additionalBlocks);
 
   const endTime = process.hrtime(startTime);
   const elapsedTime = (endTime[0] + endTime[1] / 1e9).toFixed(2);
@@ -258,6 +268,8 @@ function GetSitesCommand(bot) {
    * @returns {Promise<void>} A Promise that resolves when the command is executed.
    */
   const handleExecution = async (args, say) => {
+    await say(':hourglass: Retrieving all sites, please wait...');
+
     let filterStatus = 'live';
     let psiStrategy = 'mobile';
 
@@ -281,39 +293,8 @@ function GetSitesCommand(bot) {
       }
     });
 
-    await say(':hourglass: Retrieving all sites, please wait...');
-
     try {
-      let sites = await getCachedSitesWithAudits(psiStrategy);
-
-      if (filterStatus !== "all") {
-        sites = sites.filter(site => (filterStatus === "live" ? site.isLive : !site.isLive));
-      }
-
-      if (sites.length === 0) {
-        await say(':warning: No sites found.');
-        return;
-      }
-
-      const totalSites = sites.length;
-      const start = 0;
-      const end = start + PAGE_SIZE;
-
-      let textSections = [{
-        text: `
-    *Franklin Sites Status:* ${totalSites} total ${filterStatus} sites / PSI: ${psiStrategy}
-
-    Columns: Rank: (Live-Status) Performance - SEO - Accessibility - Best Practices >> Domain
-
-    _Sites are ordered by performance score, then all other scores, ascending._
-    ${formatSites(sites, start, end, psiStrategy)}
-    `,
-        accessory: generateOverflowAccessory(),
-      },
-      ];
-
-      let additionalBlocks = [generatePaginationBlocks(start, end, totalSites, filterStatus, psiStrategy)];
-
+      const { textSections, additionalBlocks } = await fetchAndFormatSites(0, filterStatus, psiStrategy);
       await sendMessageBlocks(say, textSections, additionalBlocks);
     } catch (error) {
       await postErrorMessage(say, error);

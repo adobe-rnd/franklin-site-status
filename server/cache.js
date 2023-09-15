@@ -99,6 +99,8 @@ function sortSites(sites, sortConfig) {
  * Cached data is automatically refreshed every 5 minutes.
  *
  * @param {string} [psiStrategy='mobile'] - The PageSpeed Insights strategy ('mobile' or 'desktop').
+ * @function
+ * @async
  * @returns {Promise<Array.<Object>>} A promise resolving with the list of sites.
  */
 
