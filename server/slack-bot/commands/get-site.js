@@ -13,6 +13,7 @@ const PHRASES = ['get site', 'get domain'];
  *
  * @param {Array<string>} row - An array of strings, each representing a cell in the row.
  * @param {Array<number>} columnWidths - An array of numbers, each representing the maximum width of a column.
+ * @param {Array<string>} headers - An array of strings, each representing a header in the table.
  * @returns {string} The formatted row.
  */
 function formatRows(row, columnWidths, headers) {
@@ -30,9 +31,10 @@ function formatRows(row, columnWidths, headers) {
  * with an ellipsis.
  *
  * @param {Array<Object>} audits - An array of audit objects.
+ * @param {string} psiStrategy - The PSI strategy used to retrieve the audits.
  * @returns {string} The audits formatted into a stringified table or a fallback message.
  */
-function formatAudits(audits) {
+function formatAudits(audits, psiStrategy = 'mobile') {
   if (!audits || !audits.length) {
     return "No audit history available";
   }
@@ -44,7 +46,7 @@ function formatAudits(audits) {
     if (isError) {
       return [formatDate(auditedAt), `Error: ${errorMessage}`];
     } else {
-      const { performance, seo, accessibility, bestPractices } = extractAuditScores(audit);
+      const { performance, seo, accessibility, bestPractices } = extractAuditScores(audit, psiStrategy);
       return [
         formatDate(auditedAt),
         formatScore(performance),
@@ -103,8 +105,8 @@ function GetSiteCommand(bot) {
    */
   const handleExecution = async (args, say) => {
     try {
-      const [domainInput] = args;
-      const domain = extractDomainFromInput(domainInput, false);
+      const domain = extractDomainFromInput(args[0], false);
+      const psiStrategy = args[1] === 'desktop' ? 'desktop' : 'mobile';
 
       if (!domain) {
         await say(baseCommand.usage());
@@ -122,11 +124,11 @@ function GetSiteCommand(bot) {
 
       const textSections = [{
         text: `
-    *Franklin Site Status*:
+    *Franklin Site Status* / PSI: ${psiStrategy}:
 
 ${printSiteDetails(site)}
 
-    _Audits are sorted by date descending._\n${formatAudits(site.audits)}
+    _Audits are sorted by date descending._\n${formatAudits(site.audits, psiStrategy)}
   `,
       }];
 
