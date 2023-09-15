@@ -85,9 +85,11 @@ function generateOverflowAccessory() {
  * @param {number} start - The index to start the page.
  * @param {number} end - The index to end the page.
  * @param {number} totalSites - The total number of sites.
+ * @param {string} filterStatus - The status to filter sites by.
+ * @param {string} psiStrategy - The strategy to show scores of.
  * @returns {Object} The pagination blocks object.
  */
-function generatePaginationBlocks(start, end, totalSites) {
+function generatePaginationBlocks(start, end, totalSites, filterStatus, psiStrategy = 'mobile') {
   const blocks = [];
   const numberOfPages = Math.ceil(totalSites / PAGE_SIZE);
 
@@ -99,7 +101,7 @@ function generatePaginationBlocks(start, end, totalSites) {
         "type": "plain_text",
         "text": "Previous"
       },
-      "value": String(start - PAGE_SIZE),
+      "value": `${String(start - PAGE_SIZE)}:${filterStatus}:${psiStrategy}`,
       "action_id": "paginate_sites_prev"
     });
   }
@@ -113,7 +115,7 @@ function generatePaginationBlocks(start, end, totalSites) {
         "type": "plain_text",
         "text": `${i + 1}`
       },
-      "value": String(pageStart),
+      "value": `${String(pageStart)}:${filterStatus}:${psiStrategy}`,
       "action_id": `paginate_sites_page_${i + 1}`
     });
   }
@@ -126,7 +128,7 @@ function generatePaginationBlocks(start, end, totalSites) {
         "type": "plain_text",
         "text": "Next"
       },
-      "value": String(start + PAGE_SIZE),
+      "value": `${String(start + PAGE_SIZE)}:${filterStatus}:${psiStrategy}`,
       "action_id": "paginate_sites_next"
     });
   }
@@ -190,10 +192,15 @@ async function paginationHandler({ ack, say, action }) {
 
   await ack();
 
-  const start = parseInt(action.value);
+  const [newStart, filterStatus, psiStrategy] = action.value.split(':');
+  const start = parseInt(newStart);
   const end = start + PAGE_SIZE;
 
-  const sites = await getCachedSitesWithAudits();
+  let sites = await getCachedSitesWithAudits(psiStrategy);
+  if (filterStatus !== "all") {
+    sites = sites.filter(site => (filterStatus === "live" ? site.isLive : !site.isLive));
+  }
+
   const totalSites = sites.length;
 
   let textSections = [{
@@ -277,7 +284,7 @@ function GetSitesCommand(bot) {
     await say(':hourglass: Retrieving all sites, please wait...');
 
     try {
-      let sites = await getCachedSitesWithAudits();
+      let sites = await getCachedSitesWithAudits(psiStrategy);
 
       if (filterStatus !== "all") {
         sites = sites.filter(site => (filterStatus === "live" ? site.isLive : !site.isLive));
@@ -294,7 +301,7 @@ function GetSitesCommand(bot) {
 
       let textSections = [{
         text: `
-    *Franklin Sites Status:* ${totalSites} total sites / PSI: ${psiStrategy}
+    *Franklin Sites Status:* ${totalSites} total ${filterStatus} sites / PSI: ${psiStrategy}
 
     Columns: Rank: (Live-Status) Performance - SEO - Accessibility - Best Practices >> Domain
 
@@ -305,7 +312,7 @@ function GetSitesCommand(bot) {
       },
       ];
 
-      let additionalBlocks = [generatePaginationBlocks(start, end, totalSites)];
+      let additionalBlocks = [generatePaginationBlocks(start, end, totalSites, filterStatus, psiStrategy)];
 
       await sendMessageBlocks(say, textSections, additionalBlocks);
     } catch (error) {

@@ -9,13 +9,6 @@ const MONGODB_URI = process.env.MONGODB_URI;
 const DATABASE_NAME = 'franklin-status';
 const COLLECTION_SITES = 'sites';
 
-const SITES_SORT_CONFIG = [
-  { key: 'lastAudit.auditResults.mobile.categories.performance.score', desc: false },
-  { key: 'lastAudit.auditResults.mobile.categories.seo.score', desc: false },
-  { key: 'lastAudit.auditResults.mobile.categories.accessibility.score', desc: false },
-  { key: 'lastAudit.auditResults.mobile.categories.bestPractices.score', desc: false },
-];
-
 let client;
 let db;
 
@@ -75,27 +68,6 @@ function getNestedValue(obj, keyString) {
   }
 
   return value;
-}
-
-function sortSites(sites, sortConfig) {
-  return sites.sort((a, b) => {
-    if (!a.lastAudit || a.lastAudit.isError) return 1;
-    if (!b.lastAudit || b.lastAudit.isError) return -1;
-
-    for (let config of sortConfig) {
-      const { key, desc } = config;
-
-      const valueA = getNestedValue(a, key) || -Infinity;
-      const valueB = getNestedValue(b, key) || -Infinity;
-
-      if (valueA !== valueB) {
-        return desc ? valueB - valueA : valueA - valueB;
-      }
-    }
-
-    // equal, so no change in order
-    return 0;
-  });
 }
 
 /**
@@ -231,14 +203,11 @@ async function getSitesWithAudits() {
     { $unset: ["audits", "_id", "lastAudit._id", "lastAudit.siteId"] },
   ];
 
-  const sites = await db.collection(COLLECTION_SITES).aggregate(query, { allowDiskUse: true }).toArray();
-
-  return sortSites(sites, SITES_SORT_CONFIG);
+  return db.collection(COLLECTION_SITES).aggregate(query, { allowDiskUse: true }).toArray();
 }
 
 module.exports = {
   COLLECTION_SITES,
-  SITES_SORT_CONFIG,
   getDb,
   getNestedValue,
   connectToDb,
@@ -249,7 +218,6 @@ module.exports = {
   getSitesToAudit,
   getSitesWithAudits,
   createSite,
-  sortSites,
   updateSite,
   updateSiteByDomain,
 };
