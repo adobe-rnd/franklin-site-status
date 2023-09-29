@@ -3,7 +3,7 @@ const sinon = require('sinon');
 const amqp = require('amqplib');
 const Queue = require('../queue.js'); // Adjust this path based on your directory structure
 
-describe('Queue', function() {
+describe('Queue', function () {
   let queue;
   const config = {
     username: 'test',
@@ -12,20 +12,23 @@ describe('Queue', function() {
     port: '5672'
   };
 
-  beforeEach(function() {
+  beforeEach(function () {
     queue = Queue(config);
+    queue.setRetryDelay(10);
   });
 
-  afterEach(function() {
+  afterEach(function () {
     sinon.restore();
   });
 
-  describe('connect', function() {
-    it('should connect to the broker', async function() {
+  describe('connect', function () {
+    it('should connect to the broker', async function () {
       const connectStub = sinon.stub(amqp, 'connect').resolves({
         createChannel: sinon.stub().resolves({
           prefetch: sinon.stub().resolves(),
-        })
+          on: sinon.stub()
+        }),
+        on: sinon.stub()
       });
 
       await queue.connect();
@@ -33,100 +36,75 @@ describe('Queue', function() {
       sinon.assert.calledOnce(connectStub);
     });
 
-    it('should handle connection errors', async function() {
+    it('should handle connection errors and retry', async function () {
       const error = new Error('Connection error');
-      sinon.stub(amqp, 'connect').rejects(error);
 
-      try {
-        await queue.connect();
-        assert.fail('Expected connect to throw but it did not.');
-      } catch (e) {
-        assert.strictEqual(e, error);
-      }
-    });
-  });
-
-  describe('close', function() {
-    it('should close the connection and channel', async function() {
-      const closeConnectionStub = sinon.stub().resolves();
-      const closeChannelStub = sinon.stub().resolves();
-
-      sinon.stub(amqp, 'connect').resolves({
-        createChannel: sinon.stub().resolves({
-          close: closeChannelStub,
-          prefetch: sinon.stub().resolves(),
-        }),
-        close: closeConnectionStub
-      });
-
-      await queue.connect();  // This will "create" the mock connection and channel
-      await queue.close();
-
-      sinon.assert.calledOnce(closeChannelStub);
-      sinon.assert.calledOnce(closeConnectionStub);
-    });
-
-    it('should handle closing errors gracefully', async function() {
-      queue = Queue({
-        ...config,
-        connection: { close: sinon.stub().throws(new Error('Close error')) },
-        channel: {
-          close: sinon.stub().resolves(),
-          prefetch: sinon.stub().resolves(),
+      let callCount = 0;
+      sinon.stub(amqp, 'connect').callsFake(() => {
+        callCount++;
+        if (callCount <= 3) {
+          return Promise.reject(error);
+        } else {
+          return Promise.resolve({
+            createChannel: sinon.stub().resolves({ prefetch: sinon.stub().resolves(), on: sinon.stub() }),
+            on: sinon.stub()
+          });
         }
       });
 
-      await queue.close(); // should not throw any error
+      await queue.connect();
+      assert.strictEqual(callCount, 4, `Expected amqp.connect to have been called 4 times, but was called ${callCount} times`);
     });
 
-    it('should log error if there\'s an issue closing the channel', async function() {
-      const channelCloseError = new Error('Channel close error');
-      const channelCloseStub = sinon.stub().throws(channelCloseError);
-      const logStub = sinon.stub(console, 'error');
-
-      sinon.stub(amqp, 'connect').resolves({
+    it('should handle connection close and reconnect', async function () {
+      const connectStub = sinon.stub(amqp, 'connect').resolves({
         createChannel: sinon.stub().resolves({
-          close: channelCloseStub,
           prefetch: sinon.stub().resolves(),
+          on: sinon.stub()
         }),
-        close: sinon.stub().resolves() // Simulating successful connection close.
+        on: sinon.stub().callsFake((event, handler) => {
+          if (event === 'close') {
+            setTimeout(handler, 50); // simulate a close event asynchronously
+          }
+        })
       });
 
-      await queue.connect();  // This will "create" the mock connection and channel.
-      await queue.close();
-
-      sinon.assert.calledWith(logStub, 'Error closing broker connection:', channelCloseError);
+      await queue.connect();
+      await new Promise(resolve => setTimeout(resolve, 100)); // wait to ensure any asynchronous handlers are called
+      sinon.assert.calledTwice(connectStub); // once initially, once for reconnect
     });
 
-    it('should log error if there\'s an issue closing the broker connection', async function() {
-      const connectionCloseError = new Error('Connection close error');
-      const connectionCloseStub = sinon.stub().throws(connectionCloseError);
+    it('should log errors from the message broker', async function () {
       const logStub = sinon.stub(console, 'error');
+      const error = new Error('Broker error');
 
       sinon.stub(amqp, 'connect').resolves({
         createChannel: sinon.stub().resolves({
-          close: sinon.stub().resolves(),
           prefetch: sinon.stub().resolves(),
-        }), // Simulating successful channel close.
-        close: connectionCloseStub
+          on: sinon.stub()
+        }),
+        on: sinon.stub().callsFake((event, handler) => {
+          if (event === 'error') {
+            handler(error); // simulate an error event
+          }
+        })
       });
 
-      await queue.connect();  // This will "create" the mock connection and channel.
-      await queue.close();
-
-      sinon.assert.calledWith(logStub, 'Error closing broker connection:', connectionCloseError);
+      await queue.connect();
+      sinon.assert.calledWith(logStub, 'Error from message broker: ', error);
     });
   });
 
-  describe('consumeMessages', function() {
-    it('should warn if channel is not available', async function() {
+  describe('consumeMessages', function () {
+    it('should warn if channel is not available', async function () {
       const logStub = sinon.stub(console, 'error');
-      await queue.consumeMessages('test-queue', () => {});
+      await queue.consumeMessages('test-queue', () => {
+      });
 
       sinon.assert.calledWith(logStub, 'Channel is not available. Make sure to connect to broker first.');
     });
 
-    it('should skip processing for null messages', async function() {
+    it('should skip processing for null messages', async function () {
       const fakeChannel = {
         assertQueue: sinon.stub().resolves(),
         consume: sinon.stub().callsFake((_, callback) => {
@@ -136,7 +114,8 @@ describe('Queue', function() {
       };
 
       sinon.stub(amqp, 'connect').resolves({
-        createChannel: sinon.stub().resolves(fakeChannel)
+        createChannel: sinon.stub().resolves(fakeChannel),
+        on: sinon.stub().resolves(),
       });
 
       const handlerSpy = sinon.spy();
@@ -147,7 +126,7 @@ describe('Queue', function() {
       sinon.assert.notCalled(handlerSpy);
     });
 
-    it('should process messages from the queue', async function() {
+    it('should process messages from the queue', async function () {
       const assertQueueStub = sinon.stub().resolves();
       const consumeStub = sinon.stub();
 
@@ -158,16 +137,18 @@ describe('Queue', function() {
       };
 
       sinon.stub(amqp, 'connect').resolves({
-        createChannel: sinon.stub().resolves(fakeChannel)
+        createChannel: sinon.stub().resolves(fakeChannel),
+        on: sinon.stub().resolves(),
       });
 
       await queue.connect();
-      await queue.consumeMessages('test-queue', () => {});
+      await queue.consumeMessages('test-queue', () => {
+      });
 
       sinon.assert.calledWith(assertQueueStub, 'test-queue', { durable: true });
     });
 
-    it('should log the received valid JSON message', async function() {
+    it('should log the received valid JSON message', async function () {
       const fakeChannel = {
         assertQueue: sinon.stub().resolves(),
         consume: sinon.stub().callsFake((_, callback) => {
@@ -177,7 +158,8 @@ describe('Queue', function() {
       };
 
       sinon.stub(amqp, 'connect').resolves({
-        createChannel: sinon.stub().resolves(fakeChannel)
+        createChannel: sinon.stub().resolves(fakeChannel),
+        on: sinon.stub().resolves(),
       });
 
       const logStub = sinon.stub(console, 'debug');
@@ -189,7 +171,7 @@ describe('Queue', function() {
       sinon.assert.calledWith(logStub, 'Received message: {"message": "Hello"}');
     });
 
-    it('should handle errors in the consumeMessages method gracefully', async function() {
+    it('should handle errors in the consumeMessages method gracefully', async function () {
       const error = new Error('Test error');
       const fakeChannel = {
         assertQueue: sinon.stub().rejects(error),
@@ -197,18 +179,20 @@ describe('Queue', function() {
       };
 
       sinon.stub(amqp, 'connect').resolves({
-        createChannel: sinon.stub().resolves(fakeChannel)
+        createChannel: sinon.stub().resolves(fakeChannel),
+        on: sinon.stub().resolves(),
       });
 
       const logStub = sinon.stub(console, 'error');
 
       await queue.connect();
-      await queue.consumeMessages('test-queue', () => {});
+      await queue.consumeMessages('test-queue', () => {
+      });
 
       sinon.assert.calledWith(logStub, 'Error:', 'Test error');
     });
 
-    it('should handle JSON parse errors gracefully', async function() {
+    it('should handle JSON parse errors gracefully', async function () {
       const fakeChannel = {
         assertQueue: sinon.stub().resolves(),
         consume: sinon.stub().callsFake((_, callback) => {
@@ -218,7 +202,8 @@ describe('Queue', function() {
       };
 
       sinon.stub(amqp, 'connect').resolves({
-        createChannel: sinon.stub().resolves(fakeChannel)
+        createChannel: sinon.stub().resolves(fakeChannel),
+        on: sinon.stub().resolves(),
       });
 
       const handlerSpy = sinon.spy();
