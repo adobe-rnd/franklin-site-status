@@ -17,14 +17,19 @@ function extractDomainFromInput(input, domainOnly = true) {
 
   for (const token of tokens) {
     if ((match = SLACK_URL_FORMAT_REGEX.exec(token)) !== null) {
-      const subdomain = `${match[1]}.` || ''; // Handle cases where subdomain is absent
-      const domain = match[2];
-      let path = match[3] || ''; // Handle cases where path is absent
-
-      result = subdomain + domain;
-      result += domainOnly ? '' : path;
-      result = result.replace(/\/+$/, '');
-      break;
+      const urlToken = token.includes("://") ? token : "http://" + token;
+      const url = new URL(urlToken);
+      const { hostname, pathname } = url;
+      // we do not keep the www
+      const finalHostname = hostname.split('www.').pop();
+      // we remove trailing slashes for paths only when an extension is provided 
+      const [...parts] = pathname.split('.');
+      const finalPathname = parts.length > 1 && parts.pop().endsWith('/')
+        ? pathname.replace(/\/+$/, '')
+        : pathname;
+      result = !domainOnly && finalPathname && finalPathname !== '/'
+        ? finalHostname + finalPathname
+        : finalHostname;
     }
   }
   return result;
