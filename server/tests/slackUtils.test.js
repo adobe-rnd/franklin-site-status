@@ -7,11 +7,11 @@ describe('slackUtils.js', () => {
     const expected = 'adobe.com';
 
     assert.strictEqual(extractDomainFromInput('get site adobe.com', false), expected);
-    assert.strictEqual(extractDomainFromInput('get site adobe.com/', false), expected + '/');
+    assert.strictEqual(extractDomainFromInput('get site adobe.com/', false), expected);
     assert.strictEqual(extractDomainFromInput('get site http://adobe.com', false), expected);
     assert.strictEqual(extractDomainFromInput('get site https://adobe.com', false), expected);
     assert.strictEqual(extractDomainFromInput('get site https://www.adobe.com', false), expected);
-    assert.strictEqual(extractDomainFromInput('get site https://www.adobe.com/', false), expected + '/');
+    assert.strictEqual(extractDomainFromInput('get site https://www.adobe.com/', false), expected);
   });
 
   it('extractDomainFromInput with path', async () => {
@@ -20,7 +20,7 @@ describe('slackUtils.js', () => {
     assert.strictEqual(extractDomainFromInput('add site http://adobe.com/some/path/w1th_numb3rs', false), expected);
     assert.strictEqual(extractDomainFromInput('add site https://adobe.com/some/path/w1th_numb3rs', false), expected);
     assert.strictEqual(extractDomainFromInput('add site https://www.adobe.com/some/path/w1th_numb3rs', false), expected);
-    assert.strictEqual(extractDomainFromInput('add site https://www.adobe.com/some/path/w1th_numb3rs/', false), expected + '/');
+    assert.strictEqual(extractDomainFromInput('add site https://www.adobe.com/some/path/w1th_numb3rs/', false), expected);
   });
 
   it('extractDomainFromInput with subdomain and path', async () => {
@@ -28,7 +28,7 @@ describe('slackUtils.js', () => {
 
     assert.strictEqual(extractDomainFromInput('get site http://business.adobe.com/some/path/w1th_numb3rs', false), expected);
     assert.strictEqual(extractDomainFromInput('get site https://business.adobe.com/some/path/w1th_numb3rs', false), expected);
-    assert.strictEqual(extractDomainFromInput('add site https://business.adobe.com/some/path/w1th_numb3rs/', false), expected  + '/');
+    assert.strictEqual(extractDomainFromInput('add site https://business.adobe.com/some/path/w1th_numb3rs/', false), expected);
   });
 
   it('extractDomainFromInput with subdomain, path and extension', async () => {

@@ -23,6 +23,7 @@ function extractDomainFromInput(input, domainOnly = true) {
 
       result = subdomain + domain;
       result += domainOnly ? '' : path;
+      result = result.replace(/\/+$/, '');
       break;
     }
   }
