@@ -30,6 +30,7 @@ function extractDomainFromInput(input, domainOnly = true) {
       result = !domainOnly && finalPathname && finalPathname !== '/'
         ? finalHostname + finalPathname
         : finalHostname;
+        break;
     }
   }
   return result;

@@ -54,4 +54,12 @@ describe('slackUtils.js', () => {
     assert.strictEqual(extractDomainFromInput('get site https://business.adobe.com/some/path/w1th_numb3rs'), expected);
     assert.strictEqual(extractDomainFromInput('add site https://business.adobe.com/some/path/w1th_numb3rs/'), expected);
   });
+
+  it('extractDomainFromInput with trailing tokens', async () => {
+    const expected = 'personal.nedbank.co.za/borrow/personal-loans.plain.html';
+
+    assert.strictEqual(extractDomainFromInput('get site personal.nedbank.co.za/borrow/personal-loans.plain.html test', false), expected);
+    assert.strictEqual(extractDomainFromInput('get site https://personal.nedbank.co.za/borrow/personal-loans.plain.html www.acme.com', false), expected);
+    assert.strictEqual(extractDomainFromInput('get site https://personal.nedbank.co.za/borrow/personal-loans.plain.html/ extra acme.com/', false), expected);
+  });
 });
