@@ -21,16 +21,16 @@ function extractDomainFromInput(input, domainOnly = true) {
       const url = new URL(urlToken);
       const { hostname, pathname } = url;
       // we do not keep the www
-      const finalHostname = hostname.split('www.').pop();
+      const finalHostname = hostname.replace(/^www\./, '');
       // we remove trailing slashes for paths only when an extension is provided 
-      const [...parts] = pathname.split('.');
-      const finalPathname = parts.length > 1 && parts.pop().endsWith('/')
+      const parts = pathname.split('.');
+      const finalPathname = parts.length > 1 && parts[parts.length - 1].endsWith('/')
         ? pathname.replace(/\/+$/, '')
         : pathname;
       result = !domainOnly && finalPathname && finalPathname !== '/'
         ? finalHostname + finalPathname
         : finalHostname;
-        break;
+      return result;
     }
   }
   return result;
