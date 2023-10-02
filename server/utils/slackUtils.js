@@ -13,7 +13,6 @@ const SLACK_URL_FORMAT_REGEX = /(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9.-]+)\.([a-
  */
 function extractDomainFromInput(input, domainOnly = true) {
   const tokens = input.split(" ");
-  let result = null;
 
   for (const token of tokens) {
     if ((match = SLACK_URL_FORMAT_REGEX.exec(token)) !== null) {
@@ -27,13 +26,12 @@ function extractDomainFromInput(input, domainOnly = true) {
       const finalPathname = parts.length > 1 && parts[parts.length - 1].endsWith('/')
         ? pathname.replace(/\/+$/, '')
         : pathname;
-      result = !domainOnly && finalPathname && finalPathname !== '/'
+      return !domainOnly && finalPathname && finalPathname !== '/'
         ? finalHostname + finalPathname
         : finalHostname;
-      return result;
     }
   }
-  return result;
+  return null;
 }
 
 /**
