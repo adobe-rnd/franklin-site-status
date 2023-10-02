@@ -12,21 +12,26 @@ const SLACK_URL_FORMAT_REGEX = /(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9.-]+)\.([a-
  * @returns {string|null} The domain extracted from the input message or null.
  */
 function extractDomainFromInput(input, domainOnly = true) {
-  const tokens = input.split(" ");
-  let result = null;
+  const tokens = input.split(' ');
 
   for (const token of tokens) {
     if ((match = SLACK_URL_FORMAT_REGEX.exec(token)) !== null) {
-      const subdomain = `${match[1]}.` || ''; // Handle cases where subdomain is absent
-      const domain = match[2];
-      let path = match[3] || ''; // Handle cases where path is absent
-
-      result = subdomain + domain;
-      result += domainOnly ? '' : path;
-      break;
+      const urlToken = token.includes('://') ? token : `http://${token}`;
+      const url = new URL(urlToken);
+      const { hostname, pathname } = url;
+      // we do not keep the www
+      const finalHostname = hostname.replace(/^www\./, '');
+      // we remove trailing slashes for paths only when an extension is provided 
+      const parts = pathname.split('.');
+      const finalPathname = parts.length > 1 && parts[parts.length - 1].endsWith('/')
+        ? pathname.replace(/\/+$/, '')
+        : pathname;
+      return !domainOnly && finalPathname && finalPathname !== '/'
+        ? `${finalHostname}${finalPathname}`
+        : finalHostname;
     }
   }
-  return result;
+  return null;
 }
 
 /**
