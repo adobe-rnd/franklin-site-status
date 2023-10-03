@@ -16,7 +16,11 @@ function extractDomainFromInput(input, domainOnly = true) {
 
   for (const token of tokens) {
     if ((match = SLACK_URL_FORMAT_REGEX.exec(token)) !== null) {
-      const urlToken = token.includes('://') ? token : `http://${token}`;
+      // see https://api.slack.com/reference/surfaces/formatting#links-in-retrieved-messages
+      const processedToken = token.charAt(0) === '<' && token.charAt(token.length - 1) === '>'
+        ? token.slice(1, token.length - 1).split('|').at(0)
+        : token;
+      const urlToken = processedToken.includes('://') ? processedToken : `http://${processedToken}`;
       const url = new URL(urlToken);
       const { hostname, pathname } = url;
       // we do not keep the www
