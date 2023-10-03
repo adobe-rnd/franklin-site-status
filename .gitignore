@@ -131,3 +131,4 @@ dist
 .pnp.*
 /.env.production
 /.env.development
+/.bundle
