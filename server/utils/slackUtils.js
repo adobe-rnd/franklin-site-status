@@ -42,21 +42,32 @@ function extractDomainFromInput(input, domainOnly = true) {
  * Sends an error message to the user and logs the error.
  *
  * @param {Function} say - The function to send a message to the user.
+ * @param {string} thread_ts - The thread_ts to send the message to.
  * @param {Error} error - The error to log and send a message about.
  */
-const postErrorMessage = async (say, error) => {
-  await say(`:nuclear-warning: Oops! Something went wrong: ${error.message}`);
+const postErrorMessage = async (say, thread_ts, error) => {
+  await say( { text: `:nuclear-warning: Oops! Something went wrong: ${error.message}`, thread_ts });
   console.error(error);
 };
 
 /**
+ * Sends a message to the user with the given text.
+ * @param {Function} say - The function to send a message to the user.
+ * @param {string} thread_ts - The thread_ts to send the message to.
+ * @param {string} text - The text to send.
+ */
+const sendTextMessage = async (say, thread_ts, text) => {
+  await say({ text, thread_ts });
+}
+/**
  * Sends a message with blocks to the user.
  *
  * @param {Function} say - The function to send a message to the user.
+ * @param {string} thread_ts - The thread_ts to send the message to.
  * @param {Object[]} textSections - The sections of the message.
  * @param {Object[]} [additionalBlocks=[]] - Additional blocks to send in the message.
  */
-const sendMessageBlocks = async (say, textSections, additionalBlocks = []) => {
+const sendMessageBlocks = async (say, thread_ts, textSections, additionalBlocks = []) => {
   let blocks = textSections.map(section => {
     let block = {
       "type": "section",
@@ -75,11 +86,12 @@ const sendMessageBlocks = async (say, textSections, additionalBlocks = []) => {
 
   blocks.push(...additionalBlocks);
 
-  await say({ blocks });
+  await say({ blocks, thread_ts });
 };
 
 module.exports = {
   extractDomainFromInput,
   postErrorMessage,
+  sendTextMessage,
   sendMessageBlocks,
 };

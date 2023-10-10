@@ -2,7 +2,7 @@ const BaseCommand = require('./base-command.js');
 const { getSiteMetadataByDomain, createSite } = require('../../db.js');
 const { queueSiteToAudit } = require('../../queue.js');
 const { invalidateCache } = require('../../cache.js');
-const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
+const { postErrorMessage, sendTextMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 
 const PHRASES = ['add site'];
 
@@ -28,21 +28,21 @@ function AddSiteCommand(bot) {
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
-  const handleExecution = async (args, say) => {
+  const handleExecution = async (args, thread_ts, say) => {
     try {
       const [siteDomainInput] = args;
 
       const siteDomain = extractDomainFromInput(siteDomainInput, false);
 
       if (!siteDomain) {
-        await say(':warning: Please provide a valid site domain.');
+        sendTextMessage(say, thread_ts, ':warning: Please provide a valid site domain.');
         return;
       }
 
       const site = await getSiteMetadataByDomain(siteDomain);
 
       if (site) {
-        await say(`:x: '${siteDomain}' was already added before. You can run _@spacecat get site ${siteDomain}_`);
+        sendTextMessage(say, thread_ts, `:x: '${siteDomain}' was already added before. You can run _@spacecat get site ${siteDomain}_`);
         return;
       }
 
@@ -53,7 +53,7 @@ function AddSiteCommand(bot) {
 
       const result = await createSite(newSite);
       if (!result || result.insertedCount !== 1) {
-        await say(`:x: Problem adding the site. Please contact the admins.`);
+        sendTextMessage(say, thread_ts, `:x: Problem adding the site. Please contact the admins.`);
         return;
       }
 
@@ -67,7 +67,7 @@ function AddSiteCommand(bot) {
       message += `First PSI check is triggered! :adobe-run:'\n`
       message += `In a minute, you can run _@spacecat get site ${siteDomain}_`;
 
-      await say(message);
+      sendTextMessage(say, thread_ts, message);
 
     } catch (error) {
       await postErrorMessage(say, error);

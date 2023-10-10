@@ -267,7 +267,7 @@ function GetSitesCommand(bot) {
    * @param {function} say - The function to send a message to Slack.
    * @returns {Promise<void>} A Promise that resolves when the command is executed.
    */
-  const handleExecution = async (args, say) => {
+  const handleExecution = async (args, thread_ts, say) => {
     await say(':hourglass: Retrieving all sites, please wait...');
 
     let filterStatus = 'live';
@@ -295,9 +295,9 @@ function GetSitesCommand(bot) {
 
     try {
       const { textSections, additionalBlocks } = await fetchAndFormatSites(0, filterStatus, psiStrategy);
-      await sendMessageBlocks(say, textSections, additionalBlocks);
+      await sendMessageBlocks(say, thread_ts, textSections, additionalBlocks);
     } catch (error) {
-      await postErrorMessage(say, error);
+      await postErrorMessage(say, thread_ts, error);
     }
   }
 

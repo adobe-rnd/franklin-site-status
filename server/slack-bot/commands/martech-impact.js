@@ -2,7 +2,7 @@ const BaseCommand = require('./base-command.js');
 const { getSiteByDomain } = require('../../db.js');
 const { extractThirdPartySummary, extractTotalBlockingTime, extractLastAudit } = require('../../utils/auditUtils.js');
 const { addEllipsis, formatSize, printSiteDetails } = require('../../utils/formatUtils.js');
-const { extractDomainFromInput, sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
+const { extractDomainFromInput, sendTextMessage, sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
 
 const BACKTICKS = '```';
 const CHARACTER_LIMIT = 2500;
@@ -102,16 +102,16 @@ function MartechImpactCommand(bot) {
       const domain = extractDomainFromInput(domainInput, false);
 
       if (!domain) {
-        await say(baseCommand.usage());
+        sendTextMessage(say, thread_ts, baseCommand.usage());
         return;
       }
-
-      await say(`:hourglass: Retrieving status for domain: ${domain}, please wait...`);
+      sendTextMessage(say, thread_ts, `:hourglass: Retrieving status for domain: ${domain}, please wait...`);
 
       const site = await getSiteByDomain(domain);
 
       if (!site) {
-        await say(`:warning: No site found with domain: ${domain}`);
+        
+        sendTextMessage(say, thread_ts, `:warning: No site found with domain: ${domain}`);
         return;
       }
 
@@ -131,9 +131,9 @@ ${printSiteDetails(site)}
   `,
       }];
 
-      await sendMessageBlocks(say, textSections);
+      await sendMessageBlocks(say, thread_ts, textSections);
     } catch (error) {
-      await postErrorMessage(say, error);
+      await postErrorMessage(say, thread_ts, error);
     }
   };
 
