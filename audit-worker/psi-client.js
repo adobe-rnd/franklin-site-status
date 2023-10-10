@@ -6,6 +6,7 @@ function PSIClient(config) {
   const FORM_FACTOR_MOBILE = 'mobile';
   const FORM_FACTOR_DESKTOP = 'desktop';
   const PSI_STRATEGIES = [FORM_FACTOR_MOBILE, FORM_FACTOR_DESKTOP];
+  const MAX_REDIRECTS = 10;
 
   const { apiKey, baseUrl } = config;
 
@@ -119,6 +120,27 @@ function PSIClient(config) {
     };
   }
 
+  async function followRedirects(url, count = 0) {
+    if (count >= MAX_REDIRECTS) {
+      throw new Error('Maximum redirects exceeded');
+    }
+
+    try {
+      const response = await axios.get(url, { maxRedirects: 0 });
+
+      if (response.status >= 300 && response.status < 400) {
+        const redirectedUrl = response.headers.location;
+        console.log(`Redirected from ${url} to ${redirectedUrl}`);
+        return followRedirects(redirectedUrl, count + 1);
+      } else {
+        return url;
+      }
+    } catch (error) {
+      log('error', `Error happened while following redirects: ${e}`);
+      throw error;
+    }
+  }
+
   /**
    * Performs a PageSpeed Insights check on the specified domain.
    *
@@ -128,7 +150,9 @@ function PSIClient(config) {
    */
   const performPSICheck = async (domain, strategy) => {
     try {
-      const apiURL = getPSIApiUrl(domain, strategy);
+      let psiCheckUrl = await followRedirects(domain);
+
+      const apiURL = getPSIApiUrl(psiCheckUrl, strategy);
       const { data: lhs } = await axios.get(apiURL);
 
       const { lighthouseResult } = processAuditData(lhs);
