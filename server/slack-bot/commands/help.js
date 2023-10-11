@@ -56,7 +56,7 @@ function HelpCommand(bot) {
       });
     }
 
-    await say({ blocks, thread_ts});
+    await say({ text: INTRO_MESSAGE, blocks, thread_ts});
   };
 
   baseCommand.init(bot);

@@ -76,17 +76,17 @@ const sendMessageBlocks = async (say, thread_ts, textSections, additionalBlocks 
         "text": section.text
       }
     };
-
+    let text = section.text;
     if (section.accessory) {
       block.accessory = section.accessory;
     }
 
-    return block;
+    return {block, text};
   });
 
   blocks.push(...additionalBlocks);
 
-  await say({ blocks, thread_ts });
+  await say({ text: blocks.text, blocks: blocks.block, thread_ts: thread_ts });
 };
 
 module.exports = {
