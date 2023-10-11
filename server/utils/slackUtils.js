@@ -46,8 +46,8 @@ function extractDomainFromInput(input, domainOnly = true) {
  * @param {string} thread_ts - The thread_ts to send the message to.
  * @param {Error} error - The error to log and send a message about.
  */
-const postErrorMessage = async (say, error, thread_ts) => {
-  if (thread_ts) {
+const postErrorMessage = async (say, thread_ts, error) => {
+  if (thread_ts !== undefined) {
     await say( { text: `:nuclear-warning: Oops! Something went wrong: ${error.message}`, thread_ts });
   } else {
     await say( { text: `:nuclear-warning: Oops! Something went wrong: ${error.message}` });
@@ -61,8 +61,8 @@ const postErrorMessage = async (say, error, thread_ts) => {
  * @param {string} thread_ts - The thread_ts to send the message to.
  * @param {string} text - The text to send.
  */
-const sendTextMessage = async (say, text, thread_ts) => {
-  if(thread_ts) {
+const sendTextMessage = async (say, thread_ts, text) => {
+  if(thread_ts !== undefined) {
     await say({ text, thread_ts });
   } else {
     await say({ text });
@@ -94,7 +94,7 @@ const sendMessageBlocks = async (say, thread_ts, textSections, additionalBlocks 
   });
 
   blocks.push(...additionalBlocks);
-  if (thread_ts) {
+  if (thread_ts !== undefined) {
     await say({ text: DEFAULT_TEXT, blocks, thread_ts });
   } else {
     await say({ text: DEFAULT_TEXT, blocks });
