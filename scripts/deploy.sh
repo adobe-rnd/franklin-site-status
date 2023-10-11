@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 set -e
 trap 'echo "Deploy script failed on line $LINENO"' ERR
 
