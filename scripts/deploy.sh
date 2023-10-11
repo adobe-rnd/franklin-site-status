@@ -31,5 +31,5 @@ if ! kubectl get secret franklin-site-status-secrets --context "$KUBE_CONTEXT" -
 fi
 
 kubectl apply -f k8s -n "$KUBE_NAMESPACE"
-kubectl set image deployment/franklin-site-status-audit-worker audit-worker=${DOCKER_REGISTRY_URL}/franklin/site-status-audit-worker:${VERSION} -n "$KUBE_NAMESPACE"
-kubectl set image deployment/franklin-site-status-server site-status-server={$DOCKER_REGISTRY_URL}/franklin/site-status-server:{$VERSION} -n "$KUBE_NAMESPACE"
+kubectl set image deployment/franklin-site-status-audit-worker audit-worker="$DOCKER_REGISTRY_URL"/franklin/site-status-audit-worker:"$VERSION" -n "$KUBE_NAMESPACE"
+kubectl set image deployment/franklin-site-status-server site-status-server="$DOCKER_REGISTRY_URL"/franklin/site-status-server:"$VERSION" -n "$KUBE_NAMESPACE"
