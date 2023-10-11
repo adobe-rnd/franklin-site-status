@@ -120,23 +120,24 @@ function PSIClient(config) {
     };
   }
 
-  const sendPSIRequest = async (domain, strategy) => {
-    let apiURL = getPSIApiUrl(domain, strategy);
+  async function followRedirects(url) {
+    const formattedURL = formatURL(url);
 
-    let lhs;
-    ({ data: lhs } = await axios.get(apiURL));
+    try {
+      const response = await axios.get(formattedURL);
 
-    let finalUrl = lhs?.lighthouseResult?.finalUrl;
+      const finalUrl = response?.request?.res?.responseUrl;
 
-    if (finalUrl && apiURL !== finalUrl) {
-      log('info', `Redirect detected, PSI will be performed on: ${finalUrl}`);
+      if (finalUrl && formattedURL !== finalUrl) {
+        console.log(`Redirect detected from ${formattedURL} to ${finalUrl}`);
+      }
 
-      apiURL = getPSIApiUrl(finalUrl, strategy);
-      ({ data: lhs } = await axios.get(apiURL));
+      return finalUrl;
+    } catch (error) {
+      log('error', `Error happened while following redirects: ${error}. Falling back to original url: ${url}`);
+      return url;
     }
-
-    return lhs;
-  };
+  }
 
   /**
    * Performs a PageSpeed Insights check on the specified domain.
@@ -147,10 +148,10 @@ function PSIClient(config) {
    */
   const performPSICheck = async (domain, strategy) => {
     try {
-      const lhs = await sendPSIRequest(domain, strategy);
+      const apiURL = getPSIApiUrl(domain, strategy);
+      const { data: lhs } = await axios.get(apiURL);
 
       const { lighthouseResult } = processAuditData(lhs);
-
       return processLighthouseResult(lighthouseResult);
     } catch (e) {
       log('error', `Error happened during PSI check: ${e}`);
@@ -161,12 +162,14 @@ function PSIClient(config) {
   const runAudit = async (domain) => {
     const auditResults = {};
 
+    const finalUrl = await followRedirects(domain);
+
     for (const strategy of PSI_STRATEGIES) {
       const strategyStartTime = process.hrtime();
-      const psiResult = await performPSICheck(domain, strategy);
+      const psiResult = await performPSICheck(finalUrl, strategy);
       const strategyEndTime = process.hrtime(strategyStartTime);
       const strategyElapsedTime = (strategyEndTime[0] + strategyEndTime[1] / 1e9).toFixed(2);
-      log('info', `Audited ${domain} for ${strategy} strategy in ${strategyElapsedTime} seconds`);
+      log('info', `Audited ${finalUrl} for ${strategy} strategy in ${strategyElapsedTime} seconds`);
 
       auditResults[strategy] = psiResult;
     }
