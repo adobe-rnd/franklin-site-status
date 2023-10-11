@@ -6,7 +6,6 @@ function PSIClient(config) {
   const FORM_FACTOR_MOBILE = 'mobile';
   const FORM_FACTOR_DESKTOP = 'desktop';
   const PSI_STRATEGIES = [FORM_FACTOR_MOBILE, FORM_FACTOR_DESKTOP];
-  const MAX_REDIRECTS = 10;
 
   const { apiKey, baseUrl } = config;
 
