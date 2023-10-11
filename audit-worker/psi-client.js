@@ -128,7 +128,7 @@ function PSIClient(config) {
 
       const finalUrl = response?.request?.res?.responseUrl;
 
-      if (finalUrl && formattedURL !== finalUrl) {
+      if (typeof finalUrl === 'string' && formattedURL !== finalUrl) {
         console.log(`Redirect detected from ${formattedURL} to ${finalUrl}`);
       }
 
