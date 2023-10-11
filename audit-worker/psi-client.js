@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { log } = require('./util.js');
+const { hasText, log } = require('./util.js');
 
 function PSIClient(config) {
   const AUDIT_TYPE = 'PSI';
@@ -120,18 +120,17 @@ function PSIClient(config) {
   }
 
   async function followRedirects(url) {
-    const formattedURL = formatURL(url);
-
     try {
+      const formattedURL = formatURL(url);
       const response = await axios.get(formattedURL);
-
       const finalUrl = response?.request?.res?.responseUrl;
 
-      if (typeof finalUrl === 'string' && formattedURL !== finalUrl) {
-        console.log(`Redirect detected from ${formattedURL} to ${finalUrl}`);
+      if (hasText(finalUrl) && formattedURL !== finalUrl) {
+        console.log(`Redirect detected from '${formattedURL}' to '${finalUrl}'`);
+        return finalUrl;
       }
 
-      return finalUrl;
+      return formattedURL;
     } catch (error) {
       log('error', `Error happened while following redirects: ${error}. Falling back to original url: ${url}`);
       return url;
