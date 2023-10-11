@@ -203,7 +203,8 @@ async function overflowActionHandler({ body, ack, client, say }) {
       file: fileBuffer,
       filename: `franklin-site-status.${selectedOption}`,
       title: `Franklin Site Status Export (${selectedOption.toUpperCase()})`,
-      initial_comment: ':tada: Here is an export of all sites and their audit scores.'
+      initial_comment: ':tada: Here is an export of all sites and their audit scores.',
+      thread_ts: body.message.ts
     });
   } catch (error) {
     await postErrorMessage(say, body.message.ts, error);
