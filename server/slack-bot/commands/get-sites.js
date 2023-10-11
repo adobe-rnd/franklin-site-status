@@ -179,16 +179,16 @@ async function overflowActionHandler({ body, ack, client, say }) {
   const selectedOption = body.actions?.[0]?.selected_option?.value;
 
   if (!selectedOption) {
-    sendTextMessage(say, undefined, `:nuclear-warning: Oops! No format selected. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
+    sendTextMessage(say, body.message.ts, `:nuclear-warning: Oops! No format selected. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
     return;
   }
 
   if (selectedOption !== EXPORT_FORMATS.CSV && selectedOption !== EXPORT_FORMATS.XLSX) {
-    sendTextMessage(say, undefined, `:nuclear-warning: Oops! The selected format '${selectedOption}' is not supported. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
+    sendTextMessage(say, body.message.ts, `:nuclear-warning: Oops! The selected format '${selectedOption}' is not supported. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
     return;
   }
 
-  sendTextMessage(say, undefined, ':hourglass: Preparing the requested export for you, please wait...');
+  sendTextMessage(say, body.message.ts, ':hourglass: Preparing the requested export for you, please wait...');
 
   try {
     let fileBuffer;
@@ -206,7 +206,7 @@ async function overflowActionHandler({ body, ack, client, say }) {
       initial_comment: ':tada: Here is an export of all sites and their audit scores.'
     });
   } catch (error) {
-    await postErrorMessage(say, undefined,error);
+    await postErrorMessage(say, body.message.ts, error);
   }
 }
 
@@ -215,7 +215,8 @@ async function overflowActionHandler({ body, ack, client, say }) {
  *
  * @param {Object} param0 - The object containing the acknowledgement function (ack), say function, and action.
  */
-const paginationHandler = async ({ ack, say, action }) => {
+const paginationHandler = async ({ body, ack, say, action }) => {
+  console.log(action );
   console.log(`Pagination request received for get sites. Page: ${action.value}`);
   const startTime = process.hrtime();
 
@@ -226,9 +227,9 @@ const paginationHandler = async ({ ack, say, action }) => {
 
   try {
     const { textSections, additionalBlocks } = await fetchAndFormatSites(start, filterStatus, psiStrategy);
-    await sendMessageBlocks(say, action.action_ts,textSections, additionalBlocks);
+    await sendMessageBlocks(say, body.message.ts, textSections, additionalBlocks);
   } catch (error) {
-    await postErrorMessage(say, action.action_ts,error);
+    await postErrorMessage(say, body.message.ts, error);
   }
 
   const endTime = process.hrtime(startTime);
