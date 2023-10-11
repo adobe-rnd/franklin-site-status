@@ -176,16 +176,16 @@ async function overflowActionHandler({ body, ack, client, say }) {
   const selectedOption = body.actions?.[0]?.selected_option?.value;
 
   if (!selectedOption) {
-    sendTextMessage(say, thread_ts, `:nuclear-warning: Oops! No format selected. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
+    sendTextMessage(say, undefined, `:nuclear-warning: Oops! No format selected. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
     return;
   }
 
   if (selectedOption !== EXPORT_FORMATS.CSV && selectedOption !== EXPORT_FORMATS.XLSX) {
-    sendTextMessage(say, thread_ts, `:nuclear-warning: Oops! The selected format '${selectedOption}' is not supported. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
+    sendTextMessage(say, undefined, `:nuclear-warning: Oops! The selected format '${selectedOption}' is not supported. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
     return;
   }
 
-  sendTextMessage(say, thread_ts, ':hourglass: Preparing the requested export for you, please wait...');
+  sendTextMessage(say, undefined, ':hourglass: Preparing the requested export for you, please wait...');
 
   try {
     let fileBuffer;
@@ -203,7 +203,7 @@ async function overflowActionHandler({ body, ack, client, say }) {
       initial_comment: ':tada: Here is an export of all sites and their audit scores.'
     });
   } catch (error) {
-    await postErrorMessage(say, error);
+    await postErrorMessage(say, undefined,error);
   }
 }
 
@@ -223,9 +223,9 @@ const paginationHandler = async ({ ack, say, action }) => {
 
   try {
     const { textSections, additionalBlocks } = await fetchAndFormatSites(start, filterStatus, psiStrategy);
-    await sendMessageBlocks(say, textSections, additionalBlocks);
+    await sendMessageBlocks(say, undefined,textSections, additionalBlocks);
   } catch (error) {
-    await postErrorMessage(say, error);
+    await postErrorMessage(say, undefined,error);
   }
 
   const endTime = process.hrtime(startTime);
