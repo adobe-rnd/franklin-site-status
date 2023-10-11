@@ -86,7 +86,7 @@ const sendMessageBlocks = async (say, thread_ts, textSections, additionalBlocks 
 
   blocks.push(...additionalBlocks);
 
-  await say({ text: textSections.textSections.text, blocks, thread_ts });
+  await say({ blocks, thread_ts });
 };
 
 module.exports = {
