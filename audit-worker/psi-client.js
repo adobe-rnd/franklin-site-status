@@ -136,7 +136,7 @@ function PSIClient(config) {
         return url;
       }
     } catch (error) {
-      log('error', `Error happened while following redirects: ${e}`);
+      log('error', `Error happened while following redirects: ${error}`);
       throw error;
     }
   }
