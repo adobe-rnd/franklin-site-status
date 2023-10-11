@@ -41,7 +41,7 @@ function SetLiveStatusCommand(bot) {
       const site = await getSiteMetadataByDomain(siteDomain);
 
       if (!site) {
-        await say(`:x: No site found with the domain '${siteDomain}'.`);
+        sendTextMessage(say, thread_ts, `:x: No site found with the domain '${siteDomain}'.`);
         return;
       }
 

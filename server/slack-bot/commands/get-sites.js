@@ -4,7 +4,7 @@ const { getCachedSitesWithAudits } = require('../../cache.js');
 
 const { extractAuditScores } = require('../../utils/auditUtils.js');
 const { formatScore, formatURL } = require('../../utils/formatUtils.js');
-const { sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
+const { sendMessageBlocks, sendTextMessage, postErrorMessage } = require('../../utils/slackUtils.js');
 
 const PAGE_SIZE = 10;
 const PHRASES = ['get sites', 'get all sites'];
@@ -176,16 +176,16 @@ async function overflowActionHandler({ body, ack, client, say }) {
   const selectedOption = body.actions?.[0]?.selected_option?.value;
 
   if (!selectedOption) {
-    await say(`:nuclear-warning: Oops! No format selected. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
+    sendTextMessage(say, thread_ts, `:nuclear-warning: Oops! No format selected. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
     return;
   }
 
   if (selectedOption !== EXPORT_FORMATS.CSV && selectedOption !== EXPORT_FORMATS.XLSX) {
-    await say(`:nuclear-warning: Oops! The selected format '${selectedOption}' is not supported. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
+    sendTextMessage(say, thread_ts, `:nuclear-warning: Oops! The selected format '${selectedOption}' is not supported. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
     return;
   }
 
-  await say(':hourglass: Preparing the requested export for you, please wait...');
+  sendTextMessage(say, thread_ts, ':hourglass: Preparing the requested export for you, please wait...');
 
   try {
     let fileBuffer;
@@ -268,7 +268,7 @@ function GetSitesCommand(bot) {
    * @returns {Promise<void>} A Promise that resolves when the command is executed.
    */
   const handleExecution = async (args, thread_ts, say) => {
-    await say(':hourglass: Retrieving all sites, please wait...');
+    sendTextMessage(say, thread_ts, ':hourglass: Retrieving all sites, please wait...');
 
     let filterStatus = 'live';
     let psiStrategy = 'mobile';
