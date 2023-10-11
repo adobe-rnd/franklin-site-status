@@ -120,26 +120,23 @@ function PSIClient(config) {
     };
   }
 
-  async function followRedirects(url, count = 0) {
-    if (count >= MAX_REDIRECTS) {
-      throw new Error('Maximum redirects exceeded');
+  const sendPSIRequest = async (domain, strategy) => {
+    let apiURL = getPSIApiUrl(domain, strategy);
+
+    let lhs;
+    ({ data: lhs } = await axios.get(apiURL));
+
+    let finalUrl = lhs?.lighthouseResult?.finalUrl;
+
+    if (finalUrl && apiURL !== finalUrl) {
+      log('info', `Redirect detected, PSI will be performed on: ${finalUrl}`);
+
+      apiURL = getPSIApiUrl(finalUrl, strategy);
+      ({ data: lhs } = await axios.get(apiURL));
     }
 
-    try {
-      const response = await axios.get(url, { maxRedirects: 0 });
-
-      if (response.status >= 300 && response.status < 400) {
-        const redirectedUrl = response.headers.location;
-        console.log(`Redirected from ${url} to ${redirectedUrl}`);
-        return followRedirects(redirectedUrl, count + 1);
-      } else {
-        return url;
-      }
-    } catch (error) {
-      log('error', `Error happened while following redirects: ${error}`);
-      throw error;
-    }
-  }
+    return lhs;
+  };
 
   /**
    * Performs a PageSpeed Insights check on the specified domain.
@@ -150,10 +147,7 @@ function PSIClient(config) {
    */
   const performPSICheck = async (domain, strategy) => {
     try {
-      let psiCheckUrl = await followRedirects(domain);
-
-      const apiURL = getPSIApiUrl(psiCheckUrl, strategy);
-      const { data: lhs } = await axios.get(apiURL);
+      const lhs = await sendPSIRequest(domain, strategy);
 
       const { lighthouseResult } = processAuditData(lhs);
 
