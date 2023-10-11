@@ -173,6 +173,9 @@ function generatePaginationBlocks(start, end, totalSites, filterStatus, psiStrat
 async function overflowActionHandler({ body, ack, client, say }) {
   await ack();
 
+  console.log(body);
+  console.log('client');
+  console.log(client);
   const selectedOption = body.actions?.[0]?.selected_option?.value;
 
   if (!selectedOption) {
@@ -213,7 +216,6 @@ async function overflowActionHandler({ body, ack, client, say }) {
  * @param {Object} param0 - The object containing the acknowledgement function (ack), say function, and action.
  */
 const paginationHandler = async ({ ack, say, action }) => {
-  console.log(action );
   console.log(`Pagination request received for get sites. Page: ${action.value}`);
   const startTime = process.hrtime();
 
@@ -224,9 +226,9 @@ const paginationHandler = async ({ ack, say, action }) => {
 
   try {
     const { textSections, additionalBlocks } = await fetchAndFormatSites(start, filterStatus, psiStrategy);
-    await sendMessageBlocks(say, undefined,textSections, additionalBlocks);
+    await sendMessageBlocks(say, action.action_ts,textSections, additionalBlocks);
   } catch (error) {
-    await postErrorMessage(say, undefined,error);
+    await postErrorMessage(say, action.action_ts,error);
   }
 
   const endTime = process.hrtime(startTime);
