@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 set -e
 trap 'echo "Deploy script failed on line $LINENO"' ERR
 
@@ -11,7 +11,7 @@ kubectl config use-context "$KUBE_CONTEXT"
 
 if ! kubectl get secret regcred --context "$KUBE_CONTEXT" -n "$KUBE_NAMESPACE" >/dev/null 2>&1; then
   kubectl create secret docker-registry regcred --context "$KUBE_CONTEXT" -n "$KUBE_NAMESPACE" \
-    --docker-server="$DOCKER_REGISTRY_URL" \
+    "--docker-server=$DOCKER_REGISTRY_URL" \
     --docker-username="$DOCKER_USERNAME" \
     --docker-password="$DOCKER_PASSWORD"
 fi
@@ -31,5 +31,5 @@ if ! kubectl get secret franklin-site-status-secrets --context "$KUBE_CONTEXT" -
 fi
 
 kubectl apply -f k8s -n "$KUBE_NAMESPACE"
-kubectl set image deployment/franklin-site-status-audit-worker audit-worker="$DOCKER_REGISTRY_URL"/franklin/site-status-audit-worker:"$VERSION" -n "$KUBE_NAMESPACE"
-kubectl set image deployment/franklin-site-status-server node-express-server="$DOCKER_REGISTRY_URL"/franklin/site-status-server:"$VERSION" -n "$KUBE_NAMESPACE"
+kubectl set image deployment/franklin-site-status-audit-worker audit-worker=${DOCKER_REGISTRY_URL}/franklin/site-status-audit-worker:${VERSION} -n "$KUBE_NAMESPACE"
+kubectl set image deployment/franklin-site-status-server site-status-server={$DOCKER_REGISTRY_URL}/franklin/site-status-server:{$VERSION} -n "$KUBE_NAMESPACE"
