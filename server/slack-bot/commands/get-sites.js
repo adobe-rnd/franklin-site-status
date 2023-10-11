@@ -213,6 +213,7 @@ async function overflowActionHandler({ body, ack, client, say }) {
  * @param {Object} param0 - The object containing the acknowledgement function (ack), say function, and action.
  */
 const paginationHandler = async ({ ack, say, action }) => {
+  console.log(action );
   console.log(`Pagination request received for get sites. Page: ${action.value}`);
   const startTime = process.hrtime();
 
