@@ -18,7 +18,7 @@ const commands = require('./commands.js')(bot);
 bot.event('app_mention', async ({ context, event, say }) => {
   try {
     const message = event.text.replace(BOT_MENTION_REGEX, '').trim();
-    const thread_ts = event.event_ts;
+    const thread_ts = event.thread_ts? event.thread_ts : event.event_ts;
     for (const command of commands) {
       if (command.accepts(message)) {
         await command.execute(message, thread_ts,  say, commands);
