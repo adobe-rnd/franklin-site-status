@@ -2,6 +2,7 @@ const { getLastWord } = require('./formatUtils.js');
 const { URL } = require('url');
 
 const SLACK_URL_FORMAT_REGEX = /(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})([/\w.-]*\/?)/;
+const DEFAULT_TEXT = 'Block text';
 
 /**
  * Extracts the domain from the input string. If the input follows a specific Slack URL format, it extracts the
@@ -76,17 +77,17 @@ const sendMessageBlocks = async (say, thread_ts, textSections, additionalBlocks 
         "text": section.text
       }
     };
-    let text = section.text;
+
     if (section.accessory) {
       block.accessory = section.accessory;
     }
 
-    return {block, text};
+    return block;
   });
 
   blocks.push(...additionalBlocks);
 
-  await say({ text: blocks.text, blocks: blocks.block, thread_ts: thread_ts });
+  await say({ text: DEFAULT_TEXT, blocks, thread_ts });
 };
 
 module.exports = {
