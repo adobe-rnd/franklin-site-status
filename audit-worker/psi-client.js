@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { log } = require('./util.js');
+const { hasText, log } = require('./util.js');
 
 function PSIClient(config) {
   const AUDIT_TYPE = 'PSI';
@@ -119,6 +119,24 @@ function PSIClient(config) {
     };
   }
 
+  async function followRedirects(url) {
+    try {
+      const formattedURL = formatURL(url);
+      const response = await axios.get(formattedURL);
+      const finalUrl = response?.request?.res?.responseUrl;
+
+      if (hasText(finalUrl) && formattedURL !== finalUrl) {
+        console.log(`Redirect detected from '${formattedURL}' to '${finalUrl}'`);
+        return finalUrl;
+      }
+
+      return formattedURL;
+    } catch (error) {
+      log('error', `Error happened while following redirects: ${error}. Falling back to original url: ${url}`);
+      return url;
+    }
+  }
+
   /**
    * Performs a PageSpeed Insights check on the specified domain.
    *
@@ -132,7 +150,6 @@ function PSIClient(config) {
       const { data: lhs } = await axios.get(apiURL);
 
       const { lighthouseResult } = processAuditData(lhs);
-
       return processLighthouseResult(lighthouseResult);
     } catch (e) {
       log('error', `Error happened during PSI check: ${e}`);
@@ -143,12 +160,14 @@ function PSIClient(config) {
   const runAudit = async (domain) => {
     const auditResults = {};
 
+    const finalUrl = await followRedirects(domain);
+
     for (const strategy of PSI_STRATEGIES) {
       const strategyStartTime = process.hrtime();
-      const psiResult = await performPSICheck(domain, strategy);
+      const psiResult = await performPSICheck(finalUrl, strategy);
       const strategyEndTime = process.hrtime(strategyStartTime);
       const strategyElapsedTime = (strategyEndTime[0] + strategyEndTime[1] / 1e9).toFixed(2);
-      log('info', `Audited ${domain} for ${strategy} strategy in ${strategyElapsedTime} seconds`);
+      log('info', `Audited ${finalUrl} for ${strategy} strategy in ${strategyElapsedTime} seconds`);
 
       auditResults[strategy] = psiResult;
     }
