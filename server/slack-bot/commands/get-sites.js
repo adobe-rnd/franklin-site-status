@@ -4,7 +4,7 @@ const { getCachedSitesWithAudits } = require('../../cache.js');
 
 const { extractAuditScores } = require('../../utils/auditUtils.js');
 const { formatScore, formatURL } = require('../../utils/formatUtils.js');
-const { sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
+const { sendMessageBlocks, sendTextMessage, postErrorMessage } = require('../../utils/slackUtils.js');
 
 const PAGE_SIZE = 10;
 const PHRASES = ['get sites', 'get all sites'];
@@ -173,19 +173,22 @@ function generatePaginationBlocks(start, end, totalSites, filterStatus, psiStrat
 async function overflowActionHandler({ body, ack, client, say }) {
   await ack();
 
+  console.log(body);
+  console.log('client');
+  console.log(client);
   const selectedOption = body.actions?.[0]?.selected_option?.value;
 
   if (!selectedOption) {
-    await say(`:nuclear-warning: Oops! No format selected. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
+    sendTextMessage(say, body.message.ts, `:nuclear-warning: Oops! No format selected. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
     return;
   }
 
   if (selectedOption !== EXPORT_FORMATS.CSV && selectedOption !== EXPORT_FORMATS.XLSX) {
-    await say(`:nuclear-warning: Oops! The selected format '${selectedOption}' is not supported. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
+    sendTextMessage(say, body.message.ts, `:nuclear-warning: Oops! The selected format '${selectedOption}' is not supported. Please select either '${EXPORT_FORMATS.CSV}' or '${EXPORT_FORMATS.XLSX}'.`);
     return;
   }
 
-  await say(':hourglass: Preparing the requested export for you, please wait...');
+  sendTextMessage(say, body.message.ts, ':hourglass: Preparing the requested export for you, please wait...');
 
   try {
     let fileBuffer;
@@ -200,10 +203,11 @@ async function overflowActionHandler({ body, ack, client, say }) {
       file: fileBuffer,
       filename: `franklin-site-status.${selectedOption}`,
       title: `Franklin Site Status Export (${selectedOption.toUpperCase()})`,
-      initial_comment: ':tada: Here is an export of all sites and their audit scores.'
+      initial_comment: ':tada: Here is an export of all sites and their audit scores.',
+      thread_ts: body.message.ts
     });
   } catch (error) {
-    await postErrorMessage(say, error);
+    await postErrorMessage(say, body.message.ts, error);
   }
 }
 
@@ -212,7 +216,8 @@ async function overflowActionHandler({ body, ack, client, say }) {
  *
  * @param {Object} param0 - The object containing the acknowledgement function (ack), say function, and action.
  */
-const paginationHandler = async ({ ack, say, action }) => {
+const paginationHandler = async ({ body, ack, say, action }) => {
+  console.log(action );
   console.log(`Pagination request received for get sites. Page: ${action.value}`);
   const startTime = process.hrtime();
 
@@ -223,9 +228,9 @@ const paginationHandler = async ({ ack, say, action }) => {
 
   try {
     const { textSections, additionalBlocks } = await fetchAndFormatSites(start, filterStatus, psiStrategy);
-    await sendMessageBlocks(say, textSections, additionalBlocks);
+    await sendMessageBlocks(say, body.message.ts, textSections, additionalBlocks);
   } catch (error) {
-    await postErrorMessage(say, error);
+    await postErrorMessage(say, body.message.ts, error);
   }
 
   const endTime = process.hrtime(startTime);
@@ -267,8 +272,8 @@ function GetSitesCommand(bot) {
    * @param {function} say - The function to send a message to Slack.
    * @returns {Promise<void>} A Promise that resolves when the command is executed.
    */
-  const handleExecution = async (args, say) => {
-    await say(':hourglass: Retrieving all sites, please wait...');
+  const handleExecution = async (args, thread_ts, say) => {
+    sendTextMessage(say, thread_ts, ':hourglass: Retrieving all sites, please wait...');
 
     let filterStatus = 'live';
     let psiStrategy = 'mobile';
@@ -295,9 +300,9 @@ function GetSitesCommand(bot) {
 
     try {
       const { textSections, additionalBlocks } = await fetchAndFormatSites(0, filterStatus, psiStrategy);
-      await sendMessageBlocks(say, textSections, additionalBlocks);
+      await sendMessageBlocks(say, thread_ts, textSections, additionalBlocks);
     } catch (error) {
-      await postErrorMessage(say, error);
+      await postErrorMessage(say, thread_ts, error);
     }
   }
 

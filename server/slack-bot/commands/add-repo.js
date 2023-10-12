@@ -2,7 +2,7 @@ const BaseCommand = require('./base-command.js');
 const { getSiteByDomain, getSiteIdByDomain, updateSiteByDomain } = require('../../db.js');
 const { invalidateCache } = require('../../cache.js');
 const { queueSiteToAudit } = require('../../queue.js');
-const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
+const { postErrorMessage, sendTextMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 const { printSiteDetails } = require('../../utils/formatUtils.js');
 
 const PHRASES = ['add repo', 'save repo', 'add repo by site'];
@@ -59,7 +59,7 @@ function AddRepoCommand(bot, axios) {
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
-  const handleExecution = async (args, say) => {
+  const handleExecution = async (args, thread_ts, say) => {
     try {
       const [siteDomainInput, repoUrlInput] = args;
       const siteURL = extractDomainFromInput(siteDomainInput, false);
@@ -67,30 +67,30 @@ function AddRepoCommand(bot, axios) {
       repoUrl = repoUrl.startsWith('https') ? '' : `https://${repoUrl}`;
 
       if (!siteURL || !repoUrl) {
-        await say(baseCommand.usage());
+        sendTextMessage(say, thread_ts, baseCommand.usage());
         return;
       }
 
       if (!validateRepoUrl(repoUrl)) {
-        await say(`:warning: '${repoUrl}' is not a valid GitHub repository URL.`);
+        sendTextMessage(say, thread_ts, `:warning: '${repoUrl}' is not a valid GitHub repository URL.`);
         return;
       }
 
       const site = await getSiteByDomain(siteURL);
       if (!site) {
-        await say(`:warning: No site found with domain: ${siteURL}`);
+        sendTextMessage(say, thread_ts, `:warning: No site found with domain: ${siteURL}`);
         return;
       }
 
       const repoInfo = await fetchRepoInfo(repoUrl);
 
       if (repoInfo === null) {
-        await say(`:warning: The GitHub repository '${repoUrl}' could not be found (private repo?).`);
+        sendTextMessage(say, thread_ts, `:warning: The GitHub repository '${repoUrl}' could not be found (private repo?).`);
         return;
       }
 
       if (repoInfo.archived) {
-        await say(`:warning: The GitHub repository '${repoUrl}' is archived. Please unarchive it before adding it to a site.`);
+        sendTextMessage(say, thread_ts, `:warning: The GitHub repository '${repoUrl}' is archived. Please unarchive it before adding it to a site.`);
         return;
       }
 
@@ -108,7 +108,7 @@ function AddRepoCommand(bot, axios) {
         _id: siteId,
       })
 
-      await say(`
+      sendTextMessage(say, thread_ts, `
       :white_check_mark: Github repo is successfully added to the site!
       
 ${printSiteDetails(site)}

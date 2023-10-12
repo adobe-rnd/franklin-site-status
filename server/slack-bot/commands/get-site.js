@@ -2,7 +2,7 @@ const BaseCommand = require('./base-command.js');
 const { getSiteByDomain } = require('../../db.js');
 const { extractAuditScores } = require('../../utils/auditUtils.js');
 const { formatDate, formatScore, printSiteDetails } = require('../../utils/formatUtils.js');
-const { extractDomainFromInput, sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
+const { extractDomainFromInput, sendTextMessage, sendMessageBlocks, postErrorMessage } = require('../../utils/slackUtils.js');
 
 const BACKTICKS = '```';
 const CHARACTER_LIMIT = 2500;
@@ -103,22 +103,22 @@ function GetSiteCommand(bot) {
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
-  const handleExecution = async (args, say) => {
+  const handleExecution = async (args, thread_ts, say) => {
     try {
       const domain = extractDomainFromInput(args[0], false);
       const psiStrategy = args[1] === 'desktop' ? 'desktop' : 'mobile';
 
       if (!domain) {
-        await say(baseCommand.usage());
+        sendTextMessage(say, thread_ts, baseCommand.usage());
         return;
       }
 
-      await say(`:hourglass: Retrieving status for domain: ${domain}, please wait...`);
+      sendTextMessage(say, thread_ts, `:hourglass: Retrieving status for domain: ${domain}, please wait...`);
 
       const site = await getSiteByDomain(domain);
 
       if (!site) {
-        await say(`:warning: No site found with domain: ${domain}`);
+        sendTextMessage(say, thread_ts, `:warning: No site found with domain: ${domain}`);
         return;
       }
 
@@ -132,9 +132,9 @@ ${printSiteDetails(site)}
   `,
       }];
 
-      await sendMessageBlocks(say, textSections);
+      await sendMessageBlocks(say, thread_ts, textSections);
     } catch (error) {
-      await postErrorMessage(say, error);
+      await postErrorMessage(say, thread_ts, error);
     }
   };
 

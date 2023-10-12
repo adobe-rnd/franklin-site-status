@@ -2,7 +2,7 @@ const BaseCommand = require('./base-command.js');
 const { getSiteMetadataByDomain, createSite } = require('../../db.js');
 const { queueSiteToAudit } = require('../../queue.js');
 const { invalidateCache } = require('../../cache.js');
-const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
+const { postErrorMessage, sendTextMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 
 const PHRASES = ['run audit'];
 
@@ -28,21 +28,21 @@ function RunAuditCommand(bot) {
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
-  const handleExecution = async (args, say) => {
+  const handleExecution = async (args, thread_ts, say) => {
     try {
       const [siteDomainInput] = args;
 
       const siteDomain = extractDomainFromInput(siteDomainInput, false);
 
       if (!siteDomain) {
-        await say(':warning: Please provide a valid site domain.');
+        sendTextMessage(say, thread_ts, ':warning: Please provide a valid site domain.');
         return;
       }
 
       const site = await getSiteMetadataByDomain(siteDomain);
 
       if (!site) {
-        await say(`:x: '${siteDomain}' was not added previously. You can run '@spacecat add site ${siteDomain}`);
+        sendTextMessage(say, thread_ts, `:x: '${siteDomain}' was not added previously. You can run '@spacecat add site ${siteDomain}`);
         return;
       }
 
@@ -53,10 +53,10 @@ function RunAuditCommand(bot) {
       let message = `:white_check_mark: Audit check is triggered for ${siteDomain}\n`
       message += `:adobe-run: In a minute, you can run@spacecat get site ${siteDomain}`;
 
-      await say(message);
+      sendTextMessage(say, thread_ts, message);
 
     } catch (error) {
-      await postErrorMessage(say, error);
+      await postErrorMessage(say, thread_ts, error);
     }
   };
 
