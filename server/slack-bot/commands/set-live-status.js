@@ -1,7 +1,7 @@
 const BaseCommand = require('./base-command.js');
 const { getSiteMetadataByDomain, updateSite } = require('../../db.js');
 const { invalidateCache } = require('../../cache.js');
-const { postErrorMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
+const { postErrorMessage, sendTextMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 
 const PHRASES = ['toggle live status'];
 
@@ -27,21 +27,21 @@ function SetLiveStatusCommand(bot) {
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
-  const handleExecution = async (args, say) => {
+  const handleExecution = async (args, thread_ts, say) => {
     try {
       const [siteDomainInput] = args;
 
       const siteDomain = extractDomainFromInput(siteDomainInput, false);
 
       if (!siteDomain) {
-        await say(':warning: Please provide a valid site domain.');
+        sendTextMessage(say, thread_ts, ':warning: Please provide a valid site domain.');
         return;
       }
 
       const site = await getSiteMetadataByDomain(siteDomain);
 
       if (!site) {
-        await say(`:x: No site found with the domain '${siteDomain}'.`);
+        sendTextMessage(say, thread_ts, `:x: No site found with the domain '${siteDomain}'.`);
         return;
       }
 
@@ -59,10 +59,10 @@ function SetLiveStatusCommand(bot) {
         ? `:rocket: _Site is now set to live!'._\n\n`
         : ':submarine: _Site is now set to development!_\n\n';
 
-      await say(message);
+        sendTextMessage(say, thread_ts, message);
 
     } catch (error) {
-      await postErrorMessage(say, error);
+      await postErrorMessage(say, thread_ts, error);
     }
   };
 

@@ -2,6 +2,7 @@ const { getLastWord } = require('./formatUtils.js');
 const { URL } = require('url');
 
 const SLACK_URL_FORMAT_REGEX = /(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})([/\w.-]*\/?)/;
+const DEFAULT_TEXT = 'Block text';
 
 /**
  * Extracts the domain from the input string. If the input follows a specific Slack URL format, it extracts the
@@ -42,21 +43,40 @@ function extractDomainFromInput(input, domainOnly = true) {
  * Sends an error message to the user and logs the error.
  *
  * @param {Function} say - The function to send a message to the user.
+ * @param {string} thread_ts - The thread_ts to send the message to.
  * @param {Error} error - The error to log and send a message about.
  */
-const postErrorMessage = async (say, error) => {
-  await say(`:nuclear-warning: Oops! Something went wrong: ${error.message}`);
+const postErrorMessage = async (say, thread_ts, error) => {
+  if (thread_ts !== undefined) {
+    await say( { text: `:nuclear-warning: Oops! Something went wrong: ${error.message}`, thread_ts });
+  } else {
+    await say( { text: `:nuclear-warning: Oops! Something went wrong: ${error.message}` });
+  }
   console.error(error);
 };
 
 /**
+ * Sends a message to the user with the given text.
+ * @param {Function} say - The function to send a message to the user.
+ * @param {string} thread_ts - The thread_ts to send the message to.
+ * @param {string} text - The text to send.
+ */
+const sendTextMessage = async (say, thread_ts, text) => {
+  if(thread_ts !== undefined) {
+    await say({ text, thread_ts });
+  } else {
+    await say({ text });
+  }
+}
+/**
  * Sends a message with blocks to the user.
  *
  * @param {Function} say - The function to send a message to the user.
+ * @param {string} thread_ts - The thread_ts to send the message to.
  * @param {Object[]} textSections - The sections of the message.
  * @param {Object[]} [additionalBlocks=[]] - Additional blocks to send in the message.
  */
-const sendMessageBlocks = async (say, textSections, additionalBlocks = []) => {
+const sendMessageBlocks = async (say, thread_ts, textSections, additionalBlocks = []) => {
   let blocks = textSections.map(section => {
     let block = {
       "type": "section",
@@ -74,12 +94,16 @@ const sendMessageBlocks = async (say, textSections, additionalBlocks = []) => {
   });
 
   blocks.push(...additionalBlocks);
-
-  await say({ blocks });
+  if (thread_ts !== undefined) {
+    await say({ text: DEFAULT_TEXT, blocks, thread_ts });
+  } else {
+    await say({ text: DEFAULT_TEXT, blocks });
+  }
 };
 
 module.exports = {
   extractDomainFromInput,
   postErrorMessage,
+  sendTextMessage,
   sendMessageBlocks,
 };

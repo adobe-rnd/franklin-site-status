@@ -37,7 +37,7 @@ function HelpCommand(bot) {
    * @param {Array} commands - The list of commands the bot can execute.
    * @returns {Promise<void>} A Promise that resolves when the command is executed.
    */
-  const handleExecution = async (args, say, commands) => {
+  const handleExecution = async (args, thread_ts, say, commands) => {
     let blocks = [{
       "type": "section",
       "text": {
@@ -56,7 +56,7 @@ function HelpCommand(bot) {
       });
     }
 
-    await say({ blocks });
+    await say({ text: INTRO_MESSAGE, blocks, thread_ts});
   };
 
   baseCommand.init(bot);
