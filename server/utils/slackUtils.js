@@ -111,7 +111,6 @@ const sendMessageBlocks = async (say, thread_ts, textSections, additionalBlocks 
   });
 
   blocks.push(...additionalBlocks);
-  console.log(blocks);
   if (thread_ts !== undefined) {
     await say({ text: DEFAULT_TEXT, blocks, thread_ts });
   } else {

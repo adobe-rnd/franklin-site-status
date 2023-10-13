@@ -70,7 +70,7 @@ function AddSiteCommand(bot) {
       sendTextMessage(say, thread_ts, message);
 
     } catch (error) {
-      await postErrorMessage(say, error);
+      await postErrorMessage(say, thread_ts, error);
     }
   };
 
