@@ -96,7 +96,7 @@ function MartechImpactCommand(bot) {
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
-  const handleExecution = async (args, thread_ts, say) => {
+  const handleExecution = async ({args, thread_ts, say}) => {
     try {
       const [domainInput] = args;
       const domain = extractDomainFromInput(domainInput, false);

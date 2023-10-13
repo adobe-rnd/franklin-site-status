@@ -15,21 +15,21 @@ const bot = new App({
 
 const commands = require('./commands.js')(bot);
 
-bot.event('app_mention', async ({ context, event, say }) => {
+bot.event('app_mention', async ({ context, event, client, say }) => {
+  const thread_ts = event.thread_ts? event.thread_ts : event.event_ts;
   try {
     const message = event.text.replace(BOT_MENTION_REGEX, '').trim();
-    const thread_ts = event.thread_ts? event.thread_ts : event.event_ts;
     for (const command of commands) {
       if (command.accepts(message)) {
-        await command.execute(message, thread_ts,  say, commands);
+        await command.execute(event, client, message, thread_ts,  say, commands);
         return;
       }
     }
 
-    await commands.find(cmd => cmd.phrases.includes('help')).execute(message, thread_ts, say, commands);
+    await commands.find(cmd => cmd.phrases.includes('help')).execute(event, client, message, thread_ts,  say, commands);
 
   } catch (error) {
-    await postErrorMessage(say, error);
+    await postErrorMessage(say, thread_ts, error);
   }
 });
 
