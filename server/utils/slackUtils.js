@@ -123,4 +123,5 @@ module.exports = {
   postErrorMessage,
   sendTextMessage,
   sendMessageBlocks,
+  sendDirectMessage
 };
