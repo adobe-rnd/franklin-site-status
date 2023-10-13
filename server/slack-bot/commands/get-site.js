@@ -103,7 +103,7 @@ function GetSiteCommand(bot) {
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
-  const handleExecution = async (args, thread_ts, say) => {
+  const handleExecution = async ({args, thread_ts, say}) => {
     try {
       const domain = extractDomainFromInput(args[0], false);
       const psiStrategy = args[1] === 'desktop' ? 'desktop' : 'mobile';

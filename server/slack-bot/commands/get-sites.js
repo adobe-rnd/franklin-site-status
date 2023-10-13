@@ -272,7 +272,7 @@ function GetSitesCommand(bot) {
    * @param {function} say - The function to send a message to Slack.
    * @returns {Promise<void>} A Promise that resolves when the command is executed.
    */
-  const handleExecution = async (args, thread_ts, say) => {
+  const handleExecution = async ({args, thread_ts, say}) => {
     sendTextMessage(say, thread_ts, ':hourglass: Retrieving all sites, please wait...');
 
     let filterStatus = 'live';

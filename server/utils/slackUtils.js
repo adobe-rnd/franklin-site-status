@@ -68,6 +68,22 @@ const sendTextMessage = async (say, thread_ts, text) => {
     await say({ text });
   }
 }
+
+/**
+ * Sends a message to the user with the given text.
+ * @param {Object} client - The client to send a message to the user.
+ * @param {string} channel - The channel to send the message to.
+ * @param {string} userId - The user to send the message to.
+ * @param {string} text - The text to send.
+ */
+const sendDirectMessage = async (client, channel, userId, text) => {
+  await client.chat.postEphemeral({
+    channel: channel,
+    user: userId,
+    text: text,
+  });
+}
+
 /**
  * Sends a message with blocks to the user.
  *
@@ -106,4 +122,5 @@ module.exports = {
   postErrorMessage,
   sendTextMessage,
   sendMessageBlocks,
+  sendDirectMessage
 };
