@@ -2,7 +2,7 @@ const BaseCommand = require('./base-command.js');
 const { getSiteMetadataByDomain, createSite } = require('../../db.js');
 const { queueSiteToAudit } = require('../../queue.js');
 const { invalidateCache } = require('../../cache.js');
-const { postErrorMessage, sendTextMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
+const { postErrorMessage, sendTextMessage, sendDirectMessage, extractDomainFromInput } = require('../../utils/slackUtils.js');
 
 const PHRASES = ['add site'];
 
@@ -28,7 +28,7 @@ function AddSiteCommand(bot) {
    * @param {Function} say - The function provided by the bot to send messages.
    * @returns {Promise} A promise that resolves when the operation is complete.
    */
-  const handleExecution = async ({args, thread_ts, say}) => {
+  const handleExecution = async ({event, client, args, thread_ts, say}) => {
     try {
       const [siteDomainInput] = args;
 
@@ -42,7 +42,7 @@ function AddSiteCommand(bot) {
       const site = await getSiteMetadataByDomain(siteDomain);
 
       if (site) {
-        sendTextMessage(say, thread_ts, `:x: '${siteDomain}' was already added before. You can run _@spacecat get site ${siteDomain}_`);
+        sendDirectMessage(client, event.channel, event.user, `:x: '${siteDomain}' was already added before. You can run _@spacecat get site ${siteDomain}_`);
         return;
       }
 
