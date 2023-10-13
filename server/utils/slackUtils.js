@@ -71,7 +71,7 @@ const sendTextMessage = async (say, thread_ts, text) => {
 
 /**
  * Sends a message to the user with the given text.
- * @param {Object} client - The function to send a message to the user.
+ * @param {Object} client - The client to send a message to the user.
  * @param {string} channel - The channel to send the message to.
  * @param {string} userId - The user to send the message to.
  * @param {string} text - The text to send.

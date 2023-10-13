@@ -54,13 +54,13 @@ function BaseCommand({
    * @param {Array[Object]} commands - List of commands existing.
    * @throws {Error} Always thrown, since this method must be overridden.
    */
-  function execute(event, client, message, thread_ts,  say, commands) {
+  function execute(event, client, message, thread_ts, say, commands) {
     const args = extractArguments(message);
 
-    return this.handleExecution({event, client, message, thread_ts,  say, args, commands});
+    return this.handleExecution({event, client, message, thread_ts, say, args, commands});
   }
 
-  const handleExecution = async (event, client, message, thread_ts,  say, args, commands) => {
+  const handleExecution = async (event, client, message, thread_ts, say, args, commands) => {
     throw new Error('Execute method must be overridden by a specific command.');
   }
 
