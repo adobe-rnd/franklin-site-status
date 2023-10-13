@@ -42,7 +42,7 @@ function AddSiteCommand(bot) {
       const site = await getSiteMetadataByDomain(siteDomain);
 
       if (site) {
-        sendDirectMessage(client, event.channel, event.user, `:x: '${siteDomain}' was already added before. You can run _@spacecat get site ${siteDomain}_`);
+        sendDirectMessage(client, event.channel, thread_ts, event.user, `:x: '${siteDomain}' was already added before. You can run _@spacecat get site ${siteDomain}_`);
         return;
       }
 
