@@ -79,8 +79,8 @@ const sendTextMessage = async (say, thread_ts, text) => {
 const sendDirectMessage = async (client, channel, userId, text) => {
   const result = await client.chat.postEphemeral({
     channel: channel,
-    users: userId,
-    text,
+    user: userId,
+    text: text,
   });
   console.log(result);
 }
