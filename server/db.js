@@ -186,7 +186,7 @@ async function getSiteByDomain(domain) {
         as: 'audits',
       },
     },
-    { $unwind: { path: '$audits' } },
+    { $unwind: { path: '$audits', preserveNullAndEmptyArrays: true } },
     { $sort: { 'audits.auditedAt': -1 } },
     {
       $group: {
