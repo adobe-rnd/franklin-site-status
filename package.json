@@ -22,7 +22,7 @@
     "amqplib": "0.10.3",
     "concurrently": "8.2.0",
     "cross-var": "1.1.0",
-    "dotenv-cli": "6.0.0",
+    "dotenv-cli": "7.3.0",
     "mocha": "10.2.0",
     "mongodb": "3.6.6",
     "nyc": "^15.1.0",
